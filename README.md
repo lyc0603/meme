@@ -1,10 +1,10 @@
-# [Project Name]
+# Meme
 
 ## Setup
 
 ```
-git clone [HTTPS/SSH URL]
-cd [project-name]
+git clone https://github.com/lyc0603/meme.git
+cd meme
 ```
 
 ### Give execute permission to your script and then run `setup_repo.sh`
