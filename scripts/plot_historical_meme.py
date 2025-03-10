@@ -8,7 +8,7 @@ import json
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
-from environ.constants import PROCESSED_DATA_PATH, UNISWAP_V3_FACTORY_DICT
+from environ.constants import PROCESSED_DATA_PATH, UNISWAP_V3_FACTORY_DICT, FIGURE_PATH
 
 fig1, ax_1 = plt.subplots(figsize=(6, 4))
 fig2, ax_2 = plt.subplots(figsize=(6, 4))
@@ -99,5 +99,5 @@ ax_2.set_ylabel("# of Uniswap V3 Tokens", fontsize=12)
 fig1.tight_layout()
 fig2.tight_layout()
 
-fig1.savefig(f"{PROCESSED_DATA_PATH}/historical_meme_pool.pdf", dpi=300)
-fig2.savefig(f"{PROCESSED_DATA_PATH}/historical_meme_token.png", dpi=300)
+fig1.savefig(f"{FIGURE_PATH}/historical_meme_pool.pdf", dpi=300)
+fig2.savefig(f"{FIGURE_PATH}/historical_meme_token.pdf", dpi=300)
