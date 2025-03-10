@@ -2,51 +2,60 @@
 Class to filter the event from Ethereum
 """
 
-import datetime
+import glob
 import json
 import logging
 from typing import Any, Dict, Iterable
 
 from eth_abi.codec import ABICodec
+from hexbytes import HexBytes
 from web3 import Web3
 from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
-from web3.exceptions import BlockNotFound
+from web3.datastructures import AttributeDict
+from web3.providers import HTTPProvider
 
-from environ.constants import ABI_PATH
+from environ.constants import (
+    DATA_PATH,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def _fetch_current_block(w3: Web3) -> int:
+def extract_pool_set() -> set:
+    """Fetch the set of pools from the file"""
+
+    # get the list of all files in the folder
+    glob_path = f"{DATA_PATH}/polygon/pool/*.json"
+    files = glob.glob(glob_path)
+
+    pool_set = set()
+    for file in files:
+        with open(file, "r", encoding="utf-8") as f:
+            for line in f:
+                event = json.loads(line)
+                pool_set.add(event["args"]["pool"])
+
+    return pool_set
+
+
+def to_dict(obj):
+    """Convert an AttributeDict to a regular dictionary"""
+    if isinstance(obj, AttributeDict):
+        return {k: to_dict(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [to_dict(item) for item in obj]
+    elif isinstance(obj, HexBytes):
+        return "0x" + obj.hex()
+    return obj
+
+
+def fetch_current_block(http: str) -> int:
     """Fetch the current block number"""
 
+    w3 = Web3(HTTPProvider(http))
+
     return w3.eth.block_number
-
-
-def _get_block_timestamp(w3: Web3, block_num) -> datetime.datetime | None:
-    """Get Ethereum block timestamp"""
-    try:
-        block_info = w3.eth.get_block(block_num)
-    except BlockNotFound:
-        return
-    last_time = block_info["timestamp"]
-    return datetime.datetime.utcfromtimestamp(last_time)
-
-
-def _get_transaction(w3: Web3, tx_hash: str) -> Iterable:
-    """Get Ethereum transaction"""
-    return w3.eth.get_transaction(tx_hash)
-
-
-def _get_token_decimals(w3: Web3, token_address: str) -> int:
-    """Get the number of decimals for a token"""
-    return _call_function(
-        w3,
-        token_address,
-        json.load(open(ABI_PATH / "erc20.json", encoding="utf-8")),
-        "decimals",
-    )
 
 
 def _fetch_events_for_all_contracts(
@@ -90,21 +99,3 @@ def _fetch_events_for_all_contracts(
         all_events.append(evt)
 
     return all_events
-
-
-def _call_function(
-    w3: Web3,
-    address: str,
-    abi: Dict,
-    func_name: str,
-    block: int | str = "latest",
-    *args,
-) -> Any:
-    """Method to call a function on a contract"""
-
-    contract = w3.eth.contract(address=Web3.to_checksum_address(address), abi=abi)
-
-    if not hasattr(contract.functions, func_name):
-        raise ValueError(f"Function {func_name} not found in contract")
-
-    return getattr(contract.functions, func_name)(*args).call(block_identifier=block)
