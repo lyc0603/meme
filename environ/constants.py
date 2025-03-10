@@ -55,14 +55,6 @@ UNISWAP_V3_FACTORY_DICT = {
         "color": "lightcoral",
         "name": "Optimism",
     },
-    "polygon": {
-        "address": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
-        "block": 22757547,
-        "timestamp": "2021-12-20",
-        "step": 500000,
-        "color": "purple",
-        "name": "Polygon",
-    },
     "base": {
         "address": "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
         "block": 1371680,
@@ -70,6 +62,14 @@ UNISWAP_V3_FACTORY_DICT = {
         "step": 50000,
         "color": "blue",
         "name": "Base",
+    },
+    "polygon": {
+        "address": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
+        "block": 22757547,
+        "timestamp": "2021-12-20",
+        "step": 500000,
+        "color": "purple",
+        "name": "Polygon",
     },
     "bnb": {
         "address": "0xdB1d10011AD0Ff90774D0C6Bb92e5C5c8b4461F7",

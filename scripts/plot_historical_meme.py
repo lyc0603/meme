@@ -5,10 +5,11 @@ Script to plot historical meme data
 import datetime
 import json
 
+import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
-from environ.constants import PROCESSED_DATA_PATH, UNISWAP_V3_FACTORY_DICT, FIGURE_PATH
+from environ.constants import FIGURE_PATH, PROCESSED_DATA_PATH, UNISWAP_V3_FACTORY_DICT
 
 fig1, ax_1 = plt.subplots(figsize=(6, 4))
 fig2, ax_2 = plt.subplots(figsize=(6, 4))
@@ -83,18 +84,30 @@ for chain, chain_info in UNISWAP_V3_FACTORY_DICT.items():
     for zm in [zm_1, zm_2]:
         zm.tick_params(axis="x", labelrotation=90, labelsize=8)
         zm.tick_params(axis="y", labelsize=8)
+        plt.setp(zm.get_xticklabels(), fontweight="bold")
+        plt.setp(zm.get_yticklabels(), fontweight="bold")
         zm.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
         zm.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         zm.grid(True)
 
 for ax in [ax_1, ax_2]:
-    ax.tick_params(axis="x", labelrotation=90, labelsize=10)
+
+    ax.tick_params(axis="x", labelrotation=90, labelsize=12)
+    ax.tick_params(axis="y", labelsize=12)
+    plt.setp(ax.get_xticklabels(), fontweight="bold")
+    plt.setp(ax.get_yticklabels(), fontweight="bold")
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.10), ncol=4, frameon=False)
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.4, 1.15),
+        ncol=4,
+        frameon=False,
+        prop={"size": 11, "weight": "bold"},
+    )
 
-ax_1.set_ylabel("# of Uniswap V3 Pools", fontsize=12)
-ax_2.set_ylabel("# of Uniswap V3 Tokens", fontsize=12)
+ax_1.set_ylabel("# of Uniswap V3 Pools", fontsize=12, fontweight="bold")
+ax_2.set_ylabel("# of Uniswap V3 Tokens", fontsize=12, fontweight="bold")
 
 fig1.tight_layout()
 fig2.tight_layout()
