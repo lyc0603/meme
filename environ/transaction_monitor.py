@@ -9,33 +9,36 @@ from typing import Any, Callable, Dict, Iterable, List
 from tqdm import tqdm
 from web3 import HTTPProvider, Web3
 
+from environ.block_fetcher import (
+    call_function,
+    fetch_current_block,
+    fetch_events_for_all_contracts,
+    get_block_timestamp,
+    get_block_timestamp_concurrent,
+    get_token_decimals,
+    get_transaction,
+    get_transaction_concurrent,
+)
 from environ.constants import ABI_PATH, USDC_WETH_500_POOL, WETH_ADDRESS
 from environ.data_class import Burn, Collect, Mint, NewTokenPool, Swap, Trader, Txn
-from environ.eth_fetcher import (
-    _call_function,
-    _fetch_current_block,
-    _fetch_events_for_all_contracts,
-    _get_block_timestamp,
-    _get_token_decimals,
-    _get_transaction,
-)
+import multiprocessing
 
 decimal_set = {}
 
 
-def _fetch_token_decimal(w3: Web3, token: str) -> int:
+def fetch_token_decimal(w3: Web3, token: str) -> int:
     """Fetch the token decimal"""
     if token in decimal_set:
         return decimal_set[token]
 
-    decimal = _get_token_decimals(w3, token)
+    decimal = get_token_decimals(w3, token)
     decimal_set[token] = decimal
     return decimal
 
 
-def _fetch_slot(w3: Web3, pool: str, block: int | str) -> Any:
+def fetch_slot(w3: Web3, pool: str, block: int | str) -> Any:
     """Fetch the slot from the pool"""
-    return _call_function(
+    return call_function(
         w3,
         pool,
         json.load(open(ABI_PATH / "v3pool.json", encoding="utf-8")),
@@ -44,25 +47,58 @@ def _fetch_slot(w3: Web3, pool: str, block: int | str) -> Any:
     )
 
 
-def _fetch_sqrtpricex96(w3: Web3, pool: str, block: int | str) -> float:
+def fetch_sqrtpricex96(w3: Web3, pool: str, block: int | str) -> float:
     """Fetch the sqrtPriceX96 from the pool"""
-    return _fetch_slot(w3, pool, block)[0]
+    return fetch_slot(w3, pool, block)[0]
 
 
-def _fetch_price(
+def fetch_price(
     w3: Web3, pool: str, block: int | str, token0_decimal: int, token1_decimal: int
 ) -> float:
     """Fetch the y / x price from the pool"""
-    return ((_fetch_sqrtpricex96(w3, pool, block) / 2**96) ** 2) * (
+    return ((fetch_sqrtpricex96(w3, pool, block) / 2**96) ** 2) * (
         10 ** (token0_decimal - token1_decimal)
     )
 
 
-def _fetch_weth_price(w3: Web3, block: int | str = "latest") -> float:
+def fetch_weth_price(w3: Web3, block: int | str = "latest") -> float:
     """Fetch the WETH price from Uniswap V3"""
-    return 1 / _fetch_price(
+    return 1 / fetch_price(
         w3, USDC_WETH_500_POOL, block, token0_decimal=6, token1_decimal=18
     )
+
+
+# def fetch_weth_price_concurrent(
+#     chain: str,
+#     blocks: Iterable[int],
+# ) -> Dict[int, float]:
+#     """Fetch the WETH price from Uniswap V3 in batch using multiprocessing"""
+
+#     with multiprocessing.Manager() as manager:
+#         w3_queue = manager.Queue()
+#         res_queue = manager.Queue()
+#         for api_key in INFURA_API_KEYS:
+#             w3_queue.put(HTTPProvider(INFURA_API_BASE_DICT[chain] + api_key))
+
+#         num_processes = min(len(INFURA_API_KEYS), os.cpu_count())
+#         with multiprocessing.Pool(num_processes) as pool:
+#             partial_process = partial(
+#                 fetch_weth_price, w3_queue=w3_queue, res_queue=res_queue
+#             )
+#             for _ in tqdm(
+#                 pool.imap_unordered(
+#                     partial_process,
+#                     blocks,
+#                 ),
+#             ):
+#                 pass
+
+#         block_timestamp = {}
+
+#         while not res_queue.empty():
+#             block_timestamp.update(res_queue.get())
+
+#     return block_timestamp
 
 
 class WalletMonitor:
@@ -91,8 +127,6 @@ class WalletMonitor:
 
 
 # Token Monitor Class
-
-
 class TxnMonitor:
     """Class to monitor the transaction of a token"""
 
@@ -105,8 +139,8 @@ class TxnMonitor:
         self.to_block = to_block
 
         # Fetch the token decimals
-        self.token0_decimal = _fetch_token_decimal(w3, new_token_pool.token0)
-        self.token1_decimal = _fetch_token_decimal(w3, new_token_pool.token1)
+        self.token0_decimal = fetch_token_decimal(w3, new_token_pool.token0)
+        self.token1_decimal = fetch_token_decimal(w3, new_token_pool.token1)
 
         # Initialize transaction data
         self.acts = {
@@ -124,7 +158,7 @@ class TxnMonitor:
 
     def fetch_act(self, act: str = "Swap") -> Iterable:
         """Fetch the swap/mint/burn events"""
-        return _fetch_events_for_all_contracts(
+        return fetch_events_for_all_contracts(
             self.w3,
             getattr(
                 self.w3.eth.contract(
@@ -175,7 +209,7 @@ class TxnMonitor:
 
         # Calculate USD value
         if self.new_token_pool.pair_token == WETH_ADDRESS:
-            weth_price = _fetch_weth_price(self.w3, common["block"])
+            weth_price = fetch_weth_price(self.w3, common["block"])
             usd_value = pair_amount * weth_price
             price *= weth_price
         else:
@@ -221,12 +255,15 @@ class TxnMonitor:
             for act in acts:
                 txn_dict[act.txn_hash][act.log_index] = act
 
+        txns = get_transaction_concurrent("ethereum", txn_dict.keys())
+        print(txns)
+
         # get date for each txn
         for txn_hash, txns in tqdm(txn_dict.items(), desc="Txns Date"):
             block = txns[list(txns.keys())[0]].block
-            date = _get_block_timestamp(self.w3, block)
-            maker = _get_transaction(self.w3, txn_hash)["from"]
-            self.txns.append(Txn(date, block, txn_hash, txns, maker))
+            date = get_block_timestamp_concurrent("ethereum", block)
+            maker = get_transaction(self.w3, txn_hash)["from"]
+            # self.txns.append(Txn(date, block, txn_hash, txns, maker))
 
 
 if __name__ == "__main__":
@@ -234,9 +271,9 @@ if __name__ == "__main__":
     import os
 
     # Initialize Web3
-    INFURA_API_KEY = str(os.getenv("INFURA_API_KEY"))
+    INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).split(",")[0]
     w3 = Web3(HTTPProvider(f"https://mainnet.infura.io/v3/{INFURA_API_KEY}"))
-    current_block = _fetch_current_block(w3)
+    current_block = fetch_current_block(w3)
 
     # Test TxnMonitor
     txn = TxnMonitor(

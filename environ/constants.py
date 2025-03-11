@@ -50,7 +50,7 @@ UNISWAP_V3_FACTORY_DICT = {
     "optimism": {
         "address": "0x1F98431c8aD98523631AE4a59f267346ea31F984",
         "block": 0,
-        "timestamp": "2021-01-15",
+        "timestamp": "2021-11-11",
         "step": 1000000,
         "color": "lightcoral",
         "name": "Optimism",

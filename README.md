@@ -64,19 +64,29 @@ pip install -e ".[dev]"
 put your APIs in `.env`:
 
 ```
-COINGLASS_SECRET="abc123"
-KAIKO_API_KEY="abc123"
-TALLY_API_KEY="xxx"
-SNAPSHOT_API_KEY="aaa"
-OPENAI_API_KEY="sk-xxx"
+INFURA_API_KEYS = "XXX,XXX,XXX"
 ```
 
 ```
 export $(cat .env | xargs)
 ```
 
-# fetch snapshot spaces data
+# fetch historical meme data
 
 ```
-python scripts/fetch_spaces.py
+python scripts/fetch_meme_data.py --chain <Chain Name>
 ```
+
+# fetch timestamp
+
+```
+python scripts/fetch_timestamp.py --chain <Chain Name>
+```
+
+# plot meme data
+
+```
+python scripts/process_meme_data.py
+python scripts/plot_historical_meme.py
+```
+
