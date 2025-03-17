@@ -106,6 +106,10 @@ UNISWAP_V3_FACTORY_DICT = {
     #     "timestamp": "2023-08-31",
     #     "step": 500000,
     # },
+    "solana": {
+        "color": "green",
+        "name": "Solana",
+    },
 }
 
 # Uniswap V3 Contracts

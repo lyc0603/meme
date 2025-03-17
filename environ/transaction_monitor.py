@@ -2,6 +2,7 @@
 Class to monitor the transaction
 """
 
+import datetime
 import json
 from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List
@@ -9,96 +10,16 @@ from typing import Any, Callable, Dict, Iterable, List
 from tqdm import tqdm
 from web3 import HTTPProvider, Web3
 
-from environ.block_fetcher import (
-    call_function,
+from environ.eth_fetcher import (
     fetch_current_block,
     fetch_events_for_all_contracts,
-    get_block_timestamp,
+    fetch_token_decimal,
     get_block_timestamp_concurrent,
-    get_token_decimals,
-    get_transaction,
     get_transaction_concurrent,
+    get_weth_price_concurrent,
 )
-from environ.constants import ABI_PATH, USDC_WETH_500_POOL, WETH_ADDRESS
+from environ.constants import ABI_PATH, WETH_ADDRESS
 from environ.data_class import Burn, Collect, Mint, NewTokenPool, Swap, Trader, Txn
-import multiprocessing
-
-decimal_set = {}
-
-
-def fetch_token_decimal(w3: Web3, token: str) -> int:
-    """Fetch the token decimal"""
-    if token in decimal_set:
-        return decimal_set[token]
-
-    decimal = get_token_decimals(w3, token)
-    decimal_set[token] = decimal
-    return decimal
-
-
-def fetch_slot(w3: Web3, pool: str, block: int | str) -> Any:
-    """Fetch the slot from the pool"""
-    return call_function(
-        w3,
-        pool,
-        json.load(open(ABI_PATH / "v3pool.json", encoding="utf-8")),
-        "slot0",
-        block,
-    )
-
-
-def fetch_sqrtpricex96(w3: Web3, pool: str, block: int | str) -> float:
-    """Fetch the sqrtPriceX96 from the pool"""
-    return fetch_slot(w3, pool, block)[0]
-
-
-def fetch_price(
-    w3: Web3, pool: str, block: int | str, token0_decimal: int, token1_decimal: int
-) -> float:
-    """Fetch the y / x price from the pool"""
-    return ((fetch_sqrtpricex96(w3, pool, block) / 2**96) ** 2) * (
-        10 ** (token0_decimal - token1_decimal)
-    )
-
-
-def fetch_weth_price(w3: Web3, block: int | str = "latest") -> float:
-    """Fetch the WETH price from Uniswap V3"""
-    return 1 / fetch_price(
-        w3, USDC_WETH_500_POOL, block, token0_decimal=6, token1_decimal=18
-    )
-
-
-# def fetch_weth_price_concurrent(
-#     chain: str,
-#     blocks: Iterable[int],
-# ) -> Dict[int, float]:
-#     """Fetch the WETH price from Uniswap V3 in batch using multiprocessing"""
-
-#     with multiprocessing.Manager() as manager:
-#         w3_queue = manager.Queue()
-#         res_queue = manager.Queue()
-#         for api_key in INFURA_API_KEYS:
-#             w3_queue.put(HTTPProvider(INFURA_API_BASE_DICT[chain] + api_key))
-
-#         num_processes = min(len(INFURA_API_KEYS), os.cpu_count())
-#         with multiprocessing.Pool(num_processes) as pool:
-#             partial_process = partial(
-#                 fetch_weth_price, w3_queue=w3_queue, res_queue=res_queue
-#             )
-#             for _ in tqdm(
-#                 pool.imap_unordered(
-#                     partial_process,
-#                     blocks,
-#                 ),
-#             ):
-#                 pass
-
-#         block_timestamp = {}
-
-#         while not res_queue.empty():
-#             block_timestamp.update(res_queue.get())
-
-#     return block_timestamp
 
 
 class WalletMonitor:
@@ -131,12 +52,18 @@ class TxnMonitor:
     """Class to monitor the transaction of a token"""
 
     def __init__(
-        self, w3: Web3, new_token_pool: NewTokenPool, from_block: int, to_block: int
+        self,
+        w3: Web3,
+        new_token_pool: NewTokenPool,
+        from_block: int,
+        to_block: int,
+        chain: str,
     ) -> None:
         self.w3 = w3
         self.new_token_pool = new_token_pool
         self.from_block = from_block
         self.to_block = to_block
+        self.chain = chain
 
         # Fetch the token decimals
         self.token0_decimal = fetch_token_decimal(w3, new_token_pool.token0)
@@ -154,7 +81,7 @@ class TxnMonitor:
     def _fetch_and_parse_events(self, action: str, parser: Callable) -> List:
         """Fetch and parse the events"""
         events = self.fetch_act(action)
-        return [parser(event) for event in tqdm(events, desc=f"{action}s")]
+        return parser(events)
 
     def fetch_act(self, act: str = "Swap") -> Iterable:
         """Fetch the swap/mint/burn events"""
@@ -191,60 +118,75 @@ class TxnMonitor:
             abs(amount1) / 10**self.token1_decimal,
         )
 
-    def parse_swap(self, swap: dict) -> Swap:
+    def parse_swap(self, swaps: list[dict]) -> list[Swap]:
         """Parse a swap event into a structured format."""
-        common = self._get_common_fields(swap)
-        args = swap["args"]
-        meme_amount, pair_amount = self._get_meme_pair_amounts(
-            args["amount0"], args["amount1"]
-        )
 
-        # Determine price and transaction type
-        if self.new_token_pool.meme_token == self.new_token_pool.token1:
-            price = -args["amount0"] / args["amount1"]
-            typ = "Sell" if args["amount1"] > 0 else "Buy"
-        else:
-            price = -args["amount1"] / args["amount0"]
-            typ = "Sell" if args["amount0"] > 0 else "Buy"
+        res_list = []
 
-        # Calculate USD value
-        if self.new_token_pool.pair_token == WETH_ADDRESS:
-            weth_price = fetch_weth_price(self.w3, common["block"])
-            usd_value = pair_amount * weth_price
-            price *= weth_price
-        else:
-            usd_value = pair_amount
-            price = price
+        blocks = [swap["blockNumber"] for swap in swaps]
+        weth_prices_dict = get_weth_price_concurrent(self.chain, blocks)
 
-        return Swap(
-            **common,
-            typ=typ,
-            usd=usd_value,
-            price=price,
-            meme=meme_amount,
-            pair=pair_amount,
-        )
+        for swap in swaps:
+            common = self._get_common_fields(swap)
+            args = swap["args"]
+            meme_amount, pair_amount = self._get_meme_pair_amounts(
+                args["amount0"], args["amount1"]
+            )
 
-    def _parse_generic_event(self, event: dict, event_class: type) -> Any:
+            # Determine price and transaction type
+            if self.new_token_pool.meme_token == self.new_token_pool.token1:
+                price = -args["amount0"] / args["amount1"]
+                typ = "Sell" if args["amount1"] > 0 else "Buy"
+            else:
+                price = -args["amount1"] / args["amount0"]
+                typ = "Sell" if args["amount0"] > 0 else "Buy"
+
+            # Calculate USD value
+            if self.new_token_pool.pair_token == WETH_ADDRESS:
+                weth_price = weth_prices_dict[swap["blockNumber"]]
+                usd_value = pair_amount * weth_price
+                price *= weth_price
+            else:
+                usd_value = pair_amount
+                price = price
+
+            res_list.append(
+                Swap(
+                    **common,
+                    typ=typ,
+                    usd=usd_value,
+                    price=price,
+                    meme=meme_amount,
+                    pair=pair_amount,
+                )
+            )
+        return res_list
+
+    def _parse_generic_event(self, events: list[dict], event_class: type) -> Any:
         """Generic parser for mint/burn/collect events."""
-        common = self._get_common_fields(event)
-        args = event["args"]
-        meme_amount, pair_amount = self._get_meme_pair_amounts(
-            args["amount0"], args["amount1"]
-        )
-        return event_class(**common, meme=meme_amount, pair=pair_amount)
 
-    def parse_mint(self, mint: dict) -> Mint:
+        res_list = []
+
+        for event in events:
+            common = self._get_common_fields(event)
+            args = event["args"]
+            meme_amount, pair_amount = self._get_meme_pair_amounts(
+                args["amount0"], args["amount1"]
+            )
+            res_list.append(event_class(**common, meme=meme_amount, pair=pair_amount))
+        return res_list
+
+    def parse_mint(self, mints: list[dict]) -> Mint:
         """Parse a mint event into a structured format."""
-        return self._parse_generic_event(mint, Mint)
+        return self._parse_generic_event(mints, Mint)
 
-    def parse_burn(self, burn: dict) -> Burn:
+    def parse_burn(self, burns: list[dict]) -> Burn:
         """Parse a burn event into a structured format."""
-        return self._parse_generic_event(burn, Burn)
+        return self._parse_generic_event(burns, Burn)
 
-    def parse_collect(self, collect: dict) -> Collect:
+    def parse_collect(self, collects: list[dict]) -> Collect:
         """Parse a collect event into a structured format."""
-        return self._parse_generic_event(collect, Collect)
+        return self._parse_generic_event(collects, Collect)
 
     def aggregate_act(self, act: str = "Swap") -> None:
         """Aggregate the swap/mint/burn events"""
@@ -255,15 +197,18 @@ class TxnMonitor:
             for act in acts:
                 txn_dict[act.txn_hash][act.log_index] = act
 
-        txns = get_transaction_concurrent("ethereum", txn_dict.keys())
-        print(txns)
+        dates_dict = get_block_timestamp_concurrent(
+            self.chain,
+            [act.block for acts in txn_dict.values() for act in acts.values()],
+        )
+        txns_dict = get_transaction_concurrent(self.chain, txn_dict.keys())
 
         # get date for each txn
         for txn_hash, txns in tqdm(txn_dict.items(), desc="Txns Date"):
             block = txns[list(txns.keys())[0]].block
-            date = get_block_timestamp_concurrent("ethereum", block)
-            maker = get_transaction(self.w3, txn_hash)["from"]
-            # self.txns.append(Txn(date, block, txn_hash, txns, maker))
+            date = datetime.datetime.utcfromtimestamp(dates_dict[block])
+            maker = txns_dict[txn_hash]["from"]
+            self.txns.append(Txn(date, block, txn_hash, txns, maker))
 
 
 if __name__ == "__main__":
@@ -271,7 +216,7 @@ if __name__ == "__main__":
     import os
 
     # Initialize Web3
-    INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).split(",")[0]
+    INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).split(",")[-1]
     w3 = Web3(HTTPProvider(f"https://mainnet.infura.io/v3/{INFURA_API_KEY}"))
     current_block = fetch_current_block(w3)
 
@@ -290,6 +235,7 @@ if __name__ == "__main__":
         ),
         21723886,
         current_block,
+        "ethereum",
     )
 
     txn.aggregate_act()

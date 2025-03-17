@@ -16,7 +16,9 @@ fig2, ax_2 = plt.subplots(figsize=(6, 4))
 
 for i, (chain, chain_info) in enumerate(UNISWAP_V3_FACTORY_DICT.items()):
     with open(
-        f"{PROCESSED_DATA_PATH}/{chain}_historical_meme.jsonl", "r", encoding="utf-8"
+        f"{PROCESSED_DATA_PATH}/plot/historical_meme/{chain}.jsonl",
+        "r",
+        encoding="utf-8",
     ) as f:
         data_list = [json.loads(line) for line in f]
 
@@ -47,15 +49,17 @@ for i, (chain, chain_info) in enumerate(UNISWAP_V3_FACTORY_DICT.items()):
         color=chain_info["color"],
     )
 
-zm_1 = ax_1.inset_axes([0.15, 0.37, 0.6, 0.6])
+zm_1 = ax_1.inset_axes([0.12, 0.37, 0.6, 0.6])
 ax_1.indicate_inset_zoom(zm_1, edgecolor="black", linestyle="--")
-zm_2 = ax_2.inset_axes([0.15, 0.37, 0.6, 0.6])
+zm_2 = ax_2.inset_axes([0.12, 0.37, 0.6, 0.6])
 ax_2.indicate_inset_zoom(zm_2, edgecolor="black", linestyle="--")
 
 
 for chain, chain_info in UNISWAP_V3_FACTORY_DICT.items():
     with open(
-        f"{PROCESSED_DATA_PATH}/{chain}_historical_meme.jsonl", "r", encoding="utf-8"
+        f"{PROCESSED_DATA_PATH}/plot/historical_meme/{chain}.jsonl",
+        "r",
+        encoding="utf-8",
     ) as f:
         data_list = [json.loads(line) for line in f]
 
@@ -101,9 +105,9 @@ for ax in [ax_1, ax_2]:
     ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.4, 1.15),
-        ncol=4,
+        ncol=5,
         frameon=False,
-        prop={"size": 11, "weight": "bold"},
+        prop={"size": 10, "weight": "bold"},
     )
 
 ax_1.set_ylabel("# of Uniswap V3 Pools", fontsize=12, fontweight="bold")
@@ -114,3 +118,5 @@ fig2.tight_layout()
 
 fig1.savefig(f"{FIGURE_PATH}/historical_meme_pool.pdf", dpi=300)
 fig2.savefig(f"{FIGURE_PATH}/historical_meme_token.pdf", dpi=300)
+
+plt.show()
