@@ -90,7 +90,7 @@ for chain, chain_info in UNISWAP_V3_FACTORY_DICT.items():
         zm.tick_params(axis="y", labelsize=8)
         plt.setp(zm.get_xticklabels(), fontweight="bold")
         plt.setp(zm.get_yticklabels(), fontweight="bold")
-        zm.xaxis.set_major_locator(mdates.MonthLocator(interval=3))
+        zm.xaxis.set_major_locator(mdates.MonthLocator(interval=6))
         zm.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         zm.grid(True)
 
@@ -110,8 +110,8 @@ for ax in [ax_1, ax_2]:
         prop={"size": 10, "weight": "bold"},
     )
 
-ax_1.set_ylabel("# of Uniswap V3 Pools", fontsize=12, fontweight="bold")
-ax_2.set_ylabel("# of Uniswap V3 Tokens", fontsize=12, fontweight="bold")
+ax_1.set_ylabel("# of Pools", fontsize=12, fontweight="bold")
+ax_2.set_ylabel("# of Unique Tokens", fontsize=12, fontweight="bold")
 
 fig1.tight_layout()
 fig2.tight_layout()
