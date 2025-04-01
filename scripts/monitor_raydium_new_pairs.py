@@ -4,7 +4,7 @@ import asyncio
 import logging
 import os
 from time import sleep
-from typing import AsyncIterator, Iterator, List, Tuple
+from typing import AsyncIterator, Iterator, List, Optional, Tuple
 
 from asyncstdlib import enumerate
 from solana.exceptions import SolanaRpcException
@@ -29,12 +29,19 @@ from environ.constants import DATA_PATH
 
 # Raydium Liquidity Pool V4
 RAYDIUM_LP = Pubkey.from_string("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8")
+SOL_ADDRESS = "So11111111111111111111111111111111111111112"
 URI = "https://api.mainnet-beta.solana.com"
 WSS = "wss://api.mainnet-beta.solana.com"
 solana_client = Client(URI)
 LOG_INSTRUCTION = "initialize2"
 seen_signatures = set()
-logging.basicConfig(filename="app.log", filemode="a", level=logging.DEBUG)
+os.makedirs("logs", exist_ok=True)
+logging.basicConfig(
+    filename="logs/new_pairs.log",
+    filemode="a",
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 logging.getLogger().setLevel(logging.INFO)
 os.makedirs(DATA_PATH / "solana" / "meme", exist_ok=True)
 
@@ -124,25 +131,37 @@ def get_tokens(signature: Signature, RAYDIUM_LP: Pubkey) -> None:
         signature, encoding="jsonParsed", max_supported_transaction_version=0
     )
     instructions = get_instructions(transaction)
+    if not instructions:
+        logging.info("No instructions found")
+        return
     filtred_instuctions = instructions_with_program_id(instructions, RAYDIUM_LP)
     logging.info(filtred_instuctions)
     for instruction in filtred_instuctions:
         tokens = get_tokens_info(instruction)
+        logging.info(
+            "\n Pair: %s, \n Base: %s, \n Quote: %s, \n Signature: %s",
+            tokens[0],
+            tokens[1],
+            tokens[2],
+            str(signature),
+        )
         with open(
-            f"{DATA_PATH}/solana/meme/{tokens[0]}.jsonl", "a", encoding="utf-8"
+            f"{DATA_PATH}/solana/meme/{tokens[0]}_{tokens[1]}_{tokens[2]}_{str(signature)}.jsonl",
+            "a",
+            encoding="utf-8",
         ) as raw_tokens:
             pass
 
 
 def get_instructions(
     transaction: GetTransactionResp,
-) -> List[UiPartiallyDecodedInstruction | ParsedInstruction]:
+) -> Optional[List[UiPartiallyDecodedInstruction | ParsedInstruction]]:
     """Get instructions from transaction
 
     Args:
         transaction (GetTransactionResp): transaction response"""
-    instructions = transaction.value.transaction.transaction.message.instructions
-    return instructions
+    if transaction.value:
+        return transaction.value.transaction.transaction.message.instructions
 
 
 def instructions_with_program_id(
@@ -170,10 +189,9 @@ def get_tokens_info(
         instruction (UiPartiallyDecodedInstruction | ParsedInstruction): instruction"""
     accounts = instruction.accounts
     pair = accounts[4]
-    token_0 = accounts[8]
-    token_1 = accounts[9]
-    logging.info("\n Token0: %s, \n Token1: %s, \n Pair: %s", token_0, token_1, pair)
-    return (pair, token_0, token_1)
+    base = accounts[8] if str(accounts[8]) != SOL_ADDRESS else accounts[9]
+    quote = accounts[9] if str(accounts[8]) != SOL_ADDRESS else accounts[8]
+    return (pair, base, quote)
 
 
 if __name__ == "__main__":
