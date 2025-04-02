@@ -5,7 +5,6 @@ Script to plot historical meme data
 import datetime
 import json
 
-import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 
@@ -33,7 +32,7 @@ for i, (chain, chain_info) in enumerate(UNISWAP_V3_FACTORY_DICT.items()):
         pool_num_list,
         label=(
             chain_info["name"]
-            if i < len(UNISWAP_V3_FACTORY_DICT) // 2
+            if i < (len(UNISWAP_V3_FACTORY_DICT) // 2 + 1)
             else "_nolegend_"
         ),
         color=chain_info["color"],
@@ -43,11 +42,26 @@ for i, (chain, chain_info) in enumerate(UNISWAP_V3_FACTORY_DICT.items()):
         token_list,
         label=(
             chain_info["name"]
-            if i >= len(UNISWAP_V3_FACTORY_DICT) // 2
+            if i >= (len(UNISWAP_V3_FACTORY_DICT) // 2 + 1)
             else "_nolegend_"
         ),
         color=chain_info["color"],
     )
+
+ax_1.axvline(
+    datetime.datetime(2025, 1, 17),
+    color="red",
+    linestyle="--",
+    linewidth=1,
+    label="__nolegend__",
+)
+ax_2.axvline(
+    datetime.datetime(2025, 1, 17),
+    color="red",
+    linestyle="--",
+    linewidth=1,
+    label="$TRUMP's launch",
+)
 
 zm_1 = ax_1.inset_axes([0.12, 0.37, 0.6, 0.6])
 ax_1.indicate_inset_zoom(zm_1, edgecolor="black", linestyle="--")
@@ -94,6 +108,23 @@ for chain, chain_info in UNISWAP_V3_FACTORY_DICT.items():
         zm.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
         zm.grid(True)
 
+zm_1.axvline(
+    datetime.datetime(2025, 1, 17),
+    color="red",
+    linestyle="--",
+    linewidth=1,
+    label="_nolegend_",
+)
+
+zm_2.axvline(
+    datetime.datetime(2025, 1, 17),
+    color="red",
+    linestyle="--",
+    linewidth=1,
+    label="_nolegend_",
+)
+
+
 for ax in [ax_1, ax_2]:
 
     ax.tick_params(axis="x", labelrotation=90, labelsize=12)
@@ -107,7 +138,7 @@ for ax in [ax_1, ax_2]:
         bbox_to_anchor=(0.4, 1.15),
         ncol=5,
         frameon=False,
-        prop={"size": 10, "weight": "bold"},
+        prop={"size": 8.5, "weight": "bold"},
     )
 
 ax_1.set_ylabel("# of Pools", fontsize=12, fontweight="bold")

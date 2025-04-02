@@ -1,11 +1,12 @@
 """Solana Fetcher"""
 
-from typing import Iterable, Literal
+from typing import Iterable, Literal, Optional
 
 from borsh_construct import U64, CStruct
 from construct import Bytes, Int8ul, Int32ul
 from solana.rpc.api import Client
 from solders.pubkey import Pubkey
+from solders.rpc.responses import GetSignaturesForAddressResp
 from solders.signature import Signature
 from solders.transaction_status import (
     EncodedConfirmedTransactionWithStatusMeta,
@@ -35,7 +36,10 @@ SPL_MINT_LAYOUT = CStruct(
     "freezeAuthorityOption" / Int32ul,
     "freezeAuthority" / PUBLIC_KEY_LAYOUT,
 )
-solana_client = Client("https://api.mainnet-beta.solana.com")
+solana_client = Client(
+    # "https://solana-mainnet.core.chainstack.com/a0db22a6450d2ad8bfabb1b8254b7abb"
+    "https://api.mainnet-beta.solana.com"
+)
 
 RAYDIUM_ADDRESSES_STR = [
     # Standard AMM (CP-Swap, New)
@@ -50,6 +54,19 @@ RAYDIUM_ADDRESSES_STR = [
 RAYDIUM_ADDRESSES_PUBKEY = [Pubkey.from_string(_) for _ in RAYDIUM_ADDRESSES_STR]
 WRAPPED_SOL_MINT = "So11111111111111111111111111111111111111112"
 token_decimals = {}
+
+
+def get_txns_for_address(
+    address: str,
+    limit: int = 1000,
+    before: Optional[Signature] = None,
+    until: Optional[Signature] = None,
+) -> GetSignaturesForAddressResp:
+    """Function to get the transactions for the address"""
+
+    return solana_client.get_signatures_for_address(
+        Pubkey.from_string(address), limit=limit, before=before, until=until
+    )
 
 
 def get_token_acct(acct: str) -> Pubkey:
@@ -94,12 +111,6 @@ def parse_signer(
     signer = [
         _ for _ in txn.transaction.transaction.message.account_keys if _.signer == True
     ]
-
-    if len(signer) != 1:
-        raise ValueError(
-            f"Signer number is not equal to 1 for {txn.signature}: {len(signer)}"
-        )
-
     return signer[0].pubkey
 
 
@@ -117,6 +128,14 @@ def parse_inner_instruction(
     """Function to parse the inner instructions of the transaction"""
 
     return txn.transaction.meta.inner_instructions
+
+
+def parse_log_messages(
+    txn: EncodedConfirmedTransactionWithStatusMeta | None,
+) -> list:
+    """Function to parse the log messages of the transaction"""
+
+    return txn.transaction.meta.log_messages
 
 
 def parse_token_info(
@@ -303,16 +322,17 @@ def check_inner_instruction_index(
 
 
 if __name__ == "__main__":
-    parse_raydium_txn(
-        Signature.from_string(
-            "2NgtxMCmqbXuDkaPLguZdWYkyEhVQgnAPWXD5JoT661H1K3NsaHmJDgphhTbyrC7FyK58kK22My2zaSKsFKcyWw2"
-        )
-    )
-
-    # transaction = get_txn(
+    pass
+    # parse_raydium_txn(
     #     Signature.from_string(
-    #         "2Xc8aQ9PyPw1xv1ciw8HdxQmvWdwe64UBkX8XpEELK6kg2cvgCH13RzFt6zzob8ignUN3PbGrfh8Ao8eQbNqcMtS"
+    #         "2NgtxMCmqbXuDkaPLguZdWYkyEhVQgnAPWXD5JoT661H1K3NsaHmJDgphhTbyrC7FyK58kK22My2zaSKsFKcyWw2"
     #     )
     # )
-    # instructions = parse_instruction(transaction)
-    # inner_instructions = parse_inner_instruction(transaction)
+
+    transaction = get_txn(
+        Signature.from_string(
+            "2eDiS9j4Pav9jLaA8uKRgYLWphJXMNCZfwD9RfUvqGziURo2mtTYMDntXNfKEoFuKN3Hp9NR5AEob2M8iNCPyUoB"
+        )
+    )
+    instructions = parse_instruction(transaction)
+    inner_instructions = parse_inner_instruction(transaction)

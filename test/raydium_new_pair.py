@@ -1,21 +1,39 @@
-# This script is used to monitor buys and sells of  multiple accounts concurrently on Solana.
-import asyncio
-import websockets
-import json
-import datetime
-from solders.signature import Signature
-from solana.rpc.api import Client
-from solders.pubkey import Pubkey
+"Detect  New Pools Created on Solana Raydium DEX"
 
-solana_client = Client("https://api.mainnet-beta.solana.com")
-# Max 5 addresses else you will get error.
-wallet_addresses = [
-    "Account Address1",
-    "Account Address",
-    "Account Address 3",
-    "Account Address 4",
-    "Account Address 5",
-]
+# MAnually see transactions of new pairs GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ under spl transfer section
+
+import asyncio
+import logging
+from time import sleep
+from typing import AsyncIterator, Iterator, List, Tuple
+
+from asyncstdlib import enumerate
+from solana.exceptions import SolanaRpcException
+from solana.rpc.api import Client
+
+# Type hinting imports
+from solana.rpc.commitment import Commitment, Finalized
+from solana.rpc.websocket_api import SolanaWsClientProtocol, connect
+from solders.pubkey import Pubkey
+from solders.rpc.config import RpcTransactionLogsFilterMentions
+from solders.rpc.responses import (
+    GetTransactionResp,
+    LogsNotification,
+    RpcLogsResponse,
+    SubscriptionResult,
+)
+from solders.signature import Signature
+from solders.transaction_status import ParsedInstruction, UiPartiallyDecodedInstruction
+from websockets.exceptions import ConnectionClosedError, ProtocolError
+
+# Raydium Liquidity Pool V4
+RaydiumLPV4 = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+URI = "https://api.mainnet-beta.solana.com"  # "https://api.devnet.solana.com" | "https://api.mainnet-beta.solana.com"
+WSS = "wss://api.mainnet-beta.solana.com"  # "wss://api.devnet.solana.com" | "wss://api.mainnet-beta.solana.com"
+solana_client = Client(URI)
+# Raydium function call name, look at raydium-amm/program/src/instruction.rs
+log_instruction = "initialize2"
+
 seen_signatures = set()
 
 

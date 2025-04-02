@@ -46,41 +46,47 @@ def get_timestamp_range(chain: str) -> List:
 
 
 def find_blocks_around_timestamp(
+    w3: Web3,
+    date: datetime.datetime,
+) -> dict:
+    """Find the blocks before and after a specific timestamp"""
+
+    timestamp = int(date.timestamp())
+    w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+    latest_block = w3.eth.block_number
+    first_block = 0
+
+    # Binary search to find the block before the timestamp
+    low, high = first_block, latest_block
+    while low < high:
+        time.sleep(0.2)
+        mid = (low + high) // 2
+        block = w3.eth.get_block(mid)
+        if block.timestamp < timestamp:
+            low = mid + 1
+        else:
+            high = mid
+
+    block_before = low - 1 if low > first_block else None
+    block_after = low if low <= latest_block else None
+
+    return {
+        "date": date.strftime("%Y-%m-%d"),
+        "block_before": block_before,
+        "block_after": block_after,
+    }
+
+
+def find_blocks_around_timestamp_concurrently(
     api_queue: multiprocessing.Queue,
     res_queue: multiprocessing.Queue,
     date: datetime.datetime,
 ) -> None:
     """Find the blocks before and after a specific timestamp"""
 
-    timestamp = int(date.timestamp())
     http = api_queue.get()
     try:
-        w3 = Web3(HTTPProvider(http))
-        w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
-        latest_block = w3.eth.block_number
-        first_block = 0
-
-        # Binary search to find the block before the timestamp
-        low, high = first_block, latest_block
-        while low < high:
-            time.sleep(0.2)
-            mid = (low + high) // 2
-            block = w3.eth.get_block(mid)
-            if block.timestamp < timestamp:
-                low = mid + 1
-            else:
-                high = mid
-
-        block_before = low - 1 if low > first_block else None
-        block_after = low if low <= latest_block else None
-
-        res_queue.put(
-            {
-                "date": date.strftime("%Y-%m-%d"),
-                "block_before": block_before,
-                "block_after": block_after,
-            }
-        )
+        res_queue.put(find_blocks_around_timestamp(Web3(HTTPProvider(http)), date))
     except Exception as e:
         print(f"Error fetching block: {e}")
         time.sleep(10)
@@ -137,4 +143,3 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    _ = get_timestamp_range("bnb")

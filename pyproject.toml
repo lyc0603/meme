@@ -28,6 +28,7 @@ dependencies = [
     "base58==2.1.1",
     "watchdog==6.0.0",
     "watchfiles==1.0.4",
+    "tenacity==9.0.0"
 ]
 
 [project.optional-dependencies]

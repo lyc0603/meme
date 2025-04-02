@@ -29,6 +29,29 @@ USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
 
 PAIR_LIST = set([WETH_ADDRESS, USDC_ADDRESS, USDT_ADDRESS])
 
+# Uniswap V3 Native Token - USDC 500 Pool used for price calculation
+UNISWAP_V3_NATIVE_USDC_500_DICT = {
+    "ethereum": {
+        "pool": "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
+        "token0": "USDC",
+        "token1": "WETH",
+        "token0_decimal": 6,
+        "token1_decimal": 18,
+    },
+    "base": {
+        "pool": "0xd0b53D9277642d899DF5C87A3966A349A798F224",
+        "token0": "WETH",
+        "token1": "USDC",
+        "token0_decimal": 18,
+        "token1_decimal": 6,
+    },
+}
+
+NATIVE_ADDRESS_DICT = {
+    "ethereum": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    "base": "0x4200000000000000000000000000000000000006",
+}
+
 # Uniswap V3 Factory Addresses
 UNISWAP_V3_FACTORY_DICT = {
     "ethereum": {
@@ -111,11 +134,6 @@ UNISWAP_V3_FACTORY_DICT = {
         "name": "Solana",
     },
 }
-
-# Uniswap V3 Contracts
-UNISWAP_V3_NFT_CONTRACT = "0xC36442B4A4522E871399CD717ABDD847AB11FE88"
-# UNISWAP_V3_FACTORY_CONTRACT = UNISWAP_V3_FACTORY_DICT["ethereum"]
-USDC_WETH_500_POOL = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"
 
 # Uniswap V3 Fee Tiers
 FEE_TIER_LIST = [100, 500, 3000, 10000]

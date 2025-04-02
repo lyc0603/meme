@@ -17,15 +17,22 @@ class NewPool:
     fee: int
     pool_add: str
     block_number: int
+    chain: str
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
 
 
 @dataclass
 class NewTokenPool(NewPool):
     """Class to store the new token pool"""
 
-    meme_token: str
-    pair_token: str
+    base_token: str
+    quote_token: str
     txns: Dict[int, str]
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
 
 
 # transaction data class
@@ -39,6 +46,9 @@ class Txn:
     acts: Dict[str, Any]
     maker: str
 
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
 
 @dataclass
 class Action:
@@ -48,6 +58,9 @@ class Action:
     txn_hash: str
     log_index: int
 
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
 
 @dataclass
 class Swap(Action):
@@ -56,32 +69,44 @@ class Swap(Action):
     typ: str
     usd: float
     price: float
-    meme: float
-    pair: float
+    base: float
+    quote: float
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
 
 
 @dataclass
 class Mint(Action):
     """Class to store the mint transaction"""
 
-    meme: float
-    pair: float
+    base: float
+    quote: float
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
 
 
 @dataclass
 class Burn(Action):
     """Class to store the burn transaction"""
 
-    meme: float
-    pair: float
+    base: float
+    quote: float
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
 
 
 @dataclass
 class Collect(Action):
     """Class to store the collect transaction"""
 
-    meme: float
-    pair: float
+    base: float
+    quote: float
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
 
 
 # wallet data class
@@ -92,6 +117,9 @@ class Wallet:
     address: str
     txn: Dict[str, Any]
 
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
 
 @dataclass
 class Trader:
@@ -100,3 +128,6 @@ class Trader:
     address: str
     token: str
     txns: Dict[str, Any]
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)

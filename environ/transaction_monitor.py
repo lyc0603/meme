@@ -4,12 +4,15 @@ Class to monitor the transaction
 
 import datetime
 import json
+import time
 from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List
 
 from tqdm import tqdm
 from web3 import HTTPProvider, Web3
 
+from environ.constants import ABI_PATH, NATIVE_ADDRESS_DICT
+from environ.data_class import Burn, Collect, Mint, NewTokenPool, Swap, Trader, Txn
 from environ.eth_fetcher import (
     fetch_current_block,
     fetch_events_for_all_contracts,
@@ -18,8 +21,6 @@ from environ.eth_fetcher import (
     get_transaction_concurrent,
     get_weth_price_concurrent,
 )
-from environ.constants import ABI_PATH, WETH_ADDRESS
-from environ.data_class import Burn, Collect, Mint, NewTokenPool, Swap, Trader, Txn
 
 
 class WalletMonitor:
@@ -67,7 +68,9 @@ class TxnMonitor:
 
         # Fetch the token decimals
         self.token0_decimal = fetch_token_decimal(w3, new_token_pool.token0)
+        time.sleep(1)
         self.token1_decimal = fetch_token_decimal(w3, new_token_pool.token1)
+        time.sleep(1)
 
         # Initialize transaction data
         self.acts = {
@@ -85,6 +88,7 @@ class TxnMonitor:
 
     def fetch_act(self, act: str = "Swap") -> Iterable:
         """Fetch the swap/mint/burn events"""
+        time.sleep(1)
         return fetch_events_for_all_contracts(
             self.w3,
             getattr(
@@ -106,9 +110,11 @@ class TxnMonitor:
             "log_index": event["logIndex"],
         }
 
-    def _get_meme_pair_amounts(self, amount0: int, amount1: int) -> tuple[float, float]:
-        """Determine meme and pair amounts based on token positions."""
-        if self.new_token_pool.meme_token == self.new_token_pool.token1:
+    def _get_base_quote_amounts(
+        self, amount0: int, amount1: int
+    ) -> tuple[float, float]:
+        """Determine base and quote amounts based on token positions."""
+        if self.new_token_pool.base_token == self.new_token_pool.token1:
             return (
                 abs(amount1) / 10**self.token1_decimal,
                 abs(amount0) / 10**self.token0_decimal,
@@ -123,18 +129,18 @@ class TxnMonitor:
 
         res_list = []
 
-        blocks = [swap["blockNumber"] for swap in swaps]
+        blocks = set([swap["blockNumber"] for swap in swaps])
         weth_prices_dict = get_weth_price_concurrent(self.chain, blocks)
 
         for swap in swaps:
             common = self._get_common_fields(swap)
             args = swap["args"]
-            meme_amount, pair_amount = self._get_meme_pair_amounts(
+            base_amount, quote_amount = self._get_base_quote_amounts(
                 args["amount0"], args["amount1"]
             )
 
             # Determine price and transaction type
-            if self.new_token_pool.meme_token == self.new_token_pool.token1:
+            if self.new_token_pool.base_token == self.new_token_pool.token1:
                 price = -args["amount0"] / args["amount1"]
                 typ = "Sell" if args["amount1"] > 0 else "Buy"
             else:
@@ -142,12 +148,12 @@ class TxnMonitor:
                 typ = "Sell" if args["amount0"] > 0 else "Buy"
 
             # Calculate USD value
-            if self.new_token_pool.pair_token == WETH_ADDRESS:
+            if self.new_token_pool.quote_token == NATIVE_ADDRESS_DICT[self.chain]:
                 weth_price = weth_prices_dict[swap["blockNumber"]]
-                usd_value = pair_amount * weth_price
+                usd_value = quote_amount * weth_price
                 price *= weth_price
             else:
-                usd_value = pair_amount
+                usd_value = quote_amount
                 price = price
 
             res_list.append(
@@ -156,8 +162,8 @@ class TxnMonitor:
                     typ=typ,
                     usd=usd_value,
                     price=price,
-                    meme=meme_amount,
-                    pair=pair_amount,
+                    base=base_amount,
+                    quote=quote_amount,
                 )
             )
         return res_list
@@ -170,10 +176,10 @@ class TxnMonitor:
         for event in events:
             common = self._get_common_fields(event)
             args = event["args"]
-            meme_amount, pair_amount = self._get_meme_pair_amounts(
+            base_amount, quote_amount = self._get_base_quote_amounts(
                 args["amount0"], args["amount1"]
             )
-            res_list.append(event_class(**common, meme=meme_amount, pair=pair_amount))
+            res_list.append(event_class(**common, base=base_amount, quote=quote_amount))
         return res_list
 
     def parse_mint(self, mints: list[dict]) -> Mint:
@@ -214,28 +220,35 @@ class TxnMonitor:
 if __name__ == "__main__":
 
     import os
+    import time
+
+    from environ.constants import INFURA_API_BASE_DICT
 
     # Initialize Web3
-    INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).split(",")[-1]
-    w3 = Web3(HTTPProvider(f"https://mainnet.infura.io/v3/{INFURA_API_KEY}"))
+    INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).rsplit(",", maxsplit=1)[-1]
+    w3 = Web3(HTTPProvider(f"{INFURA_API_BASE_DICT["base"]}{INFURA_API_KEY}"))
     current_block = fetch_current_block(w3)
 
-    # Test TxnMonitor
-    txn = TxnMonitor(
-        w3,
-        NewTokenPool(
-            token0="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-            token1="0xD1De603884e6424241cAf53EfA846e7C6163755c",
-            fee=3000,
-            pool_add="0x7315cd518E2eD43b6025c02fA178488F03D25Cdc",
-            block_number=21723886,
-            meme_token="0xD1De603884e6424241cAf53EfA846e7C6163755c",
-            pair_token="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-            txns={},
-        ),
-        21723886,
-        current_block,
-        "ethereum",
-    )
+    time.sleep(1)
 
-    txn.aggregate_act()
+    _ = w3.eth.get_block(current_block - 1)
+
+    # # Test TxnMonitor
+    # txn = TxnMonitor(
+    #     w3,
+    #     NewTokenPool(
+    #         token0="0x4200000000000000000000000000000000000006",
+    #         token1="0xBe35071605277d8Be5a52c84A66AB1bc855A758D",
+    #         fee=10000,
+    #         pool_add="0x946066d23919982116C2Ce07A5bc841c65A60b63",
+    #         block_number=24385454,
+    #         base_token="0xBe35071605277d8Be5a52c84A66AB1bc855A758D",
+    #         quote_token="0x4200000000000000000000000000000000000006",
+    #         txns={},
+    #     ),
+    #     current_block - 100,
+    #     current_block,
+    #     "base",
+    # )
+
+    # txn.aggregate_act()
