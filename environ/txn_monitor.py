@@ -5,12 +5,12 @@ import json
 import logging
 import os
 import pickle
-import time
 from collections import defaultdict
 from datetime import UTC, timedelta
 from typing import Any, Callable, Iterable
 
 from web3 import Web3
+from web3.exceptions import Web3RPCError
 
 from environ.constants import (
     ABI_PATH,
@@ -18,10 +18,11 @@ from environ.constants import (
     NATIVE_ADDRESS_DICT,
     PROCESSED_DATA_PATH,
 )
-from environ.data_class import Burn, Collect, Mint, NewTokenPool, Swap, Txn
+from environ.data_class import Burn, Collect, Mint, NewTokenPool, Swap, Transfer, Txn
 from environ.eth_fetcher import (
     estimate_block_freq,
     fetch_block_timestamp,
+    fetch_current_block,
     fetch_events_for_all_contracts,
     fetch_token_decimal,
     fetch_transaction,
@@ -58,29 +59,41 @@ class TxnMonitor:
 
         self.acts = {}
         self.txns = []
+        self.transfers = []
         self.new_token_pool = new_token_pool
         self.chain = new_token_pool.chain
         self.duration = duration
         self.w3 = Web3(Web3.HTTPProvider(INFURA_API_BASE_DICT[self.chain] + api))
 
         # Fetch the corrent block
-        self.current_block = self.w3.eth.block_number
-        self.last_block = self.current_block - 1
+        self.current_block = fetch_current_block(self.w3)
         self.est_block_duration = (
             self.duration.total_seconds() / estimate_block_freq(self.w3) / AVG_ITER
         )
-
         self.finished = False
 
+        # Last block of the transaction
+        with open(
+            f"{PROCESSED_DATA_PATH}/txn/{self.chain}/{self.new_token_pool.pool_add}.pkl",
+            "rb",
+        ) as f:
+            transactions = pickle.load(f)
+            if len(transactions) > 0:
+                self.last_block = transactions[-1].block
+            else:
+                self.last_block = self.new_token_pool.block_number
+
         # Fetch the token decimals
-        self.token0_decimal = fetch_token_decimal(self.w3, new_token_pool.token0)
-        self.token1_decimal = fetch_token_decimal(self.w3, new_token_pool.token1)
+        self.token0_decimal = fetch_token_decimal(self.w3, self.new_token_pool.token0)
+        self.token1_decimal = fetch_token_decimal(self.w3, self.new_token_pool.token1)
         self.created_time = fetch_block_timestamp(
             self.new_token_pool.block_number, self.w3
         )
-        os.makedirs(
-            f"{PROCESSED_DATA_PATH}/pool/{self.new_token_pool.chain}/", exist_ok=True
-        )
+        for path in [
+            f"{PROCESSED_DATA_PATH}/txn/{self.new_token_pool.chain}/",
+            f"{PROCESSED_DATA_PATH}/transfer/{self.new_token_pool.chain}/",
+        ]:
+            os.makedirs(path, exist_ok=True)
 
     def fetch_act(
         self,
@@ -95,7 +108,6 @@ class TxnMonitor:
             from_block (int): The from block
             to_block (int): The to block
         """
-        time.sleep(0.2)
         return fetch_events_for_all_contracts(
             self.w3,
             getattr(
@@ -108,6 +120,55 @@ class TxnMonitor:
             from_block,
             to_block,
         )
+
+    def fetch_transfer(
+        self,
+        from_block: int,
+        to_block: int,
+    ) -> None:
+        """Fetch the transfer events
+
+        Args:
+            from_block (int): The from block
+            to_block (int): The to block
+        """
+
+        try:
+            fetched_events = fetch_events_for_all_contracts(
+                self.w3,
+                self.w3.eth.contract(
+                    abi=json.load(open(ABI_PATH / "erc20.json", encoding="utf-8")),
+                ).events.Transfer,
+                {"address": Web3.to_checksum_address(self.new_token_pool.base_token)},
+                from_block,
+                to_block,
+            )
+            self.transfers.extend(
+                [self.parse_transfer(fetched_event) for fetched_event in fetched_events]
+            )
+
+        except Web3RPCError as e:
+            try:
+                error_msg = json.loads(e.args[0].replace("'", '"'))
+                if error_msg["code"] == -32005:
+                    mid_block = (from_block + to_block) // 2
+
+                    # Recursive call, pass accumulator
+                    self.fetch_transfer(from_block, mid_block)
+                    self.fetch_transfer(mid_block + 1, to_block)
+
+            except json.JSONDecodeError:
+                print(
+                    f"Fetching Swaps: JSON decode error fetching swap events for block range {e}"
+                )
+            except Exception:
+                print(
+                    f"Fetching Swaps: Unknown error fetching swap events for block range {e}"
+                )
+        except Exception as e:
+            print(
+                f"Fetching Swaps: Unknown error fetching swap events for block range {e}"
+            )
 
     @staticmethod
     def _get_common_fields(event: dict) -> dict:
@@ -154,10 +215,10 @@ class TxnMonitor:
 
         # Determine price and transaction type
         if self.new_token_pool.base_token == self.new_token_pool.token1:
-            price = -args["amount0"] / args["amount1"]
+            price = -args["amount0"] / args["amount1"] if args["amount1"] != 0 else 0
             typ = "Sell" if args["amount1"] > 0 else "Buy"
         else:
-            price = -args["amount1"] / args["amount0"]
+            price = -args["amount1"] / args["amount0"] if args["amount0"] != 0 else 0
             typ = "Sell" if args["amount0"] > 0 else "Buy"
 
         # Calculate USD value
@@ -178,6 +239,25 @@ class TxnMonitor:
             price=price,
             base=base_amount,
             quote=quote_amount,
+        )
+
+    def parse_transfer(self, transfer: dict) -> Transfer:
+        """Parse the transfer events
+
+        Args:
+            events (Iterable): The events to parse
+        """
+        common = self._get_common_fields(transfer)
+        args = transfer["args"]
+        return Transfer(
+            **common,
+            from_=args["from"],
+            to=args["to"],
+            value=(
+                args["value"] / 10**self.token0_decimal
+                if self.new_token_pool.base_token == self.new_token_pool.token0
+                else args["value"] / 10**self.token1_decimal
+            ),
         )
 
     def _parse_generic_event(self, event: dict, event_class: type) -> Any:
@@ -250,12 +330,27 @@ class TxnMonitor:
         txn_block_list = [(k, list(v.values())[0].block) for k, v in txn_dict.items()]
         txn_block_list.sort(key=lambda x: x[1])
 
+        # If the txn_block_list is empty, we can check the date of the first txn
+        if not txn_block_list:
+            date = datetime.datetime.fromtimestamp(
+                fetch_block_timestamp(from_block, self.w3), UTC
+            )
+            if (
+                date
+                > datetime.datetime.fromtimestamp(self.created_time, UTC)
+                + self.duration
+            ):
+                self.finished = True
+                return
+
         # get date for each txn
         for txn_hash, block in txn_block_list:
             txns = txn_dict[txn_hash]
             date = datetime.datetime.fromtimestamp(
                 fetch_block_timestamp(block, self.w3), UTC
             )
+            # record the block of last txn
+            self.last_block = block
             if (
                 date
                 > datetime.datetime.fromtimestamp(self.created_time, UTC)
@@ -266,7 +361,17 @@ class TxnMonitor:
             maker = fetch_transaction(txn_hash, self.w3)["from"]
             self.txns.append(Txn(date, block, txn_hash, txns, maker))
 
-    def aggregate(self) -> None:
+    def aggregate_transfers(self) -> None:
+        """Aggregate the transfers"""
+        from_block = self.new_token_pool.block_number
+        to_block = self.last_block
+
+        self.fetch_transfer(
+            from_block=from_block,
+            to_block=to_block,
+        )
+
+    def aggregate_txns(self) -> None:
         """Aggregate the actions"""
         starting_block = self.new_token_pool.block_number
         while not self.finished:
@@ -283,10 +388,23 @@ class TxnMonitor:
         """
 
         with open(
-            f"{PROCESSED_DATA_PATH}/pool/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl",
+            f"{PROCESSED_DATA_PATH}/txn/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl",
             "wb",
         ) as f:
             pickle.dump(self.txns, f)
+
+    def save_transfers(self) -> None:
+        """Save the transfers to a file
+
+        Args:
+            path (str): The path to save the txns
+        """
+
+        with open(
+            f"{PROCESSED_DATA_PATH}/transfer/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl",
+            "wb",
+        ) as f:
+            pickle.dump(self.transfers, f)
 
 
 if __name__ == "__main__":
@@ -296,16 +414,18 @@ if __name__ == "__main__":
         str(os.getenv("INFURA_API_KEYS")).rsplit(",", maxsplit=1)[-1],
         NewTokenPool(
             token0="0x4200000000000000000000000000000000000006",
-            token1="0xBe35071605277d8Be5a52c84A66AB1bc855A758D",
+            token1="0x9A487b50c0E98BF7c4c63E8E09A5A21A34B1E579",
             fee=10000,
-            pool_add="0x946066d23919982116C2Ce07A5bc841c65A60b63",
-            block_number=24385454,
+            pool_add="0x40Fae4EE4d8C5A1629571A6aA363C99Ae11D28e5",
+            block_number=25168417,
             chain="base",
-            base_token="0xBe35071605277d8Be5a52c84A66AB1bc855A758D",
+            base_token="0x9A487b50c0E98BF7c4c63E8E09A5A21A34B1E579",
             quote_token="0x4200000000000000000000000000000000000006",
             txns={},
         ),
     )
 
-    txn.aggregate()
-    txn.save_txns()
+    # txn.aggregate_txns()
+    txn.aggregate_transfers()
+    # txn.save_transfers()
+    # txn.save_txns()

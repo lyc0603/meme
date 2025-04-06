@@ -1,11 +1,20 @@
 """This file contains the configuration settings for the market environment."""
 
+import os
+
+import dotenv
+
 from environ.settings import PROJECT_ROOT
+
+dotenv.load_dotenv()
 
 DATA_PATH = PROJECT_ROOT / "data"
 PROCESSED_DATA_PATH = PROJECT_ROOT / "processed_data"
 FIGURE_PATH = PROJECT_ROOT / "figures"
 ABI_PATH = DATA_PATH / "abi"
+
+# Constants for the TRUMP block
+TRUMP_BLOCK = {"base": 25166580}
 
 # Infura API Base URLs
 INFURA_API_BASE_DICT = {
@@ -19,6 +28,11 @@ INFURA_API_BASE_DICT = {
     "celo": "https://celo-mainnet.infura.io/v3/",
     "blast": "https://blast-mainnet.infura.io/v3/",
     "zksync": "https://zksync-mainnet.infura.io/v3/",
+}
+
+# Block Explorer BASE URLs
+BLOCK_EXPLORER_BASE_URL_DICT = {
+    "base": "https://api.basescan.org",
 }
 
 # Ethereum Mainnet Constants
@@ -51,6 +65,8 @@ NATIVE_ADDRESS_DICT = {
     "ethereum": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
     "base": "0x4200000000000000000000000000000000000006",
 }
+# Block Explorer API Keys
+BLOCK_EXPLORER_API_DICT = {"base": str(os.getenv("BASE_SCAN_API"))}
 
 # Uniswap V3 Factory Addresses
 UNISWAP_V3_FACTORY_DICT = {

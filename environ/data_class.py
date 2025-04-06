@@ -63,6 +63,18 @@ class Action:
 
 
 @dataclass
+class Transfer(Action):
+    """Class to store the transfer transaction"""
+
+    from_: str
+    to: str
+    value: float
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+
+@dataclass
 class Swap(Action):
     """Class to store the swap transaction"""
 
@@ -128,6 +140,30 @@ class Trader:
     address: str
     token: str
     txns: Dict[str, Any]
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+
+# smart contract data class
+@dataclass
+class Contract:
+    """Class to store the contract data"""
+
+    source_code: str
+    abi: str
+    contract_name: str
+    compiler_version: str
+    optimization_used: str
+    runs: str
+    contructor_arguments: str
+    evm_version: str
+    library: str
+    license_type: str
+    swarm_source: str
+    similar_match: str
+    proxy: str
+    implementation: str
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)

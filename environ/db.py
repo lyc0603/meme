@@ -59,6 +59,57 @@ def load_db(
         yield document
 
 
+def fetch_native_pool_since_block(
+    chain: str,
+    from_block: int,
+    pool_number: int = 2000,
+):
+    """
+    Fetch the new token pool data since a block
+    """
+    db = client[chain]
+    collection = db["pool"]
+
+    previous_tokens = set()
+    token0_before = collection.distinct(
+        "args.token0", {"blockNumber": {"$lt": from_block}}
+    )
+    token1_before = collection.distinct(
+        "args.token1", {"blockNumber": {"$lt": from_block}}
+    )
+    previous_tokens |= set(token0_before)
+    previous_tokens |= set(token1_before)
+
+    cursor = collection.find(
+        {
+            "blockNumber": {"$gte": from_block},
+            "$or": [
+                {
+                    "args.token0": NATIVE_ADDRESS_DICT[chain],
+                },
+                {
+                    "args.token1": NATIVE_ADDRESS_DICT[chain],
+                },
+            ],
+        },
+    ).sort([("blockNumber", 1)])
+
+    result = []
+    for doc in cursor:
+        t0 = doc["args"]["token0"]
+        t1 = doc["args"]["token1"]
+
+        if (t0 not in previous_tokens) or (t1 not in previous_tokens):
+            result.append(doc)
+            previous_tokens.add(t0)
+            previous_tokens.add(t1)
+
+        if len(result) >= pool_number:
+            break
+
+    return result
+
+
 if __name__ == "__main__":
     import json
     from glob import glob

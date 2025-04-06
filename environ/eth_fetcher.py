@@ -41,7 +41,7 @@ decimal_set = {}
 @default_retry
 def fetch_current_block(w3: Web3) -> int:
     """Fetch the current block number"""
-
+    time.sleep(0.2)
     return w3.eth.block_number
 
 
@@ -63,7 +63,6 @@ def fetch_token_decimal(w3: Web3, token: str) -> int:
 
     decimal = get_token_decimals(w3, token)
     decimal_set[token] = decimal
-    time.sleep(0.2)
     return decimal
 
 
@@ -120,8 +119,8 @@ def fetch_block_timestamp(block_num: int, w3: Web3) -> int:
     """
     Given a block number and a Web3 instance, return the block's timestamp (as an int).
     """
-    block_info = w3.eth.get_block(block_num)
     time.sleep(0.2)
+    block_info = w3.eth.get_block(block_num)
     return block_info["timestamp"]
 
 
@@ -163,6 +162,7 @@ def fetch_events_for_all_contracts(
         to_block (int): The block number to stop fetching events from, inclusive
     """
 
+    time.sleep(0.2)
     if from_block is None:
         raise ValueError("Missing mandatory keyword argument 'from_block'")
 
@@ -200,6 +200,7 @@ def call_function(
 ) -> Any:
     """Method to call a function on a contract"""
 
+    time.sleep(0.2)
     contract = w3.eth.contract(address=Web3.to_checksum_address(address), abi=abi)
 
     if not hasattr(contract.functions, func_name):
@@ -211,7 +212,6 @@ def call_function(
 if __name__ == "__main__":
 
     import os
-    import time
 
     from environ.constants import INFURA_API_BASE_DICT
 
