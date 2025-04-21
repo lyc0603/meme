@@ -5,14 +5,14 @@ Script to fetch smart contract
 import argparse
 import glob
 import os
-from tqdm import tqdm
 
 from dotenv import load_dotenv
+from tqdm import tqdm
 
-from environ.constants import PROCESSED_DATA_PATH, TRUMP_BLOCK, NATIVE_ADDRESS_DICT
+from environ.constants import NATIVE_ADDRESS_DICT, PROCESSED_DATA_PATH, TRUMP_BLOCK
 from environ.contract_fetcher import TokenContractFecther
-from environ.db import fetch_native_pool_since_block
 from environ.data_class import NewTokenPool
+from environ.db import fetch_native_pool_since_block
 
 load_dotenv()
 
@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--chain",
         type=str,
-        default="base",
+        default="bnb",
         help="The chain to fetch data from (e.g., polygon).",
     )
     return parser.parse_args()

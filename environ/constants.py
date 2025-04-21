@@ -13,8 +13,13 @@ PROCESSED_DATA_PATH = PROJECT_ROOT / "processed_data"
 FIGURE_PATH = PROJECT_ROOT / "figures"
 ABI_PATH = DATA_PATH / "abi"
 
-# Constants for the TRUMP block
-TRUMP_BLOCK = {"base": 25166580}
+# before block for the TRUMP block 2025-01-17 14:01:48
+TRUMP_BLOCK = {
+    "base": 25166580,
+    "ethereum": 21644677,
+    "bnb": 45847073,
+    "optimism": 130761865,
+}
 
 # Infura API Base URLs
 INFURA_API_BASE_DICT = {
@@ -33,18 +38,20 @@ INFURA_API_BASE_DICT = {
 # Block Explorer BASE URLs
 BLOCK_EXPLORER_BASE_URL_DICT = {
     "base": "https://api.basescan.org",
+    "ethereum": "https://api.etherscan.io",
+    "bnb": "https://api.bscscan.com",
 }
 
-# Ethereum Mainnet Constants
-NULL_ADDRESS = "0x0000000000000000000000000000000000000000"
-WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
-USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-USDT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7"
+# Block Explorer API Keys
+BLOCK_EXPLORER_API_DICT = {
+    "base": str(os.getenv("BASESCAN_API")),
+    "ethereum": str(os.getenv("ETHERSCAN_API")),
+    "bnb": str(os.getenv("BNBSCAN_API")),
+}
 
-PAIR_LIST = set([WETH_ADDRESS, USDC_ADDRESS, USDT_ADDRESS])
-
-# Uniswap V3 Native Token - USDC 500 Pool used for price calculation
+# Uniswap V3 Native Token - most liquid USDC Pool used for price calculation
 UNISWAP_V3_NATIVE_USDC_500_DICT = {
+    # 0.5% fee tier
     "ethereum": {
         "pool": "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640",
         "token0": "USDC",
@@ -59,14 +66,29 @@ UNISWAP_V3_NATIVE_USDC_500_DICT = {
         "token0_decimal": 18,
         "token1_decimal": 6,
     },
+    "optimism": {
+        "pool": "0x1fb3cf6e48F1E7B10213E7b6d87D4c073C7Fdb7b",
+        "token0": "USDC",
+        "token1": "WETH",
+        "token0_decimal": 6,
+        "token1_decimal": 18,
+    },
+    # 0.01% fee tier
+    "bnb": {
+        "pool": "0x4141325bAc36aFFe9Db165e854982230a14e6d48",
+        "token0": "USDC",
+        "token1": "WETH",
+        "token0_decimal": 18,
+        "token1_decimal": 18,
+    },
 }
 
 NATIVE_ADDRESS_DICT = {
     "ethereum": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    "bnb": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
     "base": "0x4200000000000000000000000000000000000006",
+    "optimism": "0x4200000000000000000000000000000000000006",
 }
-# Block Explorer API Keys
-BLOCK_EXPLORER_API_DICT = {"base": str(os.getenv("BASE_SCAN_API"))}
 
 # Uniswap V3 Factory Addresses
 UNISWAP_V3_FACTORY_DICT = {

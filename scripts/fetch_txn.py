@@ -14,6 +14,7 @@ from environ.data_class import NewTokenPool
 from environ.txn_monitor import TxnMonitor
 from environ.db import fetch_native_pool_since_block
 
+
 load_dotenv()
 
 
@@ -65,8 +66,7 @@ def fetch_txn_concurrently(
                 txns={},
             ),
         )
-        txn.aggregate_transfers()
-        txn.save_transfers()
+        txn.aggregate()
     except Exception as e:
         print(f"Error fetching transaction data for pool {args['pool']}: {e}")
     finally:
@@ -81,7 +81,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--chain",
         type=str,
-        default="base",
+        default="optimism",
         help="The chain to fetch data from (e.g., polygon).",
     )
     return parser.parse_args()

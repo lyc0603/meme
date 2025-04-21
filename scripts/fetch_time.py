@@ -142,4 +142,13 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
+    chain = "optimism"
+    INFURA_API_KEYS = str(os.getenv("INFURA_API_KEYS")).split(",")[-1]
+    w3 = Web3(HTTPProvider(INFURA_API_BASE_DICT[chain] + INFURA_API_KEYS))
+
+    _ = find_blocks_around_timestamp(
+        w3,
+        datetime.datetime.strptime("2025-01-17 14:01:48", "%Y-%m-%d %H:%M:%S").replace(
+            tzinfo=datetime.timezone.utc
+        ),
+    )

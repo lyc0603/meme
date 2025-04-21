@@ -15,6 +15,7 @@ from web3 import Web3
 from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
 from web3.providers import HTTPProvider
+from web3.exceptions import ContractLogicError
 
 from environ.constants import (
     ABI_PATH,
@@ -32,6 +33,7 @@ default_retry = retry(
 
 INFURA_API_KEYS = str(os.getenv("INFURA_API_KEYS")).split(",")
 
+ERC20_DECIMAL = 18
 decimal_set = {}
 
 
@@ -48,12 +50,16 @@ def fetch_current_block(w3: Web3) -> int:
 @default_retry
 def get_token_decimals(w3: Web3, token_address: str) -> int:
     """Get the number of decimals for a token"""
-    return call_function(
-        w3,
-        token_address,
-        json.load(open(ABI_PATH / "erc20.json", encoding="utf-8")),
-        "decimals",
-    )
+
+    try:
+        return call_function(
+            w3,
+            token_address,
+            json.load(open(ABI_PATH / "erc20.json", encoding="utf-8")),
+            "decimals",
+        )
+    except ContractLogicError:
+        return ERC20_DECIMAL
 
 
 def fetch_token_decimal(w3: Web3, token: str) -> int:
@@ -92,7 +98,7 @@ def fetch_price(
     )
 
 
-def fetch_weth_price(block: int | str, w3: Web3, chain: str) -> float:
+def fetch_native_price(block: int | str, w3: Web3, chain: str) -> float:
     """Fetch the WETH price from Uniswap V3"""
     return (
         1
@@ -215,9 +221,10 @@ if __name__ == "__main__":
 
     from environ.constants import INFURA_API_BASE_DICT
 
-    CHAIN = "base"
+    CHAIN = "bnb"
 
     INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).rsplit(",", maxsplit=1)[-1]
     w3 = Web3(HTTPProvider(f"{INFURA_API_BASE_DICT[CHAIN]}{INFURA_API_KEY}"))
 
-    _ = estimate_block_freq(w3)
+    # _ = estimate_block_freq(w3)
+    _ = fetch_native_price(fetch_current_block(w3), w3, CHAIN)

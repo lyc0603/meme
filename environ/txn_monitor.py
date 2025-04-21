@@ -11,6 +11,7 @@ from typing import Any, Callable, Iterable
 
 from web3 import Web3
 from web3.exceptions import Web3RPCError
+from web3.middleware import ExtraDataToPOAMiddleware
 
 from environ.constants import (
     ABI_PATH,
@@ -24,9 +25,9 @@ from environ.eth_fetcher import (
     fetch_block_timestamp,
     fetch_current_block,
     fetch_events_for_all_contracts,
+    fetch_native_price,
     fetch_token_decimal,
     fetch_transaction,
-    fetch_weth_price,
 )
 
 AVG_ITER = 3
@@ -64,24 +65,14 @@ class TxnMonitor:
         self.chain = new_token_pool.chain
         self.duration = duration
         self.w3 = Web3(Web3.HTTPProvider(INFURA_API_BASE_DICT[self.chain] + api))
-
+        self.w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
         # Fetch the corrent block
         self.current_block = fetch_current_block(self.w3)
         self.est_block_duration = (
             self.duration.total_seconds() / estimate_block_freq(self.w3) / AVG_ITER
         )
+        self.last_block = self.new_token_pool.block_number
         self.finished = False
-
-        # Last block of the transaction
-        with open(
-            f"{PROCESSED_DATA_PATH}/txn/{self.chain}/{self.new_token_pool.pool_add}.pkl",
-            "rb",
-        ) as f:
-            transactions = pickle.load(f)
-            if len(transactions) > 0:
-                self.last_block = transactions[-1].block
-            else:
-                self.last_block = self.new_token_pool.block_number
 
         # Fetch the token decimals
         self.token0_decimal = fetch_token_decimal(self.w3, self.new_token_pool.token0)
@@ -223,7 +214,7 @@ class TxnMonitor:
 
         # Calculate USD value
         if self.new_token_pool.quote_token == NATIVE_ADDRESS_DICT[self.chain]:
-            weth_price = fetch_weth_price(
+            weth_price = fetch_native_price(
                 w3=self.w3, block=swap["blockNumber"], chain=self.chain
             )
             usd_value = quote_amount * weth_price
@@ -380,31 +371,16 @@ class TxnMonitor:
             )
             starting_block += self.est_block_duration
 
-    def save_txns(self) -> None:
-        """Save the txns to a file
-
-        Args:
-            path (str): The path to save the txns
-        """
-
-        with open(
-            f"{PROCESSED_DATA_PATH}/txn/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl",
-            "wb",
-        ) as f:
-            pickle.dump(self.txns, f)
-
-    def save_transfers(self) -> None:
-        """Save the transfers to a file
-
-        Args:
-            path (str): The path to save the txns
-        """
-
-        with open(
-            f"{PROCESSED_DATA_PATH}/transfer/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl",
-            "wb",
-        ) as f:
-            pickle.dump(self.transfers, f)
+    def aggregate(self) -> None:
+        """Aggregate the actions and transfers"""
+        self.aggregate_txns()
+        self.aggregate_transfers()
+        for i, j in [(self.txns, "txn"), (self.transfers, "transfer")]:
+            with open(
+                f"{PROCESSED_DATA_PATH}/{j}/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl",
+                "wb",
+            ) as f:
+                pickle.dump(i, f)
 
 
 if __name__ == "__main__":
@@ -413,19 +389,20 @@ if __name__ == "__main__":
     txn = TxnMonitor(
         str(os.getenv("INFURA_API_KEYS")).rsplit(",", maxsplit=1)[-1],
         NewTokenPool(
-            token0="0x4200000000000000000000000000000000000006",
-            token1="0x9A487b50c0E98BF7c4c63E8E09A5A21A34B1E579",
-            fee=10000,
-            pool_add="0x40Fae4EE4d8C5A1629571A6aA363C99Ae11D28e5",
-            block_number=25168417,
-            chain="base",
-            base_token="0x9A487b50c0E98BF7c4c63E8E09A5A21A34B1E579",
-            quote_token="0x4200000000000000000000000000000000000006",
+            token0="0x6583AbF3D94D8F9a8ACCe786A912496798dB1237",
+            token1="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+            fee=500,
+            pool_add="0x8F8018937F7b8b64246fEf023A7c86A5Dc2e05bC",
+            block_number=21846158,
+            chain="ethereum",
+            base_token="0x6583AbF3D94D8F9a8ACCe786A912496798dB1237",
+            quote_token="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
             txns={},
         ),
     )
 
     # txn.aggregate_txns()
-    txn.aggregate_transfers()
+    # txn.aggregate_transfers()
+    txn.aggregate()
     # txn.save_transfers()
     # txn.save_txns()
