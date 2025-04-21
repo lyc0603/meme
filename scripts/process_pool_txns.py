@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from environ.constants import PROCESSED_DATA_PATH
 
-chain = "bnb"
+chain = "optimism"
 
 pools = set(
     [
@@ -26,8 +26,8 @@ for pool in tqdm(pools, total=len(pools), desc=f"Processing {chain} data"):
     with open(f"{PROCESSED_DATA_PATH}/txn/{chain}/{pool}.pkl", "rb") as f:
         pool_data = pickle.load(f)
 
-    if len(pool_data) < 10:
-        continue
+    # if len(pool_data) < 10:
+    #     continue
     txns_len[pool] = len(pool_data)
 
 # plot the histogram

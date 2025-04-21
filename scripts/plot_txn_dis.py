@@ -20,7 +20,7 @@ from environ.db import fetch_native_pool_since_block
 
 txns_len = []
 
-for chain in ["ethereum", "base", "bnb"]:
+for chain in ["ethereum", "base", "bnb", "optimism", "polygon"]:
 
     pools = [
         pool["args"]["pool"]
@@ -44,7 +44,7 @@ for chain in ["ethereum", "base", "bnb"]:
         )
 txns_len = pd.concat(txns_len, ignore_index=True)
 
-plt.figure(figsize=(3, 4))
+plt.figure(figsize=(6, 4))
 sns.set_style("white")
 iris = sns.load_dataset("iris")
 palette = {v["name"]: v["color"] for _, v in UNISWAP_V3_FACTORY_DICT.items()}
@@ -69,7 +69,7 @@ for violin in ax.collections:
         plt.Rectangle((x0, y0), width / 2, height, transform=ax.transData)
     )
 
-for violin in ax.collections[:3]:  # one for each violin
+for violin in ax.collections[:5]:  # one for each violin
     violin.set_alpha(0.7)
 
 sns.boxplot(

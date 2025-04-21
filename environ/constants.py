@@ -19,6 +19,8 @@ TRUMP_BLOCK = {
     "ethereum": 21644677,
     "bnb": 45847073,
     "optimism": 130761865,
+    "blast": 14156346,
+    "polygon": 66811123,
 }
 
 # Infura API Base URLs
@@ -40,6 +42,7 @@ BLOCK_EXPLORER_BASE_URL_DICT = {
     "base": "https://api.basescan.org",
     "ethereum": "https://api.etherscan.io",
     "bnb": "https://api.bscscan.com",
+    "optimism": "https://api-optimistic.etherscan.io",
 }
 
 # Block Explorer API Keys
@@ -47,6 +50,7 @@ BLOCK_EXPLORER_API_DICT = {
     "base": str(os.getenv("BASESCAN_API")),
     "ethereum": str(os.getenv("ETHERSCAN_API")),
     "bnb": str(os.getenv("BNBSCAN_API")),
+    "optimism": str(os.getenv("OPSCAN_API")),
 }
 
 # Uniswap V3 Native Token - most liquid USDC Pool used for price calculation
@@ -73,6 +77,13 @@ UNISWAP_V3_NATIVE_USDC_500_DICT = {
         "token0_decimal": 6,
         "token1_decimal": 18,
     },
+    "polygon": {
+        "pool": "0x45dDa9cb7c25131DF268515131f647d726f50608",
+        "token0": "WPOL",
+        "token1": "USDC",
+        "token0_decimal": 18,
+        "token1_decimal": 6,
+    },
     # 0.01% fee tier
     "bnb": {
         "pool": "0x4141325bAc36aFFe9Db165e854982230a14e6d48",
@@ -88,6 +99,7 @@ NATIVE_ADDRESS_DICT = {
     "bnb": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
     "base": "0x4200000000000000000000000000000000000006",
     "optimism": "0x4200000000000000000000000000000000000006",
+    "polygon": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
 }
 
 # Uniswap V3 Factory Addresses

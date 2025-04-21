@@ -221,7 +221,7 @@ if __name__ == "__main__":
 
     from environ.constants import INFURA_API_BASE_DICT
 
-    CHAIN = "bnb"
+    CHAIN = "polygon"
 
     INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).rsplit(",", maxsplit=1)[-1]
     w3 = Web3(HTTPProvider(f"{INFURA_API_BASE_DICT[CHAIN]}{INFURA_API_KEY}"))
