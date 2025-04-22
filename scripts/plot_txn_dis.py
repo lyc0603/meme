@@ -20,7 +20,16 @@ from environ.db import fetch_native_pool_since_block
 
 txns_len = []
 
-for chain in ["ethereum", "base", "bnb", "optimism", "polygon"]:
+for chain in [
+    "ethereum",
+    "base",
+    "polygon",
+    "bnb",
+    "avalanche",
+    "arbitrum",
+    "optimism",
+    "blast",
+]:
 
     pools = [
         pool["args"]["pool"]
@@ -44,7 +53,7 @@ for chain in ["ethereum", "base", "bnb", "optimism", "polygon"]:
         )
 txns_len = pd.concat(txns_len, ignore_index=True)
 
-plt.figure(figsize=(6, 4))
+plt.figure(figsize=(8, 3))
 sns.set_style("white")
 iris = sns.load_dataset("iris")
 palette = {v["name"]: v["color"] for _, v in UNISWAP_V3_FACTORY_DICT.items()}
@@ -99,6 +108,7 @@ ax.set_xlim(xlim)
 ax.set_ylim(ylim)
 ax.set_ylim(bottom=0)
 ax.grid(True, axis="y", linestyle="--", linewidth=0.5, alpha=0.8)
+ax.set_xlabel("")
 plt.savefig(
     f"{FIGURE_PATH}/txn_dis.pdf",
     bbox_inches="tight",

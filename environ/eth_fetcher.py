@@ -109,7 +109,7 @@ def fetch_native_price(block: int | str, w3: Web3, chain: str) -> float:
             token0_decimal=UNISWAP_V3_NATIVE_USDC_500_DICT[chain]["token0_decimal"],
             token1_decimal=UNISWAP_V3_NATIVE_USDC_500_DICT[chain]["token1_decimal"],
         )
-        if UNISWAP_V3_NATIVE_USDC_500_DICT[chain]["token0"] == "USDC"
+        if UNISWAP_V3_NATIVE_USDC_500_DICT[chain]["token0"] in ["USDC", "USDB"]
         else fetch_price(
             w3,
             UNISWAP_V3_NATIVE_USDC_500_DICT[chain]["pool"],
@@ -221,7 +221,7 @@ if __name__ == "__main__":
 
     from environ.constants import INFURA_API_BASE_DICT
 
-    CHAIN = "polygon"
+    CHAIN = "blast"
 
     INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).rsplit(",", maxsplit=1)[-1]
     w3 = Web3(HTTPProvider(f"{INFURA_API_BASE_DICT[CHAIN]}{INFURA_API_KEY}"))

@@ -21,6 +21,8 @@ TRUMP_BLOCK = {
     "optimism": 130761865,
     "blast": 14156346,
     "polygon": 66811123,
+    "arbitrum": 296388510,
+    "avalanche": 55939100,
 }
 
 # Infura API Base URLs
@@ -43,6 +45,8 @@ BLOCK_EXPLORER_BASE_URL_DICT = {
     "ethereum": "https://api.etherscan.io",
     "bnb": "https://api.bscscan.com",
     "optimism": "https://api-optimistic.etherscan.io",
+    "polygon": "https://api.polygonscan.com",
+    "arbitrum": "https://api.arbiscan.io",
 }
 
 # Block Explorer API Keys
@@ -51,6 +55,8 @@ BLOCK_EXPLORER_API_DICT = {
     "ethereum": str(os.getenv("ETHERSCAN_API")),
     "bnb": str(os.getenv("BNBSCAN_API")),
     "optimism": str(os.getenv("OPSCAN_API")),
+    "polygon": str(os.getenv("POLYSCAN_API")),
+    "arbitrum": str(os.getenv("ARBISCAN_API")),
 }
 
 # Uniswap V3 Native Token - most liquid USDC Pool used for price calculation
@@ -84,10 +90,32 @@ UNISWAP_V3_NATIVE_USDC_500_DICT = {
         "token0_decimal": 18,
         "token1_decimal": 6,
     },
+    "arbitrum": {
+        "pool": "0xC6962004f452bE9203591991D15f6b388e09E8D0",
+        "token0": "WETH",
+        "token1": "USDC",
+        "token0_decimal": 18,
+        "token1_decimal": 6,
+    },
+    "avalanche": {
+        "pool": "0xfAe3f424a0a47706811521E3ee268f00cFb5c45E",
+        "token0": "WAVAX",
+        "token1": "USDC",
+        "token0_decimal": 18,
+        "token1_decimal": 6,
+    },
     # 0.01% fee tier
     "bnb": {
         "pool": "0x4141325bAc36aFFe9Db165e854982230a14e6d48",
         "token0": "USDC",
+        "token1": "WETH",
+        "token0_decimal": 18,
+        "token1_decimal": 18,
+    },
+    # 0.3% fee tier
+    "blast": {
+        "pool": "0xf52B4b69123CbcF07798AE8265642793b2E8990C",
+        "token0": "USDB",
         "token1": "WETH",
         "token0_decimal": 18,
         "token1_decimal": 18,
@@ -100,6 +128,9 @@ NATIVE_ADDRESS_DICT = {
     "base": "0x4200000000000000000000000000000000000006",
     "optimism": "0x4200000000000000000000000000000000000006",
     "polygon": "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+    "arbitrum": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+    "avalanche": "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7",
+    "blast": "0x4300000000000000000000000000000000000004",
 }
 
 # Uniswap V3 Factory Addresses

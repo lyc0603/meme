@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--chain",
         type=str,
-        default="optimism",
+        default="arbitrum",
         help="The chain to fetch data from (e.g., polygon).",
     )
     return parser.parse_args()

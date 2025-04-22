@@ -142,7 +142,7 @@ def main():
 
 
 if __name__ == "__main__":
-    chain = "polygon"
+    chain = "avalanche"
     INFURA_API_KEYS = str(os.getenv("INFURA_API_KEYS")).split(",")[-1]
     w3 = Web3(HTTPProvider(INFURA_API_BASE_DICT[chain] + INFURA_API_KEYS))
 
