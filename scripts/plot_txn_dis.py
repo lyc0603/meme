@@ -53,7 +53,7 @@ for chain in [
         )
 txns_len = pd.concat(txns_len, ignore_index=True)
 
-plt.figure(figsize=(4, 2))
+plt.figure(figsize=(6, 3))
 sns.set_style("white")
 iris = sns.load_dataset("iris")
 palette = {v["name"]: v["color"] for _, v in UNISWAP_V3_FACTORY_DICT.items()}
@@ -111,12 +111,12 @@ ax.grid(True, axis="y", linestyle="--", linewidth=0.5, alpha=0.8)
 ax.set_xlabel("")
 ax.set_ylabel(
     "# of Transactions in 12 Hours",
-    fontsize=10,
+    fontsize=12,
     fontweight="bold",
 )
-ax.yaxis.set_label_coords(-0.15, 0.3)
+ax.yaxis.set_label_coords(-0.10, 0.3)
 plt.xticks(rotation=90)
-ax.tick_params(axis="both", which="major", labelsize=9)
+ax.tick_params(axis="both", which="major", labelsize=12)
 for label in ax.get_xticklabels():
     label.set_fontweight("bold")
 for label in ax.get_yticklabels():
