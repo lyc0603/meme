@@ -83,6 +83,7 @@ class TxnMonitor:
         for path in [
             f"{PROCESSED_DATA_PATH}/txn/{self.new_token_pool.chain}/",
             f"{PROCESSED_DATA_PATH}/transfer/{self.new_token_pool.chain}/",
+            f"{PROCESSED_DATA_PATH}/creation/{self.new_token_pool.chain}/",
         ]:
             os.makedirs(path, exist_ok=True)
 
@@ -206,10 +207,10 @@ class TxnMonitor:
 
         # Determine price and transaction type
         if self.new_token_pool.base_token == self.new_token_pool.token1:
-            price = -args["amount0"] / args["amount1"] if args["amount1"] != 0 else 0
+            price = quote_amount / base_amount if base_amount != 0 else 0
             typ = "Sell" if args["amount1"] > 0 else "Buy"
         else:
-            price = -args["amount1"] / args["amount0"] if args["amount0"] != 0 else 0
+            price = quote_amount / base_amount if base_amount != 0 else 0
             typ = "Sell" if args["amount0"] > 0 else "Buy"
 
         # Calculate USD value
@@ -220,8 +221,10 @@ class TxnMonitor:
             usd_value = quote_amount * weth_price
             price *= weth_price
         else:
-            usd_value = quote_amount
-            price = price
+            print(
+                f"Fetching Swap: Unknown quote token {self.new_token_pool.quote_token}"
+            )
+            raise ValueError(f"Unknown quote token {self.new_token_pool.quote_token}")
 
         return Swap(
             **common,
@@ -374,13 +377,31 @@ class TxnMonitor:
     def aggregate(self) -> None:
         """Aggregate the actions and transfers"""
         self.aggregate_txns()
-        self.aggregate_transfers()
-        for i, j in [(self.txns, "txn"), (self.transfers, "transfer")]:
+        # self.aggregate_transfers()
+        # for i, j in [(self.txns, "txn"), (self.transfers, "transfer")]:
+        #     with open(
+        #         f"{PROCESSED_DATA_PATH}/{j}/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl",
+        #         "wb",
+        #     ) as f:
+        #         pickle.dump(i, f)
+        for i, j in [(self.txns, "txn")]:
             with open(
                 f"{PROCESSED_DATA_PATH}/{j}/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl",
                 "wb",
             ) as f:
                 pickle.dump(i, f)
+
+        with open(
+            f"{PROCESSED_DATA_PATH}/creation/{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.json",
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(
+                {
+                    "created_time": self.created_time,
+                },
+                f,
+            )
 
 
 if __name__ == "__main__":
@@ -389,13 +410,13 @@ if __name__ == "__main__":
     txn = TxnMonitor(
         str(os.getenv("INFURA_API_KEYS")).rsplit(",", maxsplit=1)[-1],
         NewTokenPool(
-            token0="0x6583AbF3D94D8F9a8ACCe786A912496798dB1237",
+            token0="0x1A7516924309a29Ac1E17D2853046Dd4015c1e1a",
             token1="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-            fee=500,
-            pool_add="0x8F8018937F7b8b64246fEf023A7c86A5Dc2e05bC",
-            block_number=21846158,
+            fee=10000,
+            pool_add="0xd6feCb0620abad24510D5192Dba1F1d931B232eB",
+            block_number=21704729,
             chain="ethereum",
-            base_token="0x6583AbF3D94D8F9a8ACCe786A912496798dB1237",
+            base_token="0x1A7516924309a29Ac1E17D2853046Dd4015c1e1a",
             quote_token="0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
             txns={},
         ),

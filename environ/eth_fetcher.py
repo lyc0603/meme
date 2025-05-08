@@ -221,10 +221,11 @@ if __name__ == "__main__":
 
     from environ.constants import INFURA_API_BASE_DICT
 
-    CHAIN = "blast"
+    CHAIN = "ethereum"
 
     INFURA_API_KEY = str(os.getenv("INFURA_API_KEYS")).rsplit(",", maxsplit=1)[-1]
     w3 = Web3(HTTPProvider(f"{INFURA_API_BASE_DICT[CHAIN]}{INFURA_API_KEY}"))
 
     # _ = estimate_block_freq(w3)
-    _ = fetch_native_price(fetch_current_block(w3), w3, CHAIN)
+    # _ = fetch_native_price(fetch_current_block(w3), w3, CHAIN)
+    _ = fetch_native_price(21649765, w3, CHAIN)

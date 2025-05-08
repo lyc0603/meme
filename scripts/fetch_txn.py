@@ -11,9 +11,8 @@ from tqdm import tqdm
 
 from environ.constants import NATIVE_ADDRESS_DICT, PROCESSED_DATA_PATH, TRUMP_BLOCK
 from environ.data_class import NewTokenPool
-from environ.txn_monitor import TxnMonitor
 from environ.db import fetch_native_pool_since_block
-
+from environ.txn_monitor import TxnMonitor
 
 load_dotenv()
 
@@ -29,7 +28,7 @@ def get_todo_list(
     finished_pools = set(
         [
             os.path.basename(path).split(".")[0]
-            for path in glob.glob(f"{PROCESSED_DATA_PATH}/transfer/{chain}/*.pkl")
+            for path in glob.glob(f"{PROCESSED_DATA_PATH}/txn/{chain}/*.pkl")
         ]
     )
     return [pool for pool in pools if pool["args"]["pool"] not in finished_pools]
@@ -59,9 +58,9 @@ def fetch_txn_concurrently(
                     else args["token1"]
                 ),
                 quote_token=(
-                    args["token1"]
-                    if args["token1"] != NATIVE_ADDRESS_DICT[chain]
-                    else args["token0"]
+                    args["token0"]
+                    if args["token0"] == NATIVE_ADDRESS_DICT[chain]
+                    else args["token1"]
                 ),
                 txns={},
             ),
@@ -81,7 +80,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--chain",
         type=str,
-        default="blast",
+        default="bnb",
         help="The chain to fetch data from (e.g., polygon).",
     )
     return parser.parse_args()
