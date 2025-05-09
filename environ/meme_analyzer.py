@@ -7,6 +7,7 @@ from datetime import UTC
 
 import numpy as np
 import pandas as pd
+from typing import Optional
 
 from environ.constants import NATIVE_ADDRESS_DICT, PROCESSED_DATA_PATH, TRUMP_BLOCK
 from environ.data_class import NewTokenPool, Swap
@@ -98,9 +99,11 @@ class MemeAnalyzer:
 
         return prc_resampled
 
-    def get_mdd(self, freq: str = "1min") -> float:
+    def get_mdd(self, freq: str = "1min", before: Optional[float] = None) -> float:
         """Method to get the maximum drawdown of the meme token"""
-        prc_date_df = self.process_price(freq)
+        prc_date_df = self.process_price(freq).copy().to_frame(name="price")
+        if before is not None:
+            prc_date_df = prc_date_df[prc_date_df.index <= before]
         prc_date_df["running_max"] = prc_date_df["price"].cummax()
         prc_date_df["drawdown"] = (
             prc_date_df["price"] - prc_date_df["running_max"]
@@ -111,7 +114,9 @@ class MemeAnalyzer:
     def get_ret(self, freq="1min") -> pd.DataFrame:
         """Method to get the return of the meme token"""
 
-        return self.process_price(freq).pct_change().dropna().to_frame(name="ret")
+        return (
+            self.process_price(freq).copy().pct_change().dropna().to_frame(name="ret")
+        )
 
 
 if __name__ == "__main__":
@@ -143,9 +148,11 @@ if __name__ == "__main__":
                     txns={},
                 ),
             )
-            if len(meme.get_acts(Swap)) > 5:
-                if args["pool"] == "0xd6feCb0620abad24510D5192Dba1F1d931B232eB":
-                    # print(f"Max Drawdown: {meme.get_mdd(freq="1h") * 100:.2f}%, ")
-                    # print(args)
-                    # (meme.get_ret(freq="1h") + 1).cumprod().plot()
-                    meme.process_price(freq="1h")
+            if len(meme.get_acts(Swap)) > 2:
+                # if args["pool"] == "0xd6feCb0620abad24510D5192Dba1F1d931B232eB":
+                print(
+                    f"Max Drawdown: {meme.get_mdd(freq="1min", before=1) * 100:.2f}%, "
+                )
+                print(args)
+                (meme.get_ret(freq="1min") + 1).cumprod().plot()
+                # meme.process_price(freq="1h")
