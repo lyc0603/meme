@@ -4,6 +4,7 @@ Script to process the transactions data in the pool
 
 import pickle
 
+from glob import glob
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -21,22 +22,30 @@ from environ.db import fetch_native_pool_since_block
 txns_len = []
 
 for chain in [
+    "solana_pumpfun",
     "ethereum",
     "base",
     "polygon",
     "bnb",
-    "avalanche",
-    "arbitrum",
-    "optimism",
-    "blast",
+    # "avalanche",
+    # "arbitrum",
+    # "optimism",
+    # "blast",
 ]:
 
-    pools = [
-        pool["args"]["pool"]
-        for pool in fetch_native_pool_since_block(
-            chain, TRUMP_BLOCK[chain], pool_number=100
-        )
-    ]
+    pools = (
+        [
+            pool["args"]["pool"]
+            for pool in fetch_native_pool_since_block(
+                chain, TRUMP_BLOCK[chain], pool_number=100
+            )
+        ]
+        if chain not in ["solana_pumpfun"]
+        else [
+            _.split("/")[-1].split(".")[0]
+            for _ in glob(f"{PROCESSED_DATA_PATH}/txn/{chain}/*.pkl")
+        ]
+    )
 
     for pool in tqdm(pools, total=len(pools), desc=f"Processing {chain} data"):
         with open(f"{PROCESSED_DATA_PATH}/txn/{chain}/{pool}.pkl", "rb") as f:

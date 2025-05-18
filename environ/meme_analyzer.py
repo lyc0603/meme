@@ -4,10 +4,10 @@ import datetime
 import json
 import pickle
 from datetime import UTC
+from typing import Optional
 
 import numpy as np
 import pandas as pd
-from typing import Optional
 
 from environ.constants import NATIVE_ADDRESS_DICT, PROCESSED_DATA_PATH, TRUMP_BLOCK
 from environ.data_class import NewTokenPool, Swap

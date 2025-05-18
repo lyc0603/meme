@@ -1,338 +1,320 @@
-"""Solana Fetcher"""
+"""Class to fetch Solana data from the Solana API."""
 
-from typing import Iterable, Literal, Optional
+import pickle
+import argparse
+import json
+import os
+from datetime import datetime
+from glob import glob
+from pathlib import Path
+from typing import Any
 
-from borsh_construct import U64, CStruct
-from construct import Bytes, Int8ul, Int32ul
-from solana.rpc.api import Client
-from solders.pubkey import Pubkey
-from solders.rpc.responses import GetSignaturesForAddressResp
-from solders.signature import Signature
-from solders.transaction_status import (
-    EncodedConfirmedTransactionWithStatusMeta,
-    ParsedInstruction,
-)
+import dotenv
+from flipside import Flipside
+from tqdm import tqdm
 
-PUBLIC_KEY_LAYOUT = Bytes(32)
-SPL_ACCOUNT_LAYOUT = CStruct(
-    "mint" / PUBLIC_KEY_LAYOUT,
-    "owner" / PUBLIC_KEY_LAYOUT,
-    "amount" / U64,
-    "delegateOption" / Int32ul,
-    "delegate" / PUBLIC_KEY_LAYOUT,
-    "state" / Int8ul,
-    "isNativeOption" / Int32ul,
-    "isNative" / U64,
-    "delegatedAmount" / U64,
-    "closeAuthorityOption" / Int32ul,
-    "closeAuthority" / PUBLIC_KEY_LAYOUT,
-)
-SPL_MINT_LAYOUT = CStruct(
-    "mintAuthorityOption" / Int32ul,
-    "mintAuthority" / PUBLIC_KEY_LAYOUT,
-    "supply" / U64,
-    "decimals" / Int8ul,
-    "isInitialized" / Int8ul,
-    "freezeAuthorityOption" / Int32ul,
-    "freezeAuthority" / PUBLIC_KEY_LAYOUT,
-)
-solana_client = Client(
-    # "https://solana-mainnet.core.chainstack.com/a0db22a6450d2ad8bfabb1b8254b7abb"
-    "https://api.mainnet-beta.solana.com"
-)
+from environ.constants import DATA_PATH, PROCESSED_DATA_PATH
+from environ.data_class import Txn, Swap, Transfer
 
-RAYDIUM_ADDRESSES_STR = [
-    # Standard AMM (CP-Swap, New)
-    "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C",
-    # Legacy AMM v4 (OpenBook)
-    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
-    # Stable Swap AMM
-    "5quBtoiQqxF9Jv6KYKctB59NT3gtJD2Y65kdnB1Uev3h",
-    # Concentrated Liquidity (CLMM)
-    "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
-]
-RAYDIUM_ADDRESSES_PUBKEY = [Pubkey.from_string(_) for _ in RAYDIUM_ADDRESSES_STR]
-WRAPPED_SOL_MINT = "So11111111111111111111111111111111111111112"
-token_decimals = {}
+dotenv.load_dotenv()
+FLIPSIDE_API_KEY = os.getenv("FLIPSIDE_API")
+FLIPSIDE_BASE_URL = "https://api-v2.flipsidecrypto.xyz"
+
+os.makedirs(DATA_PATH / "solana", exist_ok=True)
 
 
-def get_txns_for_address(
-    address: str,
-    limit: int = 1000,
-    before: Optional[Signature] = None,
-    until: Optional[Signature] = None,
-) -> GetSignaturesForAddressResp:
-    """Function to get the transactions for the address"""
+class SolanaFetcher:
+    """Class to fetch Solana data from the FLIPSIDE."""
 
-    return solana_client.get_signatures_for_address(
-        Pubkey.from_string(address), limit=limit, before=before, until=until
-    )
+    def __init__(
+        self,
+        pool_path: Path = DATA_PATH / "solana" / "pumpfun.jsonl",
+    ) -> None:
 
+        self.flipside = Flipside(str(FLIPSIDE_API_KEY), FLIPSIDE_BASE_URL)
+        self.pool = []
+        if os.path.exists(pool_path):
+            with open(
+                pool_path,
+                "r",
+                encoding="utf-8",
+            ) as f:
+                for line in f:
+                    self.pool.append(json.loads(line))
+        self.cache = None
 
-def get_token_acct(acct: str) -> Pubkey:
-    """Function to parse the data of token account
-    and find the token program, owner of the account"""
-
-    data = solana_client.get_account_info(Pubkey.from_string(acct)).value.data
-    parsed_data = SPL_ACCOUNT_LAYOUT.parse(data)
-    mint = Pubkey.from_bytes(parsed_data.mint)
-
-    return mint
-
-
-def get_token_decimals(mint: Pubkey) -> int:
-    """Function to get the token details"""
-
-    if mint in token_decimals:
-        return token_decimals[mint]
-
-    data = solana_client.get_account_info(mint).value.data
-    parsed_data = SPL_MINT_LAYOUT.parse(data)
-    token_decimals[mint] = parsed_data.decimals
-
-    return parsed_data.decimals
-
-
-def get_txn(
-    sig: Signature,
-) -> EncodedConfirmedTransactionWithStatusMeta | None:
-    """Function to get the transaction details"""
-
-    return solana_client.get_transaction(
-        sig, encoding="jsonParsed", max_supported_transaction_version=0
-    ).value
-
-
-def parse_signer(
-    txn: EncodedConfirmedTransactionWithStatusMeta | None,
-) -> Pubkey:
-    """Function to parse the signer of the transaction"""
-
-    signer = [
-        _ for _ in txn.transaction.transaction.message.account_keys if _.signer == True
-    ]
-    return signer[0].pubkey
-
-
-def parse_instruction(
-    txn: EncodedConfirmedTransactionWithStatusMeta | None,
-) -> list:
-    """Function to parse the instructions of the transaction"""
-
-    return txn.transaction.transaction.message.instructions
-
-
-def parse_inner_instruction(
-    txn: EncodedConfirmedTransactionWithStatusMeta | None,
-) -> list:
-    """Function to parse the inner instructions of the transaction"""
-
-    return txn.transaction.meta.inner_instructions
-
-
-def parse_log_messages(
-    txn: EncodedConfirmedTransactionWithStatusMeta | None,
-) -> list:
-    """Function to parse the log messages of the transaction"""
-
-    return txn.transaction.meta.log_messages
-
-
-def parse_token_info(
-    token_info: ParsedInstruction,
-    direction: Literal["in", "out", "mint"],
-) -> tuple:
-    """Function to parse the token info of the transaction"""
-
-    if "tokenAmount" in token_info.parsed["info"]:
-        token = token_info.parsed["info"]["mint"]
-        amount = token_info.parsed["info"]["tokenAmount"]["uiAmount"]
-    else:
-
-        match direction:
-            case "out":
-                token = str(get_token_acct(token_info.parsed["info"]["destination"]))
-            case "in":
-                token = str(get_token_acct(token_info.parsed["info"]["source"]))
-            case "mint":
-                token = str(token_info.parsed["info"]["mint"])
-
-        amount = float(token_info.parsed["info"]["amount"]) / 10 ** get_token_decimals(
-            Pubkey.from_string(token)
+    def fetch_task(
+        self,
+        query: str,
+        timestamp: str,
+        num: int,
+        save_path: Path,
+    ) -> Any:
+        """Fetch the list of meme coins"""
+        res = self.flipside.query(
+            query.format(
+                timestamp=timestamp,
+                num=num,
+            ),
         )
 
-    return token, amount
+        self.pool = res.records
+        with open(
+            save_path,
+            "w",
+            encoding="utf-8",
+        ) as f:
+            for row in res.records:
+                f.write(json.dumps(row) + "\n")
 
+    def parse_task(
+        self,
+        num: int,
+        save_path: Path,
+    ) -> list[tuple[str, str]]:
+        """Task to be run."""
 
-def parse_simple_raydium_txn(instructions: list, inner_instructions: list) -> None:
-    """Function to parse the simple raydium transaction"""
-
-    raydium_instructions = [
-        i
-        for i, j in enumerate(instructions)
-        if j.program_id in RAYDIUM_ADDRESSES_PUBKEY
-    ]
-
-    for instruction_index in raydium_instructions:
-        raydium_inner_instructions = check_inner_instruction_index(
-            inner_instructions, instruction_index
-        )
-
-        for inner_instructions in raydium_inner_instructions:
-            # two inner instructions are the token info
-            out_token_info, in_token_info = inner_instructions.instructions
-
-            out_token, out_amount = parse_token_info(out_token_info, "out")
-            in_token, in_amount = parse_token_info(in_token_info, "in")
-
-            print(f"Swap {out_amount} {out_token} for {in_amount} {in_token}")
-
-
-def parse_complex_raydium_txn(inner_instructions: list) -> None:
-    """Function to parse the complex raydium transaction"""
-
-    for inner_instruction in inner_instructions:
-        raydium_instruction_indexes = check_instruction_program_id(
-            inner_instruction.instructions, RAYDIUM_ADDRESSES_PUBKEY
-        )
-
-        if raydium_instruction_indexes:
-            # the following two inner instructions are the token info
-            for raydium_instruction_index in raydium_instruction_indexes:
-                out_otken_info = inner_instruction.instructions[
-                    raydium_instruction_index + 1
-                ]
-                in_token_info = inner_instruction.instructions[
-                    raydium_instruction_index + 2
-                ]
-
-                out_token, out_amount = parse_token_info(out_otken_info, "out")
-                in_token, in_amount = parse_token_info(in_token_info, "in")
-
-                print(f"Swap {out_amount} {out_token} for {in_amount} {in_token}")
-
-
-def parse_mint_burn(
-    inner_instructions: list, type_name: Literal["mint", "burn"]
-) -> None:
-    """Function to parse the mint and burn transaction"""
-
-    token0, token0_amount = parse_token_info(
-        inner_instructions[-3], "out" if type_name == "mint" else "in"
-    )
-    token1, token1_amount = parse_token_info(
-        inner_instructions[-2], "out" if type_name == "mint" else "in"
-    )
-    lp_token, lp_token_amount = parse_token_info(inner_instructions[-1], "mint")
-
-    match type_name:
-        case "mint":
-            print(
-                f"add liquidity: {token0_amount} {token0}, {token1_amount} {token1} for {lp_token_amount} {lp_token}"
+        os.makedirs(save_path, exist_ok=True)
+        finished = [
+            _.split("/")[-1].split(".")[0] for _ in glob(str(save_path / "*.jsonl"))
+        ]
+        return [
+            (token_add, block_ts)
+            for idx, (token_add, block_ts) in enumerate(
+                [(_["token_address"], _["block_timestamp"]) for _ in self.pool], 1
             )
-        case "burn":
-            print(
-                f"remove liquidity: {token0_amount} {token0}, {token1_amount} {token1} for {lp_token_amount} {lp_token}"
-            )
+            if (token_add not in finished) & (idx <= num)
+        ]
 
+    def fetch_data(
+        self, query: str, token_address: str, migration_timestamp: str, page_number: int
+    ) -> Any:
+        """Fetch transactions before 12 hours since the migration."""
+        return self.flipside.query(
+            query.format(
+                token_address=token_address, migration_timestamp=migration_timestamp
+            ),
+            page_number=page_number,
+        )
 
-def parse_raydium_txn(signature: Signature) -> None:
-    """Function to parse the raydium transaction"""
+    def fetch(self, query: str, num: int, save_path: Path) -> Any:
+        """Fetch transactions before 12 hours since the migration."""
 
-    transaction = get_txn(signature)
-    instructions = parse_instruction(transaction)
-    inner_instructions = parse_inner_instruction(transaction)
+        for token_address, block_timestamp in tqdm(
+            self.parse_task(num, save_path),
+        ):
 
-    raydium_instructions_indexes = check_instruction_program_id(
-        instructions, RAYDIUM_ADDRESSES_PUBKEY
-    )
+            data_lst = []
 
-    # if there is raydium instruction
-    if raydium_instructions_indexes:
-        for radium_instruction_index in raydium_instructions_indexes:
-            # if there is mintTo sub-instruction
-            if check_inner_instruction_type(inner_instructions, "mintTo"):
+            current_page_number = 0
+            total_pages = 1
 
-                # all mints rely on the instruction index
-                raydium_inner_instructions = check_inner_instruction_index(
-                    inner_instructions, radium_instruction_index
+            while current_page_number < total_pages:
+                current_page_number += 1
+                self.cache = self.fetch_data(
+                    query,
+                    token_address,
+                    datetime.strptime(
+                        block_timestamp, "%Y-%m-%dT%H:%M:%S.%fZ"
+                    ).strftime("%Y-%m-%d %H:%M:%S"),
+                    current_page_number,
                 )
+                data_lst.extend(self.cache.records)
+                total_pages = self.cache.page.totalPages
 
-                # if there is new pool created
-                if check_inner_instruction_type(inner_instructions, "initializeMint"):
-                    for raydium_inner_instruction in raydium_inner_instructions:
-                        parse_mint_burn(raydium_inner_instruction.instructions, "mint")
-                # if there is regular liquidity added
-                else:
-                    for raydium_inner_instruction in raydium_inner_instructions:
-                        parse_mint_burn(raydium_inner_instruction.instructions, "mint")
-            elif check_inner_instruction_type(inner_instructions, "burn"):
-                for inner_instruction in inner_instructions:
-                    parse_mint_burn(inner_instruction.instructions, "burn")
-            else:
-                parse_simple_raydium_txn(instructions, inner_instructions)
-    else:
-        # if there is no raydium instruction
-        for inner_instruction in inner_instructions:
-            raydium_inner_instructions_index = check_instruction_program_id(
-                inner_instruction.instructions, RAYDIUM_ADDRESSES_PUBKEY
-            )
+                if self.cache.status != "QUERY_STATE_SUCCESS":
+                    raise Exception(f"Query failed with status: {self.cache.status}")
 
-            if raydium_inner_instructions_index:
-                parse_complex_raydium_txn(inner_instructions)
+            # save as jsonl
+            with open(
+                save_path / f"{token_address}.jsonl",
+                "w",
+                encoding="utf-8",
+            ) as f:
+                for row in data_lst:
+                    f.write(json.dumps(row) + "\n")
 
 
-def check_inner_instruction_type(inner_instructions: list, type_name: str) -> list:
-    """Function to return the list of index of inner instruction of a specific type"""
-    return [
-        i
-        for inner_instruction in inner_instructions
-        for i, j in enumerate(
-            [
-                k
-                for k in inner_instruction.instructions
-                if isinstance(k, ParsedInstruction)
-            ]
-        )
-        if j.parsed["type"] == type_name
-    ]
+SWAP_QUERY = """SELECT *
+FROM solana.defi.ez_dex_swaps
+WHERE (
+         swap_from_mint = '{token_address}'
+      OR swap_to_mint = '{token_address}'
+      )
+  AND block_timestamp < TIMESTAMP '{migration_timestamp}' + INTERVAL '12 hours'
+ORDER BY block_timestamp ASC;"""
+
+TRANSFER_QUERY = """SELECT *
+FROM solana.core.fact_transfers
+WHERE (
+         mint = '{token_address}'
+      )
+  AND block_timestamp < TIMESTAMP '{migration_timestamp}' + INTERVAL '12 hours'
+ORDER BY block_timestamp ASC;"""
+
+LAUNCH_QUERY = """select
+  block_timestamp,
+  tx_id,
+  decoded_instruction:accounts[0]:pubkey::string as token_address
+from
+  solana.core.ez_events_decoded
+where
+  program_id = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P'
+  and event_type = 'create'
+  and block_timestamp > timestamp '{timestamp}'
+order by block_timestamp
+limit {num};"""
+
+MIGRATION_QUERY = """select
+  block_timestamp,
+  tx_id,
+  decoded_instruction:accounts[9]:pubkey::string as token_address,
+  decoded_instruction:args:initCoinAmount::number as sol_lamports,
+  decoded_instruction:args:initPcAmount::number as meme_amount
+from 
+  solana.core.ez_events_decoded
+where 
+  signers[0] = '39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg'
+  and program_id = '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8'
+  and event_type = 'initialize2'
+  and succeeded
+  and decoded_instruction:accounts[8]:pubkey::string = 'So11111111111111111111111111111111111111112'
+  and block_timestamp > timestamp '{timestamp}'
+order by block_timestamp
+limit {num};"""
 
 
-def check_instruction_program_id(
-    instructions: list, program_id: Iterable[Pubkey] | Pubkey
-) -> list:
-    """Function to return the list of index of instruction of a specific program id"""
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Solana Fetcher")
+    parser.add_argument(
+        "--pool_path",
+        type=str,
+        default=DATA_PATH / "solana" / "pumpfun.jsonl",
+        help="Path to the pool file",
+    )
+    parser.add_argument(
+        "--num",
+        type=int,
+        default=100,
+        help="Number of tokens to fetch",
+    )
+    return parser.parse_args()
 
-    if isinstance(program_id, Pubkey):
-        program_id = [program_id]
 
-    return [i for i, j in enumerate(instructions) if j.program_id in program_id]
+def main() -> None:
+    """Main function to run the Solana fetcher."""
 
+    args = parse_args()
 
-def check_inner_instruction_index(
-    inner_instructions: list, instruction_index: int
-) -> list:
-    """Function to check the inner instruction index
-    and directly return the list of inner instructions"""
-    return [
-        inner_instruction
-        for inner_instruction in inner_instructions
-        if inner_instruction.index == instruction_index
-    ]
+    # Fetch the pumpfun meme coins
+    pumpfun_fetcher = SolanaFetcher(pool_path=args.pool_path)
+    pumpfun_fetcher.fetch_task(
+        LAUNCH_QUERY,
+        "2025-01-17 14:01:48",
+        args.num,
+        DATA_PATH / "solana" / "pumpfun.jsonl",
+    )
+    pumpfun_fetcher.fetch(
+        SWAP_QUERY, args.num, DATA_PATH / "solana" / "pumpfun" / "txn"
+    )
+    pumpfun_fetcher.fetch(
+        TRANSFER_QUERY, args.num, DATA_PATH / "solana" / "pumpfun" / "transfer"
+    )
+
+    # Fetch the raydium migration meme coins
+    raydium_fetcher = SolanaFetcher(pool_path=args.pool_path)
+    raydium_fetcher.fetch_task(
+        MIGRATION_QUERY,
+        "2025-01-17 14:01:48",
+        args.num,
+        DATA_PATH / "solana" / "raydium.jsonl",
+    )
+    raydium_fetcher.fetch(
+        SWAP_QUERY, args.num, DATA_PATH / "solana" / "raydium" / "txn"
+    )
+    raydium_fetcher.fetch(
+        TRANSFER_QUERY, args.num, DATA_PATH / "solana" / "raydium" / "transfer"
+    )
 
 
 if __name__ == "__main__":
-    pass
-    # parse_raydium_txn(
-    #     Signature.from_string(
-    #         "2NgtxMCmqbXuDkaPLguZdWYkyEhVQgnAPWXD5JoT661H1K3NsaHmJDgphhTbyrC7FyK58kK22My2zaSKsFKcyWw2"
-    #     )
+    # solana_fetcher = SolanaFetcher(pool_path=DATA_PATH / "solana" / "raydium.jsonl")
+    # solana_fetcher.fetch_task(
+    #     MIGRATION_QUERY,
+    #     "2025-01-17 14:01:48",
+    #     1000,
+    #     DATA_PATH / "solana" / "raydium.jsonl",
     # )
+    # # solana_fetcher.fetch(SWAP_QUERY, 100, DATA_PATH / "solana" / "pumpfun" / "txn")
+    # # solana_fetcher.fetch(
+    # #     TRANSFER_QUERY, 100, DATA_PATH / "solana" / "pumpfun" / "transfer"
+    # # )
 
-    transaction = get_txn(
-        Signature.from_string(
-            "2eDiS9j4Pav9jLaA8uKRgYLWphJXMNCZfwD9RfUvqGziURo2mtTYMDntXNfKEoFuKN3Hp9NR5AEob2M8iNCPyUoB"
-        )
-    )
-    instructions = parse_instruction(transaction)
-    inner_instructions = parse_inner_instruction(transaction)
+    save_path = PROCESSED_DATA_PATH / "txn" / "solana_pumpfun"
+    os.makedirs(save_path, exist_ok=True)
+    for txn_path in tqdm(
+        glob(str(DATA_PATH / "solana" / "pumpfun" / "txn" / "*.jsonl"))
+    ):
+        token_add = txn_path.split("/")[-1].split(".")[0]
+        with open(txn_path, "r", encoding="utf-8") as f:
+            txn_lst = []
+            for line in f:
+                txn = json.loads(line)
+
+                # special case for the swap
+                if txn["swap_from_amount"] * txn["swap_to_amount"] == 0:
+                    continue
+
+                txn_lst.append(
+                    Txn(
+                        date=datetime.strptime(
+                            txn["block_timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                        ),
+                        block=txn["block_id"],
+                        txn_hash=txn["tx_id"],
+                        maker=txn["swapper"],
+                        acts={
+                            0: [
+                                Swap(
+                                    block=txn["block_id"],
+                                    txn_hash=txn["tx_id"],
+                                    log_index=0,
+                                    typ=(
+                                        "Buy"
+                                        if txn["swap_from_symbol"] == "SOL"
+                                        else "Sell"
+                                    ),
+                                    usd=(
+                                        txn["swap_from_amount_usd"]
+                                        if txn["swap_from_amount_usd"]
+                                        else txn["swap_to_amount_usd"]
+                                    ),
+                                    base=(
+                                        txn["swap_to_amount"]
+                                        if txn["swap_from_symbol"] == "SOL"
+                                        else txn["swap_from_amount"]
+                                    ),
+                                    quote=(
+                                        txn["swap_from_amount"]
+                                        if txn["swap_from_symbol"] == "SOL"
+                                        else txn["swap_to_amount"]
+                                    ),
+                                    price=(
+                                        txn["swap_from_amount_usd"]
+                                        / txn["swap_to_amount"]
+                                        if txn["swap_from_symbol"] == "SOL"
+                                        else txn["swap_to_amount_usd"]
+                                        / txn["swap_from_amount"]
+                                    ),
+                                )
+                            ]
+                        },
+                    )
+                )
+
+            with open(
+                save_path / f"{token_add}.pkl",
+                "wb",
+            ) as f:
+                pickle.dump(txn_lst, f)

@@ -210,9 +210,9 @@ UNISWAP_V3_FACTORY_DICT = {
     #     "timestamp": "2023-08-31",
     #     "step": 500000,
     # },
-    "solana": {
+    "solana_pumpfun": {
         "color": "green",
-        "name": "Solana",
+        "name": "PumpFun",
     },
 }
 
