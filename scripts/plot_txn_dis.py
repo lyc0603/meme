@@ -239,7 +239,5 @@ if inset_ax.legend_ is not None:
 
 # Save and show
 plt.tight_layout()
-plt.savefig(
-    f"{FIGURE_PATH}/txn_dis_with_inset_aligned.pdf", bbox_inches="tight", dpi=300
-)
+plt.savefig(f"{FIGURE_PATH}/txn_dis.pdf", bbox_inches="tight", dpi=300)
 plt.show()
