@@ -1,26 +1,56 @@
 """Class to fetch Solana data from the Solana API."""
 
-import pickle
 import argparse
 import json
 import os
+import pickle
 from datetime import datetime
 from glob import glob
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Literal
 
 import dotenv
 from flipside import Flipside
+from tenacity import retry, stop_after_attempt, wait_exponential
 from tqdm import tqdm
 
 from environ.constants import DATA_PATH, PROCESSED_DATA_PATH
-from environ.data_class import Txn, Swap, Transfer
+from environ.data_class import Swap, Txn
 
 dotenv.load_dotenv()
 FLIPSIDE_API_KEY = os.getenv("FLIPSIDE_API")
 FLIPSIDE_BASE_URL = "https://api-v2.flipsidecrypto.xyz"
+default_retry = retry(
+    reraise=True,
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+)
 
 os.makedirs(DATA_PATH / "solana", exist_ok=True)
+
+SOLANA_PATH_DICT = {
+    "pumpfun": DATA_PATH / "solana" / "pumpfun.jsonl",
+    "raydium": DATA_PATH / "solana" / "raydium.jsonl",
+}
+
+
+def import_pool(
+    category: Literal["pumpfun", "raydium"], num: int
+) -> list[tuple[str | int | Any, str | int | Any]]:
+    """Utility function to fetch the pool list."""
+
+    pool = []
+    with open(
+        SOLANA_PATH_DICT[category],
+        "r",
+        encoding="utf-8",
+    ) as f:
+        for idx, line in enumerate(f, 1):
+            if idx > num:
+                break
+            pool.append(json.loads(line))
+
+    return [(_["token_address"], _["block_timestamp"]) for _ in pool]
 
 
 class SolanaFetcher:
@@ -28,21 +58,33 @@ class SolanaFetcher:
 
     def __init__(
         self,
-        pool_path: Path = DATA_PATH / "solana" / "pumpfun.jsonl",
+        category: Literal["pumpfun", "raydium"],
+        num: int,
+        timestamp: str,
+        task_query: str,
     ) -> None:
 
         self.flipside = Flipside(str(FLIPSIDE_API_KEY), FLIPSIDE_BASE_URL)
-        self.pool = []
-        if os.path.exists(pool_path):
-            with open(
-                pool_path,
-                "r",
-                encoding="utf-8",
-            ) as f:
-                for line in f:
-                    self.pool.append(json.loads(line))
+        self.category = category
+        self.num = num
+        self.timestamp = timestamp
+        self.task_query = task_query
+
+        if os.path.exists(SOLANA_PATH_DICT[category]):
+            self.pool = import_pool(
+                category,
+                num,
+            )
+        else:
+            self.fetch_task(
+                self.task_query,
+                self.timestamp,
+                self.num,
+                SOLANA_PATH_DICT[category],
+            )
         self.cache = None
 
+    @default_retry
     def fetch_task(
         self,
         query: str,
@@ -64,30 +106,41 @@ class SolanaFetcher:
             "w",
             encoding="utf-8",
         ) as f:
-            for row in res.records:
-                f.write(json.dumps(row) + "\n")
+            if isinstance(res.records, Iterable):
+                for row in res.records:
+                    f.write(json.dumps(row) + "\n")
+            else:
+                raise ValueError(
+                    f"Invalid response type: {type(res.records)}. Expected Iterable."
+                )
 
     def parse_task(
         self,
-        num: int,
         save_path: Path,
-    ) -> list[tuple[str, str]]:
+    ) -> list[tuple[str | int | Any, str | int | Any]]:
         """Task to be run."""
 
         os.makedirs(save_path, exist_ok=True)
         finished = [
             _.split("/")[-1].split(".")[0] for _ in glob(str(save_path / "*.jsonl"))
         ]
-        return [
-            (token_add, block_ts)
-            for idx, (token_add, block_ts) in enumerate(
-                [(_["token_address"], _["block_timestamp"]) for _ in self.pool], 1
-            )
-            if (token_add not in finished) & (idx <= num)
-        ]
 
+        if isinstance(self.pool, list):
+            return [
+                (token_add, block_ts)
+                for token_add, block_ts in self.pool
+                if token_add not in finished
+            ]
+        else:
+            raise ValueError(f"Invalid pool type: {type(self.pool)}. Expected list.")
+
+    @default_retry
     def fetch_data(
-        self, query: str, token_address: str, migration_timestamp: str, page_number: int
+        self,
+        query: str,
+        token_address: str | int | Any,
+        migration_timestamp: str,
+        page_number: int,
     ) -> Any:
         """Fetch transactions before 12 hours since the migration."""
         return self.flipside.query(
@@ -97,11 +150,11 @@ class SolanaFetcher:
             page_number=page_number,
         )
 
-    def fetch(self, query: str, num: int, save_path: Path) -> Any:
+    def fetch(self, query: str, save_path: Path) -> Any:
         """Fetch transactions before 12 hours since the migration."""
 
         for token_address, block_timestamp in tqdm(
-            self.parse_task(num, save_path),
+            self.parse_task(save_path),
         ):
 
             data_lst = []
@@ -109,30 +162,35 @@ class SolanaFetcher:
             current_page_number = 0
             total_pages = 1
 
-            while current_page_number < total_pages:
-                current_page_number += 1
-                self.cache = self.fetch_data(
-                    query,
-                    token_address,
-                    datetime.strptime(
-                        block_timestamp, "%Y-%m-%dT%H:%M:%S.%fZ"
-                    ).strftime("%Y-%m-%d %H:%M:%S"),
-                    current_page_number,
-                )
-                data_lst.extend(self.cache.records)
-                total_pages = self.cache.page.totalPages
+            try:
+                while current_page_number < total_pages:
+                    current_page_number += 1
+                    self.cache = self.fetch_data(
+                        query,
+                        token_address,
+                        datetime.strptime(
+                            str(block_timestamp), "%Y-%m-%dT%H:%M:%S.%fZ"
+                        ).strftime("%Y-%m-%d %H:%M:%S"),
+                        current_page_number,
+                    )
+                    data_lst.extend(self.cache.records)
+                    total_pages = self.cache.page.totalPages
 
-                if self.cache.status != "QUERY_STATE_SUCCESS":
-                    raise Exception(f"Query failed with status: {self.cache.status}")
+                    if self.cache.status != "QUERY_STATE_SUCCESS":
+                        raise Exception(
+                            f"Query failed with status: {self.cache.status}"
+                        )
 
-            # save as jsonl
-            with open(
-                save_path / f"{token_address}.jsonl",
-                "w",
-                encoding="utf-8",
-            ) as f:
-                for row in data_lst:
-                    f.write(json.dumps(row) + "\n")
+                # save as jsonl
+                with open(
+                    save_path / f"{token_address}.jsonl",
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    for row in data_lst:
+                        f.write(json.dumps(row) + "\n")
+            except Exception as e:
+                print(f"Error fetching data for {token_address}: {e}")
 
 
 SWAP_QUERY = """SELECT *
@@ -184,77 +242,13 @@ order by block_timestamp
 limit {num};"""
 
 
-def parse_args() -> argparse.Namespace:
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Solana Fetcher")
-    parser.add_argument(
-        "--pool_path",
-        type=str,
-        default=DATA_PATH / "solana" / "pumpfun.jsonl",
-        help="Path to the pool file",
-    )
-    parser.add_argument(
-        "--num",
-        type=int,
-        default=100,
-        help="Number of tokens to fetch",
-    )
-    return parser.parse_args()
+def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
+    """Process the transactions data in the pool"""
 
-
-def main() -> None:
-    """Main function to run the Solana fetcher."""
-
-    args = parse_args()
-
-    # Fetch the pumpfun meme coins
-    pumpfun_fetcher = SolanaFetcher(pool_path=args.pool_path)
-    pumpfun_fetcher.fetch_task(
-        LAUNCH_QUERY,
-        "2025-01-17 14:01:48",
-        args.num,
-        DATA_PATH / "solana" / "pumpfun.jsonl",
-    )
-    pumpfun_fetcher.fetch(
-        SWAP_QUERY, args.num, DATA_PATH / "solana" / "pumpfun" / "txn"
-    )
-    pumpfun_fetcher.fetch(
-        TRANSFER_QUERY, args.num, DATA_PATH / "solana" / "pumpfun" / "transfer"
-    )
-
-    # Fetch the raydium migration meme coins
-    raydium_fetcher = SolanaFetcher(pool_path=args.pool_path)
-    raydium_fetcher.fetch_task(
-        MIGRATION_QUERY,
-        "2025-01-17 14:01:48",
-        args.num,
-        DATA_PATH / "solana" / "raydium.jsonl",
-    )
-    raydium_fetcher.fetch(
-        SWAP_QUERY, args.num, DATA_PATH / "solana" / "raydium" / "txn"
-    )
-    raydium_fetcher.fetch(
-        TRANSFER_QUERY, args.num, DATA_PATH / "solana" / "raydium" / "transfer"
-    )
-
-
-if __name__ == "__main__":
-    # solana_fetcher = SolanaFetcher(pool_path=DATA_PATH / "solana" / "raydium.jsonl")
-    # solana_fetcher.fetch_task(
-    #     MIGRATION_QUERY,
-    #     "2025-01-17 14:01:48",
-    #     1000,
-    #     DATA_PATH / "solana" / "raydium.jsonl",
-    # )
-    # # solana_fetcher.fetch(SWAP_QUERY, 100, DATA_PATH / "solana" / "pumpfun" / "txn")
-    # # solana_fetcher.fetch(
-    # #     TRANSFER_QUERY, 100, DATA_PATH / "solana" / "pumpfun" / "transfer"
-    # # )
-
-    save_path = PROCESSED_DATA_PATH / "txn" / "solana_pumpfun"
+    save_path = PROCESSED_DATA_PATH / "txn" / f"{category}"
     os.makedirs(save_path, exist_ok=True)
     for txn_path in tqdm(
-        glob(str(DATA_PATH / "solana" / "pumpfun" / "txn" / "*.jsonl"))
+        glob(str(DATA_PATH / "solana" / category / "txn" / "*.jsonl"))
     ):
         token_add = txn_path.split("/")[-1].split(".")[0]
         with open(txn_path, "r", encoding="utf-8") as f:
@@ -264,6 +258,11 @@ if __name__ == "__main__":
 
                 # special case for the swap
                 if txn["swap_from_amount"] * txn["swap_to_amount"] == 0:
+                    continue
+
+                if (txn["swap_from_symbol"] != "SOL") & (
+                    txn["swap_to_symbol"] != "SOL"
+                ):
                     continue
 
                 txn_lst.append(
@@ -318,3 +317,83 @@ if __name__ == "__main__":
                 "wb",
             ) as f:
                 pickle.dump(txn_lst, f)
+
+
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Solana Fetcher")
+    parser.add_argument(
+        "--num",
+        type=int,
+        default=100,
+        help="Number of tokens to fetch",
+    )
+    parser.add_argument(
+        "--timestamp",
+        type=str,
+        default="2025-01-17 14:01:48",
+        help="Timestamp to start fetching from",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    """Main function to run the Solana fetcher."""
+
+    args = parse_args()
+
+    # Fetch the pumpfun meme coins
+    pumpfun_fetcher = SolanaFetcher(
+        category="pumpfun",
+        num=args.num,
+        timestamp=args.timestamp,
+        task_query=LAUNCH_QUERY,
+    )
+    pumpfun_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "pumpfun" / "txn")
+    pumpfun_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "pumpfun" / "transfer")
+
+    # Fetch the raydium migration meme coins
+    raydium_fetcher = SolanaFetcher(
+        category="raydium",
+        num=args.num,
+        timestamp=args.timestamp,
+        task_query=MIGRATION_QUERY,
+    )
+    raydium_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
+    raydium_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
+
+    # Process the transactions data
+    for category in ["pumpfun", "raydium"]:
+        process_txn(category)
+
+
+if __name__ == "__main__":
+    solana_fetcher = SolanaFetcher(
+        category="pumpfun",
+        num=1000,
+        timestamp="2025-01-17 14:01:48",
+        task_query=LAUNCH_QUERY,
+    )
+    # solana_fetcher.fetch_task(
+    #     LAUNCH_QUERY,
+    #     "2025-01-17 14:01:48",
+    #     1000,
+    #     DATA_PATH / "solana" / "raydium.jsonl",
+    # )
+    solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "pumpfun" / "txn")
+    solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "pumpfun" / "transfer")
+
+    solana_fetcher = SolanaFetcher(
+        category="raydium",
+        num=1000,
+        timestamp="2025-01-17 14:01:48",
+        task_query=LAUNCH_QUERY,
+    )
+    # solana_fetcher.fetch_task(
+    #     LAUNCH_QUERY,
+    #     "2025-01-17 14:01:48",
+    #     1000,
+    #     DATA_PATH / "solana" / "raydium.jsonl",
+    # )
+    solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
+    solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
