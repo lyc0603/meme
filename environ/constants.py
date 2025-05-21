@@ -215,7 +215,7 @@ UNISWAP_V3_FACTORY_DICT = {
         "name": "PumpFun",
     },
     "raydium": {
-        "color": "pink",
+        "color": "red",
         "name": "Raydium",
     },
 }

@@ -15,8 +15,12 @@ from environ.constants import (
 from environ.data_class import NewTokenPool, Swap
 from environ.db import fetch_native_pool_since_block
 from environ.meme_analyzer import MemeAnalyzer
+from environ.sol_fetcher import import_pool
+from tqdm import tqdm
 
 NUM_OF_OBSERVATIONS = 100
+
+SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 
 
 def plot_ret(
@@ -28,41 +32,69 @@ def plot_ret(
     pool_num = 0
     df_ret = pd.DataFrame()
 
-    for pool in fetch_native_pool_since_block(
-        chain, TRUMP_BLOCK[chain], pool_number=1000
+    for pool in (
+        fetch_native_pool_since_block(chain, TRUMP_BLOCK[chain], pool_number=1000)
+        if chain not in ["pumpfun", "raydium"]
+        else import_pool(
+            chain,
+            NUM_OF_OBSERVATIONS,
+        )
     ):
         try:
             if pool_num >= NUM_OF_OBSERVATIONS:
                 break
-            args = pool["args"]
-            meme = MemeAnalyzer(
-                NewTokenPool(
-                    token0=args["token0"],
-                    token1=args["token1"],
-                    fee=args["fee"],
-                    pool_add=args["pool"],
-                    block_number=pool["blockNumber"],
-                    chain=chain,
-                    base_token=(
-                        args["token0"]
-                        if args["token0"] != NATIVE_ADDRESS_DICT[chain]
-                        else args["token1"]
+
+            if chain not in ["pumpfun", "raydium"]:
+                args = pool["args"]
+                meme = MemeAnalyzer(
+                    NewTokenPool(
+                        token0=args["token0"],
+                        token1=args["token1"],
+                        fee=args["fee"],
+                        pool_add=args["pool"],
+                        block_number=pool["blockNumber"],
+                        chain=chain,
+                        base_token=(
+                            args["token0"]
+                            if args["token0"] != NATIVE_ADDRESS_DICT[chain]
+                            else args["token1"]
+                        ),
+                        quote_token=(
+                            args["token1"]
+                            if args["token1"] != NATIVE_ADDRESS_DICT[chain]
+                            else args["token0"]
+                        ),
+                        txns={},
                     ),
-                    quote_token=(
-                        args["token1"]
-                        if args["token1"] != NATIVE_ADDRESS_DICT[chain]
-                        else args["token0"]
+                )
+            else:
+                meme = MemeAnalyzer(
+                    NewTokenPool(
+                        token0=SOL_TOKEN_ADDRESS,
+                        token1=pool["token_address"],
+                        fee=0,
+                        pool_add=pool["token_address"],
+                        block_number=0,
+                        chain=chain,
+                        base_token=pool["token_address"],
+                        quote_token=SOL_TOKEN_ADDRESS,
+                        txns={},
                     ),
-                    txns={},
-                ),
-            )
+                )
+
             if len(meme.get_acts(Swap)) >= 2:
                 pool_num += 1
                 if con["condition"](meme.get_mdd(freq=freq, before=con["before"])):
                     df_log_ret = meme.get_ret(freq=freq)
                     df_log_ret["ret"] = np.log(df_log_ret["ret"] + 1)
-                    df_log_ret = df_log_ret.rename(
-                        columns={"ret": f"{args['pool']}_{args['fee']}"}
+                    df_log_ret = (
+                        df_log_ret.rename(
+                            columns={"ret": f"{args['pool']}_{args['fee']}"}
+                        )
+                        if chain not in ["pumpfun", "raydium"]
+                        else df_log_ret.rename(
+                            columns={"ret": f"{pool['token_address']}_{0}"}
+                        )
                     )
                     # for t_idx in df_log_ret.index:
                     #     plt.scatter(
@@ -74,10 +106,17 @@ def plot_ret(
                     #         marker="x",
                     #     )
                     df_ret = pd.concat(
-                        [
-                            df_ret,
-                            df_log_ret[f"{args['pool']}_{args['fee']}"],
-                        ],
+                        (
+                            [
+                                df_ret,
+                                df_log_ret[f"{args['pool']}_{args['fee']}"],
+                            ]
+                            if chain not in ["pumpfun", "raydium"]
+                            else [
+                                df_ret,
+                                df_log_ret[f"{pool['token_address']}_{0}"],
+                            ]
+                        ),
                         axis=1,
                     )
         except Exception as e:
@@ -128,7 +167,8 @@ if __name__ == "__main__":
     for freq in ["1h"]:
         for label, con in conditions.items():
             plt.figure(figsize=(4, 3))
-            for chain in ["ethereum", "base", "polygon", "bnb"]:
+            for chain in ["raydium", "pumpfun", "ethereum", "base", "bnb"]:
+                # , "ethereum", "base", "polygon", "bnb"
                 plot_ret(chain, freq, con)
 
             # plot the horizontal dashed line at 0

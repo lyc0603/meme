@@ -3,7 +3,7 @@
 import datetime
 import json
 import pickle
-from datetime import UTC
+from datetime import UTC, timezone
 from typing import Optional
 
 import numpy as np
@@ -25,7 +25,8 @@ class MemeAnalyzer:
         self.new_token_pool = new_token_pool
 
         # load the transaction, transfer and smart contract data
-        for attr in ["txn", "transfer", "smart_contract"]:
+        # for attr in ["txn", "transfer", "smart_contract"]:
+        for attr in ["txn"]:
             file_path = (
                 f"{PROCESSED_DATA_PATH}/{attr}/"
                 f"{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl"
@@ -56,7 +57,7 @@ class MemeAnalyzer:
                 prc_date_dict["price"].append(
                     acts["acts"][list(acts["acts"].keys())[-1]].price
                 )
-            prc_date_dict["date"].append(acts["date"])
+            prc_date_dict["date"].append(acts["date"].replace(tzinfo=timezone.utc))
             prc_date_dict["price"].append(
                 acts["acts"][list(acts["acts"].keys())[-1]].price
             )

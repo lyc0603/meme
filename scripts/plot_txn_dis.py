@@ -41,7 +41,7 @@ for chain in [
         ]
         if chain not in ["pumpfun", "raydium"]
         else [
-            _[0]
+            _["token_address"]
             for _ in import_pool(
                 chain,
                 POOL_NUM,
@@ -93,7 +93,7 @@ zoom_df = txns_len[txns_len["Label"].isin(zoom_labels)]
 zoom_palette = {k: palette[k] for k in zoom_labels}
 
 # Step 2: Plot main + inset together
-fig, ax = plt.subplots(figsize=(6, 4))
+fig, ax = plt.subplots(figsize=(7, 4))
 sns.set_style("white")
 
 # Main plot
@@ -154,7 +154,7 @@ ax.grid(True, axis="y", linestyle="-", linewidth=1, alpha=0.8)
 ax.set_xlabel("")
 ax.set_ylabel("# of Transactions in 12 Hours", fontsize=12, fontweight="bold")
 ax.yaxis.set_label_coords(-0.15, 0.4)
-ax.tick_params(axis="both", which="major", labelsize=10)
+ax.tick_params(axis="both", which="major", labelsize=12)
 for label in ax.get_xticklabels():
     label.set_fontweight("bold")
     label.set_linespacing(1.5)
@@ -164,7 +164,7 @@ if ax.legend_ is not None:
     ax.legend_.remove()
 
 # Step 3: Inset with aligned x-axis categories (in same order)
-inset_ax = fig.add_axes([0.35, 0.32, 0.58, 0.62])  # [left, bottom, width, height]
+inset_ax = fig.add_axes([0.35, 0.32, 0.62, 0.62])  # [left, bottom, width, height]
 
 # Set category order to match full x-axis
 category_order = [

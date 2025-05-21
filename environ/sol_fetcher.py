@@ -7,7 +7,7 @@ import pickle
 from datetime import datetime
 from glob import glob
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Iterable, Literal, Optional
 
 import dotenv
 from flipside import Flipside
@@ -35,8 +35,8 @@ SOLANA_PATH_DICT = {
 
 
 def import_pool(
-    category: Literal["pumpfun", "raydium"], num: int
-) -> list[tuple[str | int | Any, str | int | Any]]:
+    category: Literal["pumpfun", "raydium"], num: Optional[int] = None
+) -> list[tuple[str, str | int | Any]]:
     """Utility function to fetch the pool list."""
 
     pool = []
@@ -46,11 +46,12 @@ def import_pool(
         encoding="utf-8",
     ) as f:
         for idx, line in enumerate(f, 1):
-            if idx > num:
-                break
+            if num:
+                if idx > num:
+                    break
             pool.append(json.loads(line))
 
-    return [(_["token_address"], _["block_timestamp"]) for _ in pool]
+    return pool
 
 
 class SolanaFetcher:
@@ -71,10 +72,13 @@ class SolanaFetcher:
         self.task_query = task_query
 
         if os.path.exists(SOLANA_PATH_DICT[category]):
-            self.pool = import_pool(
-                category,
-                num,
-            )
+            self.pool = [
+                (_["token_address"], _["block_timestamp"])
+                for _ in import_pool(
+                    category,
+                    num,
+                )
+            ]
         else:
             self.fetch_task(
                 self.task_query,
@@ -245,13 +249,39 @@ limit {num};"""
 def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
     """Process the transactions data in the pool"""
 
-    save_path = PROCESSED_DATA_PATH / "txn" / f"{category}"
-    os.makedirs(save_path, exist_ok=True)
-    for txn_path in tqdm(
-        glob(str(DATA_PATH / "solana" / category / "txn" / "*.jsonl"))
-    ):
-        token_add = txn_path.split("/")[-1].split(".")[0]
-        with open(txn_path, "r", encoding="utf-8") as f:
+    for save_path in ["txn", "creation"]:
+        os.makedirs(
+            PROCESSED_DATA_PATH / save_path / category,
+            exist_ok=True,
+        )
+
+    for pool_info in tqdm(import_pool(category)):
+        token_add = pool_info["token_address"]
+        block_ts = int(
+            datetime.strptime(
+                str(pool_info["block_timestamp"]), "%Y-%m-%dT%H:%M:%S.%fZ"
+            ).timestamp()
+        )
+        # # processed the creation time data
+        # with open(
+        #     PROCESSED_DATA_PATH / "creation" / category / f"{token_add}.json",
+        #     "w",
+        #     encoding="utf-8",
+        # ) as f:
+        #     json.dump(
+        #         {
+        #             "created_time": block_ts,
+        #         },
+        #         f,
+        #         indent=4,
+        #     )
+
+        # processed transaction data
+        with open(
+            DATA_PATH / "solana" / category / "txn" / f"{token_add}.jsonl",
+            "r",
+            encoding="utf-8",
+        ) as f:
             txn_lst = []
             for line in f:
                 txn = json.loads(line)
@@ -274,46 +304,43 @@ def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
                         txn_hash=txn["tx_id"],
                         maker=txn["swapper"],
                         acts={
-                            0: [
-                                Swap(
-                                    block=txn["block_id"],
-                                    txn_hash=txn["tx_id"],
-                                    log_index=0,
-                                    typ=(
-                                        "Buy"
-                                        if txn["swap_from_symbol"] == "SOL"
-                                        else "Sell"
-                                    ),
-                                    usd=(
-                                        txn["swap_from_amount_usd"]
-                                        if txn["swap_from_amount_usd"]
-                                        else txn["swap_to_amount_usd"]
-                                    ),
-                                    base=(
-                                        txn["swap_to_amount"]
-                                        if txn["swap_from_symbol"] == "SOL"
-                                        else txn["swap_from_amount"]
-                                    ),
-                                    quote=(
-                                        txn["swap_from_amount"]
-                                        if txn["swap_from_symbol"] == "SOL"
-                                        else txn["swap_to_amount"]
-                                    ),
-                                    price=(
-                                        txn["swap_from_amount_usd"]
-                                        / txn["swap_to_amount"]
-                                        if txn["swap_from_symbol"] == "SOL"
-                                        else txn["swap_to_amount_usd"]
-                                        / txn["swap_from_amount"]
-                                    ),
-                                )
-                            ]
+                            0: Swap(
+                                block=txn["block_id"],
+                                txn_hash=txn["tx_id"],
+                                log_index=0,
+                                typ=(
+                                    "Buy"
+                                    if txn["swap_from_symbol"] == "SOL"
+                                    else "Sell"
+                                ),
+                                usd=(
+                                    txn["swap_from_amount_usd"]
+                                    if txn["swap_from_amount_usd"]
+                                    else txn["swap_to_amount_usd"]
+                                ),
+                                base=(
+                                    txn["swap_to_amount"]
+                                    if txn["swap_from_symbol"] == "SOL"
+                                    else txn["swap_from_amount"]
+                                ),
+                                quote=(
+                                    txn["swap_from_amount"]
+                                    if txn["swap_from_symbol"] == "SOL"
+                                    else txn["swap_to_amount"]
+                                ),
+                                price=(
+                                    txn["swap_from_amount_usd"] / txn["swap_to_amount"]
+                                    if txn["swap_from_symbol"] == "SOL"
+                                    else txn["swap_to_amount_usd"]
+                                    / txn["swap_from_amount"]
+                                ),
+                            )
                         },
                     )
                 )
 
             with open(
-                save_path / f"{token_add}.pkl",
+                PROCESSED_DATA_PATH / "txn" / category / f"{token_add}.pkl",
                 "wb",
             ) as f:
                 pickle.dump(txn_lst, f)
