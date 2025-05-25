@@ -16,7 +16,6 @@ from environ.data_class import NewTokenPool, Swap
 from environ.db import fetch_native_pool_since_block
 from environ.meme_analyzer import MemeAnalyzer
 from environ.sol_fetcher import import_pool
-from tqdm import tqdm
 
 NUM_OF_OBSERVATIONS = 100
 
@@ -155,11 +154,11 @@ if __name__ == "__main__":
     conditions = {
         "all": {"before": 1.0, "condition": lambda mdd: mdd < 1},
         "lower_-0.5": {
-            "before": 1.0,
+            "before": 1,
             "condition": lambda mdd: mdd < -0.5,
         },
         "greater_-0.5": {
-            "before": 1.0,
+            "before": 1,
             "condition": lambda mdd: mdd >= -0.5,
         },
     }
@@ -167,8 +166,14 @@ if __name__ == "__main__":
     for freq in ["1h"]:
         for label, con in conditions.items():
             plt.figure(figsize=(4, 3))
-            for chain in ["raydium", "pumpfun", "ethereum", "base", "bnb"]:
-                # , "ethereum", "base", "polygon", "bnb"
+            for chain in [
+                "pumpfun",
+                "raydium",
+                "ethereum",
+                "base",
+                #   "polygon",
+                "bnb",
+            ]:
                 plot_ret(chain, freq, con)
 
             # plot the horizontal dashed line at 0

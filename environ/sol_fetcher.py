@@ -33,6 +33,11 @@ SOLANA_PATH_DICT = {
     "raydium": DATA_PATH / "solana" / "raydium.jsonl",
 }
 
+DEX_DICT = {
+    "raydium": "Raydium Liquidity Pool V4",
+    "pumpfun": "pump.fun",
+}
+
 
 def import_pool(
     category: Literal["pumpfun", "raydium"], num: Optional[int] = None
@@ -262,19 +267,19 @@ def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
                 str(pool_info["block_timestamp"]), "%Y-%m-%dT%H:%M:%S.%fZ"
             ).timestamp()
         )
-        # # processed the creation time data
-        # with open(
-        #     PROCESSED_DATA_PATH / "creation" / category / f"{token_add}.json",
-        #     "w",
-        #     encoding="utf-8",
-        # ) as f:
-        #     json.dump(
-        #         {
-        #             "created_time": block_ts,
-        #         },
-        #         f,
-        #         indent=4,
-        #     )
+        # processed the creation time data
+        with open(
+            PROCESSED_DATA_PATH / "creation" / category / f"{token_add}.json",
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(
+                {
+                    "created_time": block_ts,
+                },
+                f,
+                indent=4,
+            )
 
         # processed transaction data
         with open(
@@ -395,32 +400,34 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    solana_fetcher = SolanaFetcher(
-        category="pumpfun",
-        num=1000,
-        timestamp="2025-01-17 14:01:48",
-        task_query=LAUNCH_QUERY,
-    )
-    # solana_fetcher.fetch_task(
-    #     LAUNCH_QUERY,
-    #     "2025-01-17 14:01:48",
-    #     1000,
-    #     DATA_PATH / "solana" / "raydium.jsonl",
+    # solana_fetcher = SolanaFetcher(
+    #     category="pumpfun",
+    #     num=1000,
+    #     timestamp="2025-01-17 14:01:48",
+    #     task_query=LAUNCH_QUERY,
     # )
-    solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "pumpfun" / "txn")
-    solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "pumpfun" / "transfer")
+    # # solana_fetcher.fetch_task(
+    # #     LAUNCH_QUERY,
+    # #     "2025-01-17 14:01:48",
+    # #     1000,
+    # #     DATA_PATH / "solana" / "raydium.jsonl",
+    # # )
+    # solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "pumpfun" / "txn")
+    # solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "pumpfun" / "transfer")
 
-    solana_fetcher = SolanaFetcher(
-        category="raydium",
-        num=1000,
-        timestamp="2025-01-17 14:01:48",
-        task_query=LAUNCH_QUERY,
-    )
-    # solana_fetcher.fetch_task(
-    #     LAUNCH_QUERY,
-    #     "2025-01-17 14:01:48",
-    #     1000,
-    #     DATA_PATH / "solana" / "raydium.jsonl",
+    # solana_fetcher = SolanaFetcher(
+    #     category="raydium",
+    #     num=1000,
+    #     timestamp="2025-01-17 14:01:48",
+    #     task_query=LAUNCH_QUERY,
     # )
-    solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
-    solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
+    # # solana_fetcher.fetch_task(
+    # #     LAUNCH_QUERY,
+    # #     "2025-01-17 14:01:48",
+    # #     1000,
+    # #     DATA_PATH / "solana" / "raydium.jsonl",
+    # # )
+    # solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
+    # solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
+    for category in ["pumpfun", "raydium"]:
+        process_txn(category)
