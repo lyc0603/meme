@@ -1,6 +1,7 @@
 """Script to plot the returns of the meme token"""
 
 from typing import Callable
+from scipy.stats import t
 
 import numpy as np
 import pandas as pd
@@ -123,21 +124,21 @@ def plot_ret(
             continue
 
     # winsorize the rows
+    n = df_ret.shape[1]
+    if n < 2:
+        print(f"Not enough pools for {chain} to compute t-distribution.")
+        return
+
     df_ret["mean"] = df_ret.mean(axis=1)
-    df_ret["std"] = df_ret.std(axis=1)
+    df_ret["sem"] = df_ret.sem(axis=1)  # Standard Error of Mean
+    t_crit = t.ppf(0.975, df=n - 1)  # 95% CI
+    df_ret["t_err"] = df_ret["sem"] * t_crit
 
     # plot the line chart with mean and error bars
-    plt.plot(
-        [0] + df_ret.index.tolist(),
-        [0] + df_ret["mean"].values.tolist(),
-        color=UNISWAP_V3_FACTORY_DICT[chain]["color"],
-        lw=1,
-        alpha=1,
-    )
     plt.errorbar(
         df_ret.index,
         df_ret["mean"],
-        yerr=df_ret["std"],
+        yerr=df_ret["t_err"],
         fmt="x-",  # line with circular markers
         color=UNISWAP_V3_FACTORY_DICT[chain]["color"],
         ecolor=UNISWAP_V3_FACTORY_DICT[chain]["color"],
@@ -171,7 +172,7 @@ if __name__ == "__main__":
                 "raydium",
                 "ethereum",
                 "base",
-                #   "polygon",
+                # "polygon",
                 "bnb",
             ]:
                 plot_ret(chain, freq, con)

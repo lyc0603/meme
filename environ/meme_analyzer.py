@@ -26,6 +26,9 @@ class MemeAnalyzer:
         self.txn = self._load_pickle("txn")
         self.block_created_time = self._load_creation_time()
         self.prc_date_df, self.pre_prc_date_df = self._build_price_df()
+        self.migration_duration = (
+            self.block_created_time - self.pre_prc_date_df.index.min()
+        ).total_seconds()
 
     def _load_pickle(self, attr: str):
         path = (
@@ -83,44 +86,37 @@ class MemeAnalyzer:
             }
             if not acts_dict:
                 continue
-            acts_list.append(
-                {
-                    "date": txn.date,
-                    "acts": acts_dict,
-                }
-            )
+            acts_list.append({"date": txn.date, "acts": acts_dict, "maker": txn.maker})
         acts_list.sort(key=lambda x: x["date"])
         return acts_list
 
-    def process_price(self, freq: str) -> pd.Series:
-        """Method to process the price data into different frequency"""
+    def get_unique_swapers(self) -> int:
+        """Method to get the unique swapers of the meme token"""
+        swapers = set()
+        for swap in self.get_acts(Swap):
+            swapers.add(swap["maker"])
+        return len(swapers)
 
-        # Resample the price data to the specified frequency
-        # prc_resampled = price_resample(freq, self.prc_date_df.copy())
-
+    def resample_price(self) -> pd.DataFrame:
+        """Method to resample the price data to the specified frequency"""
+        # convert the index to how many seconds since the pool was created
         prc_resampled = self.prc_date_df.loc[
             self.prc_date_df.index >= self.block_created_time
         ].copy()
-        prc_resampled = self.prc_date_df.copy()["price"].resample(freq).last().ffill()
+        prc_resampled.index = (
+            prc_resampled.index - self.block_created_time
+        ).total_seconds()
 
-        # Normalize index to start at hour = 0
+        # drop the duplicate index values
+        prc_resampled = prc_resampled[~prc_resampled.index.duplicated(keep="last")]
 
-        match freq:
-            case "1min":
-                start_time = self.block_created_time.replace(second=0)
-            case "1h":
-                # keep the hour of start time
-                start_time = self.block_created_time.replace(minute=0, second=0)
+        # take the 12*3600 seconds as the maximum index value
+        prc_resampled = prc_resampled.reindex(range(0, 12 * 3600 + 1, 1)).ffill()
 
-        normalized_hours = (prc_resampled.index - start_time).total_seconds() / 3600
+        return prc_resampled
 
-        # Reindex to ensure a full 12-hour range even if data is shorter
-        full_hour_range = pd.timedelta_range(start="0h", end="12h", freq=freq)
-        full_hour_index = full_hour_range.total_seconds() / 3600  # in hours
-        prc_resampled.index = normalized_hours
-        prc_resampled = prc_resampled.reindex(full_hour_index).ffill()
-
-        # append the last row of pre_prc_date_df to the resampled price data
+    def append_pre_prc_date_df(self, prc_resampled: pd.DataFrame) -> pd.DataFrame:
+        """Method to append the pre price data to the resampled price data"""
         if not self.pre_prc_date_df.empty:
             last_pre_price = self.pre_prc_date_df["price"].iloc[-1]
             prc_resampled = pd.concat(
@@ -133,14 +129,44 @@ class MemeAnalyzer:
                     prc_resampled,
                 ]
             )
+        return prc_resampled
+
+    def process_price(self, freq: str) -> pd.DataFrame:
+        """Method to process the price data into different frequency"""
+
+        prc_resampled = self.resample_price()
+        match freq:
+            case "1h":
+                # only keep the value can be divided by 3600
+                prc_resampled = prc_resampled[
+                    (prc_resampled.index % 3600 == 0) & (prc_resampled.index != 0)
+                ].copy()
+                prc_resampled.index = prc_resampled.index / 3600  # convert to hours
+            case "1min":
+                # only keep the value can be divided by 60
+                prc_resampled = prc_resampled[
+                    prc_resampled.index % 60 == 0 & (prc_resampled.index != 0)
+                ].copy()
+                prc_resampled.index = prc_resampled.index / 60  # convert to minutes
+
+        # append the last row of pre_prc_date_df to the resampled price data
+        prc_resampled = self.append_pre_prc_date_df(prc_resampled)
 
         return prc_resampled
 
     def get_mdd(self, freq: str = "1min", before: Optional[float] = None) -> float:
         """Method to get the maximum drawdown of the meme token"""
-        prc_date_df = self.process_price(freq).copy().to_frame(name="price")
+        prc_date_df = self.resample_price()
+        prc_date_df = self.append_pre_prc_date_df(prc_date_df)
+
         if before is not None:
-            prc_date_df = prc_date_df[prc_date_df.index <= before]
+            match freq:
+                case "1min":
+                    before = before * 60
+                case "1h":
+                    before = before * 3600
+            prc_date_df = prc_date_df[(prc_date_df.index <= before)]
+
         prc_date_df["running_max"] = prc_date_df["price"].cummax()
         prc_date_df["drawdown"] = (
             prc_date_df["price"] - prc_date_df["running_max"]
@@ -152,27 +178,18 @@ class MemeAnalyzer:
         """Method to get the return of the meme token"""
 
         return (
-            self.process_price(freq).copy().pct_change().dropna().to_frame(name="ret")
+            self.process_price(freq)
+            .copy()
+            .pct_change()
+            .dropna()
+            .rename(columns={"price": "ret"})
         )
-
-
-def price_resample(freq: str, df: pd.DataFrame) -> pd.Series:
-    """Method to resample the price data into different frequency and keep the last value
-
-    Args:
-        freq (str): Frequency to resample the data
-        df (pd.DataFrame): DataFrame containing the price data with "date" and "price" columns
-    Returns:
-        pd.Series: Resampled price data
-    """
-
-    return df["price"].resample(freq).last().ffill()
 
 
 if __name__ == "__main__":
 
     SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
-    NUM_OF_OBSERVATIONS = 3
+    NUM_OF_OBSERVATIONS = 10
 
     for chain in [
         # "pumpfun",
@@ -226,13 +243,14 @@ if __name__ == "__main__":
                         txns={},
                     ),
                 )
-            if len(meme.get_acts(Swap)) > 2:
-                # if (
-                #     pool["token_address"]
-                #     == "3quAiFqum25S7NtyDgzq8V3vhWB6U1v6GtWWNaNfpump"
-                # ):
-                print(
-                    f"Pool: {pool['token_address']}, "
-                    f"Max Drawdown: {meme.get_mdd(freq="1h") * 100:.2f}%, "
-                )
-                (meme.get_ret(freq="1h") + 1).cumprod().plot()
+            # if len(meme.get_acts(Swap)) > 2:
+            # if (
+            #     pool["token_address"]
+            #     == "3quAiFqum25S7NtyDgzq8V3vhWB6U1v6GtWWNaNfpump"
+            # ):
+            print(
+                f"Pool: {pool['token_address']}, "
+                f"Max Drawdown: {meme.get_mdd(freq="1min") * 100:.2f}%, "
+                f"Unique Swapers: {meme.get_unique_swapers()}, "
+            )
+            # (meme.get_ret(freq="1min") + 1).cumprod().plot()
