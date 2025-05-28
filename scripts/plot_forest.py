@@ -8,6 +8,9 @@ import statsmodels.api as sm
 from pathlib import Path
 from environ.constants import PROCESSED_DATA_PATH, FIGURE_PATH
 
+# Plot
+plt.figure(figsize=(7, 3.5))
+
 # Load and preprocess data
 processed_path = Path(PROCESSED_DATA_PATH)
 mdd_path = processed_path / "mdd.csv"
@@ -71,9 +74,6 @@ palette = sns.color_palette("tab10", len(x_labels))
 # Mapping
 y_pos_map = {var: i * 0.5 for i, var in enumerate(reversed(y_labels))}
 
-# Plot
-plt.figure(figsize=(10, 3.5))
-
 for i, time_label in enumerate(x_labels):
     color = palette[i]
     sub = df[df["y_var"] == time_label]
@@ -114,8 +114,8 @@ plt.legend(
     frameon=False,
 )
 plt.tight_layout()
-plt.show()
 plt.savefig(
     FIGURE_PATH / "forest_plot.pdf",
     dpi=300,
 )
+plt.show()
