@@ -66,6 +66,7 @@ class Action:
 class Transfer(Action):
     """Class to store the transfer transaction"""
 
+    date: datetime.datetime
     from_: str
     to: str
     value: float

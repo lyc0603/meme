@@ -13,6 +13,7 @@ from environ.constants import NATIVE_ADDRESS_DICT, PROCESSED_DATA_PATH, TRUMP_BL
 from environ.data_class import NewTokenPool, Swap
 from environ.db import fetch_native_pool_since_block
 from environ.sol_fetcher import import_pool
+from collections import defaultdict
 
 
 class MemeAnalyzer:
@@ -24,6 +25,7 @@ class MemeAnalyzer:
     ):
         self.new_token_pool = new_token_pool
         self.txn = self._load_pickle("txn")
+        self.transfer = self._load_pickle("transfer")
         self.block_created_time = self._load_creation_time()
         self.prc_date_df, self.pre_prc_date_df = self._build_price_df()
         self.migration_duration = (
@@ -96,6 +98,41 @@ class MemeAnalyzer:
         for swap in self.get_acts(Swap):
             swapers.add(swap["maker"])
         return len(swapers)
+
+    def get_unique_non_swap_transfers(self) -> int:
+        """Method to get the unique non-swap transfers of the meme token"""
+        non_swap_transfers = set()
+        for transfer in self.transfer:
+            if transfer.date.replace(tzinfo=timezone.utc) < self.block_created_time:
+                non_swap_transfers.add(transfer.txn_hash)
+
+        for txn in self.txn:
+            non_swap_transfers.discard(txn.txn_hash)
+
+        return len(non_swap_transfers)
+
+    def get_holdings_herf(self) -> float:
+        """Method to get the herfindahl index of the holdings of the meme token"""
+        holdings = defaultdict(float)
+
+        for swap in [
+            _
+            for _ in self.get_acts(Swap)
+            if _["date"].replace(tzinfo=timezone.utc) < self.block_created_time
+        ]:
+            if swap["acts"]:
+                last_act = swap["acts"][list(swap["acts"].keys())[-1]]
+                if last_act.typ == "Buy":
+                    holdings[swap["maker"]] += last_act.base
+                elif last_act.typ == "Sell":
+                    holdings[swap["maker"]] -= last_act.base
+
+        # calculate the herfindahl index
+        total_holdings = sum(holdings.values())
+        if total_holdings == 0:
+            return 0.0
+        herf = sum((holding / total_holdings) ** 2 for holding in holdings.values())
+        return herf
 
     def resample_price(self) -> pd.DataFrame:
         """Method to resample the price data to the specified frequency"""
@@ -251,6 +288,8 @@ if __name__ == "__main__":
             print(
                 f"Pool: {pool['token_address']}, "
                 f"Max Drawdown: {meme.get_mdd(freq="1min") * 100:.2f}%, "
-                f"Unique Swapers: {meme.get_unique_swapers()}, "
+                f"Unique Swapers: {meme.get_unique_swapers()},"
+                f"Unique Non-Swap Transfers: {meme.get_unique_non_swap_transfers()}",
+                f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
             )
             # (meme.get_ret(freq="1min") + 1).cumprod().plot()
