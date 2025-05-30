@@ -18,7 +18,13 @@ mdd_df = pd.read_csv(mdd_path)
 
 mdd_df["duration"] = np.log(mdd_df["duration"])
 mdd_df["unique_address"] = np.log(mdd_df["unique_address"])
-mdd_df["unique_transfer"] = np.log(mdd_df["unique_transfer"])
+mdd_df["unique_transfer"] = np.log(mdd_df["unique_transfer"] + 1)
+# mdd_df["transfer_amount"] = mdd_df["transfer_amount"] / 206900000
+# mdd_df["dev_transfer_amount"] = mdd_df["dev_transfer_amount"] / (
+#     1_000_000_000 - 206_900_000
+# )
+mdd_df["max_same_txn"] = np.log(mdd_df["max_same_txn"] / mdd_df["total_txn"])
+
 
 FREQ_DICT = {
     "1 Min": {"freq": "1min", "before": 1},
@@ -32,11 +38,24 @@ FREQ_DICT = {
 }
 
 NAMING_DICT = {
-    "unique_address": "Swapper",
+    "unique_address": "# Swapper",
     "duration": "Duration",
-    "unique_transfer": "Transfer",
+    "unique_transfer": "# Transfer",
     "holding_herf": "Holding HERF",
+    # "out_degree_herf": "Out Degree HERF",
+    # "in_degree_herf": "In Degree HERF",
+    # "degree": "Degree",
+    # "transfer_amount": "Transfer Amount",
+    "dev_transfer": "Transfer Dev",
+    "dev_txn": "Swap Dev",
+    # "dev_transfer_amount": "Transfer Amount Dev",
+    "bundle": "Bundle HERF",
+    # "txn_per_s": "Txn per Second",
+    "max_same_txn": "Max Same Txn",
 }
+
+# plot the heatmap of the correlation matrix coefficients
+
 
 IND_VARS = NAMING_DICT.keys()
 
@@ -115,7 +134,7 @@ plt.legend(
 )
 plt.tight_layout()
 plt.savefig(
-    FIGURE_PATH / "forest_plot.pdf",
+    FIGURE_PATH / "forest_plot_mdd.pdf",
     dpi=300,
 )
 plt.show()

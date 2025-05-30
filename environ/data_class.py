@@ -30,6 +30,7 @@ class NewTokenPool(NewPool):
     base_token: str
     quote_token: str
     txns: Dict[int, str]
+    creator: str = ""
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)

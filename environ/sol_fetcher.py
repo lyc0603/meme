@@ -219,36 +219,65 @@ WHERE (
   AND block_timestamp < TIMESTAMP '{migration_timestamp}' + INTERVAL '12 hours'
 ORDER BY block_timestamp ASC;"""
 
-LAUNCH_QUERY = """select
+LAUNCH_QUERY = """SELECT
   block_timestamp,
   tx_id,
-  decoded_instruction:accounts[0]:pubkey::string as token_address
-from
+  decoded_instruction:accounts[0]:pubkey::string AS token_address,
+  signers[0] AS token_creator,
+  decoded_instruction:accounts[2]:pubkey::string AS pumpfun_pool_address
+FROM
   solana.core.ez_events_decoded
-where
+WHERE
   program_id = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P'
-  and event_type = 'create'
-  and block_timestamp > timestamp '{timestamp}'
-order by block_timestamp
-limit {num};"""
+  AND event_type = 'create'
+  AND block_timestamp > TIMESTAMP '{timestamp}'
+ORDER BY block_timestamp
+LIMIT {num};"""
 
-MIGRATION_QUERY = """select
-  block_timestamp,
-  tx_id,
-  decoded_instruction:accounts[9]:pubkey::string as token_address,
-  decoded_instruction:args:initCoinAmount::number as sol_lamports,
-  decoded_instruction:args:initPcAmount::number as meme_amount
-from 
-  solana.core.ez_events_decoded
-where 
-  signers[0] = '39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg'
-  and program_id = '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8'
-  and event_type = 'initialize2'
-  and succeeded
-  and decoded_instruction:accounts[8]:pubkey::string = 'So11111111111111111111111111111111111111112'
-  and block_timestamp > timestamp '{timestamp}'
-order by block_timestamp
-limit {num};"""
+MIGRATION_QUERY = """SELECT
+  mig.block_timestamp AS block_timestamp,
+  mig.tx_id AS tx_id,
+  mig.token_address,
+  mig.sol_lamports,
+  mig.meme_amount,
+  lau.block_timestamp AS launch_time,
+  lau.tx_id AS launch_tx_id,
+  lau.token_creator,
+  lau.pumpfun_pool_address
+FROM (
+  SELECT
+    block_timestamp,
+    tx_id,
+    decoded_instruction:accounts[9]:pubkey::string AS token_address,
+    decoded_instruction:args:initCoinAmount::number AS sol_lamports,
+    decoded_instruction:args:initPcAmount::number AS meme_amount
+  FROM
+    solana.core.ez_events_decoded
+  WHERE
+    signers[0] = '39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg'
+    AND program_id = '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8'
+    AND event_type = 'initialize2'
+    AND succeeded
+    AND decoded_instruction:accounts[8]:pubkey::string = 'So11111111111111111111111111111111111111112'
+    AND block_timestamp > TIMESTAMP '{timestamp}'
+  ORDER BY block_timestamp
+  LIMIT {num}
+) mig
+LEFT JOIN (
+  SELECT
+    block_timestamp,
+    tx_id,
+    decoded_instruction:accounts[0]:pubkey::string AS token_address,
+    signers[0] AS token_creator,
+    decoded_instruction:accounts[2]:pubkey::string AS pumpfun_pool_address
+  FROM
+    solana.core.ez_events_decoded
+  WHERE
+    program_id = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P'
+    AND event_type = 'create'
+) lau
+ON mig.token_address = lau.token_address;
+ORDER BY block_timestamp"""
 
 
 def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
@@ -262,53 +291,61 @@ def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
 
     for pool_info in tqdm(import_pool(category)):
         token_add = pool_info["token_address"]
-        # block_ts = int(
-        #     datetime.strptime(
-        #         str(pool_info["block_timestamp"]), "%Y-%m-%dT%H:%M:%S.%fZ"
-        #     ).timestamp()
-        # )
-        # # processed the creation time data
-        # with open(
-        #     PROCESSED_DATA_PATH / "creation" / category / f"{token_add}.json",
-        #     "w",
-        #     encoding="utf-8",
-        # ) as f:
-        #     json.dump(
-        #         {
-        #             "created_time": block_ts,
-        #         },
-        #         f,
-        #         indent=4,
-        #     )
-
-        # processed transfer data
+        block_ts = int(
+            datetime.strptime(
+                str(pool_info["block_timestamp"]), "%Y-%m-%dT%H:%M:%S.%fZ"
+            ).timestamp()
+        )
+        launch_ts = int(
+            datetime.strptime(
+                str(pool_info["launch_time"]), "%Y-%m-%dT%H:%M:%S.%fZ"
+            ).timestamp()
+        )
+        # processed the creation time data
         with open(
-            DATA_PATH / "solana" / category / "transfer" / f"{token_add}.jsonl",
-            "r",
+            PROCESSED_DATA_PATH / "creation" / category / f"{token_add}.json",
+            "w",
             encoding="utf-8",
         ) as f:
-            transfer_lst = []
-            for line in f:
-                transfer = json.loads(line)
-                transfer_lst.append(
-                    Transfer(
-                        date=datetime.strptime(
-                            transfer["block_timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"
-                        ),
-                        block=transfer["block_id"],
-                        txn_hash=transfer["tx_id"],
-                        log_index=transfer["index"],
-                        from_=transfer["tx_from"],
-                        to=transfer["tx_to"],
-                        value=transfer["amount"],
-                    )
-                )
+            json.dump(
+                {
+                    "created_time": block_ts,
+                    "launch_time": launch_ts,
+                    "token_creator": pool_info["token_creator"],
+                    "pumpfun_pool_address": pool_info["pumpfun_pool_address"],
+                },
+                f,
+                indent=4,
+            )
 
-        with open(
-            PROCESSED_DATA_PATH / "transfer" / category / f"{token_add}.pkl",
-            "wb",
-        ) as f:
-            pickle.dump(transfer_lst, f)
+        # # processed transfer data
+        # with open(
+        #     DATA_PATH / "solana" / category / "transfer" / f"{token_add}.jsonl",
+        #     "r",
+        #     encoding="utf-8",
+        # ) as f:
+        #     transfer_lst = []
+        #     for line in f:
+        #         transfer = json.loads(line)
+        #         transfer_lst.append(
+        #             Transfer(
+        #                 date=datetime.strptime(
+        #                     transfer["block_timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"
+        #                 ),
+        #                 block=transfer["block_id"],
+        #                 txn_hash=transfer["tx_id"],
+        #                 log_index=transfer["index"],
+        #                 from_=transfer["tx_from"],
+        #                 to=transfer["tx_to"],
+        #                 value=transfer["amount"],
+        #             )
+        #         )
+
+        # with open(
+        #     PROCESSED_DATA_PATH / "transfer" / category / f"{token_add}.pkl",
+        #     "wb",
+        # ) as f:
+        #     pickle.dump(transfer_lst, f)
 
         # # processed transaction data
         # with open(
@@ -448,15 +485,15 @@ if __name__ == "__main__":
     #     category="raydium",
     #     num=1000,
     #     timestamp="2025-01-17 14:01:48",
-    #     task_query=LAUNCH_QUERY,
+    #     task_query=MIGRATION_QUERY,
     # )
-    # # solana_fetcher.fetch_task(
-    # #     LAUNCH_QUERY,
-    # #     "2025-01-17 14:01:48",
-    # #     1000,
-    # #     DATA_PATH / "solana" / "raydium.jsonl",
-    # # )
-    # solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
-    # solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
-    for category in ["pumpfun", "raydium"]:
+    # solana_fetcher.fetch_task(
+    #     MIGRATION_QUERY,
+    #     "2025-01-17 14:01:48",
+    #     1000,
+    #     DATA_PATH / "solana" / "raydium.jsonl",
+    # )
+    # # solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
+    # # solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
+    for category in ["raydium"]:
         process_txn(category)

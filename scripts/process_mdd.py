@@ -49,6 +49,8 @@ for pool in tqdm(
         ),
     )
 
+    # out_degree_herf, in_degree_herf = meme.analyze_non_swap_transfer_graph()
+
     mdd_df = pd.DataFrame(
         {
             **{
@@ -58,8 +60,16 @@ for pool in tqdm(
             **{
                 "duration": meme.migration_duration,
                 "unique_address": meme.get_unique_swapers(),
-                "unique_transfer": meme.get_unique_non_swap_transfers(),
+                "unique_transfer": len(meme.non_swap_transfer_hash),
                 "holding_herf": meme.get_holdings_herf(),
+                "dev_transfer": meme.dev_transfer,
+                "dev_txn": meme.dev_txn,
+                # "dev_transfer_amount": meme.dev_transfer_amount,
+                "bundle": meme.get_block_bundle_herf(),
+                # "transfer_amount": meme.get_non_swap_transfer_amount(),
+                # "degree": meme.analyze_non_swap_transfer_graph(),
+                "max_same_txn": meme.get_max_same_txn_per_swaper(),
+                "total_txn": len(meme.txn),
             },
         },
         index=[0],

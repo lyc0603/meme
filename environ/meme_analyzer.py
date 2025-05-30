@@ -3,9 +3,12 @@
 import datetime
 import json
 import pickle
+from collections import defaultdict, Counter
 from datetime import UTC, timezone
 from typing import Optional
 
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import pandas as pd
 
@@ -13,7 +16,18 @@ from environ.constants import NATIVE_ADDRESS_DICT, PROCESSED_DATA_PATH, TRUMP_BL
 from environ.data_class import NewTokenPool, Swap
 from environ.db import fetch_native_pool_since_block
 from environ.sol_fetcher import import_pool
-from collections import defaultdict
+
+SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
+MIGATOR = "39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg"
+
+
+def compute_herfindahl(var_dict: dict) -> float:
+    """Compute Herfindahl index given a  dictionary"""
+    values = np.array(list(var_dict.values()))
+    if values.sum() == 0:
+        return 0.0
+    normalized = values / values.sum()
+    return np.sum(normalized**2)
 
 
 class MemeAnalyzer:
@@ -26,11 +40,18 @@ class MemeAnalyzer:
         self.new_token_pool = new_token_pool
         self.txn = self._load_pickle("txn")
         self.transfer = self._load_pickle("transfer")
-        self.block_created_time = self._load_creation_time()
+        self.block_created_time, self.launch_time, self.creator, self.pool_add = (
+            self._load_creation()
+        )
+        self.dev_txn = 0
+        self.dev_transfer = 0
+        self.dev_transfer_amount = 0
+        self.non_swap_transfer_hash = self._build_non_swap_transfer()
         self.prc_date_df, self.pre_prc_date_df = self._build_price_df()
         self.migration_duration = (
             self.block_created_time - self.pre_prc_date_df.index.min()
         ).total_seconds()
+        self.swappers = self._build_swappers()
 
     def _load_pickle(self, attr: str):
         path = (
@@ -40,31 +61,69 @@ class MemeAnalyzer:
         with open(path, "rb") as f:
             return pickle.load(f)
 
-    def _load_creation_time(self) -> datetime.datetime:
+    def _load_creation(self) -> tuple[datetime.datetime, datetime.datetime, str, str]:
         """Method to load the creation time of the meme token"""
         path = (
             f"{PROCESSED_DATA_PATH}/creation/{self.new_token_pool.chain}/"
             f"{self.new_token_pool.pool_add}.json"
         )
         with open(path, "r", encoding="utf-8") as f:
-            creation_data = json.load(f)["created_time"]
-        return datetime.datetime.fromtimestamp(creation_data, UTC)
+            file = json.load(f)
+            creation_data = file["created_time"]
+            lauch_time = file["launch_time"]
+            creator_address = file["token_creator"]
+            pool_adress = file["pumpfun_pool_address"]
+
+        return (
+            datetime.datetime.fromtimestamp(creation_data, UTC),
+            lauch_time,
+            creator_address,
+            pool_adress,
+        )
+
+    def _build_non_swap_transfer(self) -> set[str]:
+        """Method to get the unique non-swap transfers of the meme token"""
+        non_swap_transfers = set()
+        for transfer in self.transfer:
+            if (
+                transfer.date.replace(tzinfo=timezone.utc) < self.block_created_time
+            ) & (MIGATOR not in [transfer.from_, transfer.to]):
+                non_swap_transfers.add(transfer.txn_hash)
+
+        for txn in self.txn:
+            non_swap_transfers.discard(txn.txn_hash)
+
+            if self.creator == txn.maker:
+                self.dev_txn = 1
+
+        for transfer in self.transfer:
+            if transfer.txn_hash in non_swap_transfers and self.creator in [
+                transfer.from_,
+                transfer.to,
+            ]:
+                self.dev_transfer = 1
+
+                if transfer.to == self.creator:
+                    self.dev_transfer_amount += transfer.value
+
+        return non_swap_transfers
 
     def _build_price_df(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Method to build the price DataFrame of the meme token"""
         prc_date_dict = {
+            "block": [],
             "date": [],
             "price": [],
+            "base": [],
         }
-        for idx, acts in enumerate(self.get_acts(Swap)):
-            # if idx == 0:
-            #     prc_date_dict["date"].append(acts["date"].replace(tzinfo=timezone.utc))
-            #     prc_date_dict["price"].append(
-            #         acts["acts"][list(acts["acts"].keys())[-1]].price
-            #     )
+        for _, acts in enumerate(self.get_acts(Swap)):
+            prc_date_dict["block"].append(acts["block"])
             prc_date_dict["date"].append(acts["date"].replace(tzinfo=timezone.utc))
             prc_date_dict["price"].append(
                 acts["acts"][list(acts["acts"].keys())[-1]].price
+            )
+            prc_date_dict["base"].append(
+                acts["acts"][list(acts["acts"].keys())[-1]].base
             )
         prc_date_df = pd.DataFrame(prc_date_dict)
         prc_date_df = prc_date_df.set_index("date").sort_index()
@@ -79,6 +138,13 @@ class MemeAnalyzer:
 
         return prc_date_df, pre_prc_date_df
 
+    def _build_swappers(self) -> dict[str, list]:
+        """Method to get the swapers of the meme token"""
+        swapers = defaultdict(list)
+        for swap in self.get_acts(Swap):
+            swapers[swap["maker"]].append(swap)
+        return swapers
+
     def get_acts(self, act: type) -> list:
         """Method to get the swap transaction of the meme token"""
         acts_list = []
@@ -88,51 +154,106 @@ class MemeAnalyzer:
             }
             if not acts_dict:
                 continue
-            acts_list.append({"date": txn.date, "acts": acts_dict, "maker": txn.maker})
+            acts_list.append(
+                {
+                    "date": txn.date,
+                    "acts": acts_dict,
+                    "maker": txn.maker,
+                    "block": txn.block,
+                }
+            )
         acts_list.sort(key=lambda x: x["date"])
         return acts_list
 
+    # Metrics for Meme Token Analysis
+    def get_block_bundle_herf(self) -> float:
+        """Method to get the Herfindahl index of the block bundle of the meme token"""
+        return compute_herfindahl(
+            self.pre_prc_date_df.groupby("block")["base"].sum().to_dict()
+        )
+
     def get_unique_swapers(self) -> int:
         """Method to get the unique swapers of the meme token"""
-        swapers = set()
-        for swap in self.get_acts(Swap):
-            swapers.add(swap["maker"])
-        return len(swapers)
+        return len(self.swappers)
 
-    def get_unique_non_swap_transfers(self) -> int:
+    def get_max_same_txn_per_swaper(self) -> float:
+        """Method to get the max number of same transaction per swaper"""
+
+        same_txn_list = []
+        for swaper, swaps in self.swappers.items():
+            txn_amount_list = [
+                swap["acts"][list(swap["acts"].keys())[-1]].base for swap in swaps
+            ]
+            same_txn_list.append(Counter(txn_amount_list).most_common(1)[0][1])
+
+        return max(same_txn_list) if same_txn_list else 0
+
+    def get_non_swap_transfer_amount(self) -> int:
         """Method to get the unique non-swap transfers of the meme token"""
-        non_swap_transfers = set()
+
+        transfer_amount = 0
         for transfer in self.transfer:
-            if transfer.date.replace(tzinfo=timezone.utc) < self.block_created_time:
-                non_swap_transfers.add(transfer.txn_hash)
+            if transfer.txn_hash in self.non_swap_transfer_hash:
+                transfer_amount += transfer.value
 
-        for txn in self.txn:
-            non_swap_transfers.discard(txn.txn_hash)
-
-        return len(non_swap_transfers)
+        return transfer_amount
 
     def get_holdings_herf(self) -> float:
-        """Method to get the herfindahl index of the holdings of the meme token"""
+        """Method to get the Herfindahl index of the holdings of the meme token"""
         holdings = defaultdict(float)
 
         for swap in [
-            _
-            for _ in self.get_acts(Swap)
-            if _["date"].replace(tzinfo=timezone.utc) < self.block_created_time
+            s
+            for s in self.get_acts(Swap)
+            if s["date"].replace(tzinfo=timezone.utc) < self.block_created_time
         ]:
-            if swap["acts"]:
-                last_act = swap["acts"][list(swap["acts"].keys())[-1]]
-                if last_act.typ == "Buy":
-                    holdings[swap["maker"]] += last_act.base
-                elif last_act.typ == "Sell":
-                    holdings[swap["maker"]] -= last_act.base
+            last_act = swap["acts"][list(swap["acts"].keys())[-1]]
+            if last_act.typ == "Buy":
+                holdings[swap["maker"]] += last_act.base
+            elif last_act.typ == "Sell":
+                holdings[swap["maker"]] -= last_act.base
 
-        # calculate the herfindahl index
-        total_holdings = sum(holdings.values())
-        if total_holdings == 0:
-            return 0.0
-        herf = sum((holding / total_holdings) ** 2 for holding in holdings.values())
-        return herf
+        return compute_herfindahl(holdings)
+
+    def analyze_non_swap_transfer_graph(self):
+        """Builds and visualizes the non-swap transfer graph and returns in/out Herfindahl index."""
+        swap_hashes = {txn.txn_hash for txn in self.txn}
+        G = nx.DiGraph()
+
+        for transfer in self.transfer:
+            if (
+                transfer.date.replace(tzinfo=timezone.utc) < self.block_created_time
+                and transfer.txn_hash not in swap_hashes
+            ):
+                G.add_edge(transfer.from_, transfer.to, weight=transfer.value)
+
+        pos = nx.spring_layout(G)
+        plt.figure(figsize=(10, 7))
+        # color the dev transfer in red
+        for node in G.nodes:
+            if node == self.creator:
+                G.nodes[node]["color"] = "red"
+            else:
+                G.nodes[node]["color"] = "skyblue"
+        node_colors = [G.nodes[node]["color"] for node in G.nodes]
+        edge_widths = [
+            G[u][v]["weight"] / (1_000_000_00 - 206_900_00) for u, v in G.edges
+        ]
+        nx.draw(
+            G,
+            pos,
+            with_labels=True,
+            node_color=node_colors,
+            edge_color="gray",
+            width=edge_widths,
+            alpha=0.7,
+        )
+        plt.show()
+
+        # out_degree_centrality = nx.out_degree_centrality(G)
+        # average_out_degree_centrality = np.mean(list(out_degree_centrality.values()))
+
+        return 1
 
     def resample_price(self) -> pd.DataFrame:
         """Method to resample the price data to the specified frequency"""
@@ -191,6 +312,28 @@ class MemeAnalyzer:
 
         return prc_resampled
 
+    def get_ret_before(
+        self, freq: str = "1min", before: Optional[float] = None
+    ) -> float:
+        """Method to get the return of the meme token"""
+
+        prc_date_df = self.resample_price()
+        prc_date_df = self.append_pre_prc_date_df(prc_date_df)
+
+        if before is not None:
+            match freq:
+                case "1min":
+                    before = before * 60
+                case "1h":
+                    before = before * 3600
+            prc_date_df = prc_date_df[(prc_date_df.index <= before)]
+
+        # only keep the first and last row
+        starting_price = prc_date_df["price"].iloc[0]
+        ending_price = prc_date_df["price"].iloc[-1]
+
+        return (ending_price - starting_price) / starting_price
+
     def get_mdd(self, freq: str = "1min", before: Optional[float] = None) -> float:
         """Method to get the maximum drawdown of the meme token"""
         prc_date_df = self.resample_price()
@@ -219,14 +362,13 @@ class MemeAnalyzer:
             .copy()
             .pct_change()
             .dropna()
-            .rename(columns={"price": "ret"})
+            .rename(columns={"price": "ret"})[["ret"]]
         )
 
 
 if __name__ == "__main__":
 
-    SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
-    NUM_OF_OBSERVATIONS = 10
+    NUM_OF_OBSERVATIONS = 3
 
     for chain in [
         # "pumpfun",
@@ -285,11 +427,24 @@ if __name__ == "__main__":
             #     pool["token_address"]
             #     == "3quAiFqum25S7NtyDgzq8V3vhWB6U1v6GtWWNaNfpump"
             # ):
+
+            # out_deg, in_deg = meme.analyze_non_swap_transfer_graph()
+
             print(
-                f"Pool: {pool['token_address']}, "
-                f"Max Drawdown: {meme.get_mdd(freq="1min") * 100:.2f}%, "
-                f"Unique Swapers: {meme.get_unique_swapers()},"
-                f"Unique Non-Swap Transfers: {meme.get_unique_non_swap_transfers()}",
-                f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
+                # f"Pool: {pool['token_address']}, "
+                f"Max Drawdown: {meme.get_mdd(freq="1min", before=1) * 100:.2f}%, "
+                # f"Unique Swapers: {meme.get_unique_swapers()},"
+                # f"Unique Non-Swap Transfers: {len(meme.non_swap_transfer_hash)}, ",
+                # f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
+                # # f"Non-Swap Transfer Graph Out Herfindahl: {out_deg}, "
+                # # f"Non-Swap Transfer Graph In Herfindahl: {in_deg}",
+                f"Degree: {meme.analyze_non_swap_transfer_graph()}",
+                # f"Transfer amount: {meme.get_non_swap_transfer_amount()}",
+                # f"Dev Txn: {meme.dev_txn}, "
+                # f"Dev Transfer: {meme.dev_transfer}",
+                # f"Dev Transfer Amount: {meme.dev_transfer_amount}",
+                f"Return: {meme.get_ret_before(freq='1min', before=1) * 100:.2f}%, ",
+                f"Max Same Txn per Swaper: {meme.get_max_same_txn_per_swaper():.2f}, ",
+                f"Block Bundle Herfindahl: {meme.get_block_bundle_herf()}",
             )
             # (meme.get_ret(freq="1min") + 1).cumprod().plot()
