@@ -18,6 +18,36 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
 }
 
+# Naming dictionary for regression variables
+NAMING_DICT = {
+    "size": {
+        "duration": "$\\text{Duration}$",
+        "#trader": "$\#\\text{Traders}$",
+        "#txn": "$\#\\text{Txns}$",
+        "#transfer": "$\#\\text{Transfers}$",
+    },
+    "bundle_bot": {
+        "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
+        "bundle": "$\\text{HHI}_{\\text{Bundle}}$",
+        "transfer_amount": "$\\text{Transfer Amount (\%)}$",
+    },
+    "volume_bot": {
+        "max_same_txn": "$\\text{Max Same Txn}$",
+        "pos_to_number_of_swaps_ratio": "$\\text{Pos/\#Swaps}$",
+    },
+    "comment_bot": {
+        "unique_replies": "$\#\\text{Replies}$",
+        "reply_interval_herf": "$\\text{HHI}_{\\text{Interval}}$",
+        "unique_repliers": "$\#\\text{Repliers}$",
+        "non_swapper_repliers": "$\#\\text{Non-Trader Repliers}$",
+    },
+    "dev": {
+        "dev_transfer": "$\\text{Dev Transfer}$",
+        "dev_buy": "$\\text{Dev Buy}$",
+        "dev_sell": "$\\text{Dev Sell}$",
+    },
+}
+
 # before block for the TRUMP block 2025-01-17 14:01:48
 TRUMP_BLOCK = {
     "base": 25166580,

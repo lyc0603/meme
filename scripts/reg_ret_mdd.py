@@ -2,13 +2,11 @@
 
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import statsmodels.api as sm
 
-from environ.constants import TABLE_PATH, PROCESSED_DATA_PATH
+from environ.constants import PROCESSED_DATA_PATH, TABLE_PATH, NAMING_DICT
 
 mdd_df = pd.read_csv(Path(PROCESSED_DATA_PATH) / "ret_mdd.csv")
 
@@ -21,35 +19,6 @@ FREQ_DICT = {
     "1 Hour": {"ret": "${\it Ret}_{\it 1h}$", "mdd": "${\it MDD}_{\it 1h}$"},
     "6 Hours": {"ret": "${\it Ret}_{\it 6h}$", "mdd": "${\it MDD}_{\it 6h}$"},
     "12 Hours": {"ret": "${\it Ret}_{\it 12h}$", "mdd": "${\it MDD}_{\it 12h}$"},
-}
-
-NAMING_DICT = {
-    "size": {
-        "duration": "$\mathrm{Duration}$",
-        "#trader": "$\mathrm{\#Traders}$",
-        "#txn": "$\mathrm{\#Txns}$",
-        "#transfer": "$\mathrm{\#Transfers}$",
-    },
-    "bundle_bot": {
-        "holding_herf": "$\mathrm{HHI_\mathrm{Holding}}$",
-        "bundle": "$\mathrm{HHI_\mathrm{Bundle}}$",
-    },
-    "volume_bot": {
-        "transfer_amount": "$\mathrm{Transfer Amount (\%)}$",
-        "max_same_txn": "$\mathrm{Max Same Txn (\%)}$",
-        "pos_to_number_of_swaps_ratio": "$\mathrm{Position\#Swaps}$",
-    },
-    "comment_bot": {
-        "unique_replies": "$\mathrm{\#Replies}$",
-        "reply_interval_herf": "$\mathrm{HHI_\mathrm{Interval}}$",
-        "unique_repliers": "$\mathrm{\#Repliers}$",
-        "non_swapper_repliers": "$\mathrm{\#Non-Trader Repliers}$",
-    },
-    "dev": {
-        "dev_transfer": "$\mathrm{Dev Transfer}$",
-        "dev_buy": "$\mathrm{Dev Buy}$",
-        "dev_sell": "$\mathrm{Dev Sell}$",
-    },
 }
 
 
@@ -140,17 +109,20 @@ def render_latex_table(
 # size
 mdd_df["duration"] = np.log(mdd_df["duration"])
 mdd_df["#trader"] = np.log(mdd_df["#trader"])
-mdd_df["#txn"] = np.log(mdd_df["#txn"] + 1)
+mdd_df["#txn"] = np.log(mdd_df["#txn"])
 mdd_df["#transfer"] = np.log(mdd_df["#transfer"] + 1)
 
 # bots
+
 ## Bundle
 mdd_df["holding_herf"] = mdd_df["holding_herf"]
-mdd_df["bundle"] = np.log(mdd_df["bundle"] + 1)
-## Volume
+mdd_df["bundle"] = mdd_df["bundle"]
 mdd_df["transfer_amount"] = mdd_df["transfer_amount"] / 206900000
+
+## Volume
 mdd_df["max_same_txn"] = np.log(mdd_df["max_same_txn"] / mdd_df["#txn"])
 mdd_df["pos_to_number_of_swaps_ratio"] = np.log(mdd_df["pos_to_number_of_swaps_ratio"])
+
 ## Comments
 mdd_df["unique_replies"] = np.log(mdd_df["unique_replies"] + 1)
 mdd_df["reply_interval_herf"] = mdd_df["reply_interval_herf"]
