@@ -23,12 +23,12 @@ FREQ_DICT = {
 
 
 def asterisk(pval: float) -> str:
-    """Return asterisks based on p-value."""
-    if pval < 0.001:
+    """Return asterisks based on standard significance levels."""
+    if pval < 0.01:
         return "***"
-    elif pval < 0.01:
-        return "**"
     elif pval < 0.05:
+        return "**"
+    elif pval < 0.10:
         return "*"
     else:
         return ""
@@ -36,7 +36,9 @@ def asterisk(pval: float) -> str:
 
 # Render the Latex Table
 def render_latex_table(
-    res_dict: dict[str, float], tab_name: str, x_var_list: list[str]
+    res_dict: dict[str, float],
+    tab_name: str,
+    x_var_list: list[str],
 ) -> str:
     """Render the regression results as a LaTeX table."""
     y_ret_var_name = [FREQ_DICT[k]["ret"] for k in FREQ_DICT]
@@ -58,8 +60,8 @@ def render_latex_table(
             + " & "
             + " & ".join(
                 [
-                    f"{res_dict[x_var][y_var]['coef']:.2f}"
-                    + asterisk(res_dict[x_var][y_var]["coef_pval"])
+                    f"{res_dict[x_var][f"ret_{y_var}"]['coef']:.2f}"
+                    + asterisk(res_dict[x_var][f"ret_{y_var}"]["coef_pval"])
                     for y_var in FREQ_DICT
                 ]
             )
@@ -68,7 +70,7 @@ def render_latex_table(
             + " & "
             + " & ".join(
                 [
-                    f"({res_dict[x_var][y_var]['coef_stderr']:.2f})"
+                    f"({res_dict[x_var][f"ret_{y_var}"]['coef_stderr']:.2f})"
                     for y_var in FREQ_DICT
                 ]
             )
@@ -77,8 +79,8 @@ def render_latex_table(
             + "Constant & "
             + " & ".join(
                 [
-                    f"{res_dict[x_var][y_var]['con']:.2f}"
-                    + asterisk(res_dict[x_var][y_var]["con_pval"])
+                    f"{res_dict[x_var][f"ret_{y_var}"]['con']:.2f}"
+                    + asterisk(res_dict[x_var][f"ret_{y_var}"]["con_pval"])
                     for y_var in FREQ_DICT
                 ]
             )
@@ -86,18 +88,23 @@ def render_latex_table(
             # Constants Std Err
             + " & "
             + " & ".join(
-                [f"({res_dict[x_var][y_var]['con_stderr']:.2f})" for y_var in FREQ_DICT]
+                [
+                    f"({res_dict[x_var][f"ret_{y_var}"]['con_stderr']:.2f})"
+                    for y_var in FREQ_DICT
+                ]
             )
             # Observation
             + " \\\\\n"
             + "Observation & "
             + " & ".join(
-                [f"{res_dict[x_var][y_var]['obs']:.0f}" for y_var in FREQ_DICT]
+                [f"{res_dict[x_var][f"ret_{y_var}"]['obs']:.0f}" for y_var in FREQ_DICT]
             )
             + " \\\\\n"
             # R-squared
             + "Overall $R^2$ & "
-            + " & ".join([f"{res_dict[x_var][y_var]['r2']:.2f}" for y_var in FREQ_DICT])
+            + " & ".join(
+                [f"{res_dict[x_var][f"ret_{y_var}"]['r2']:.2f}" for y_var in FREQ_DICT]
+            )
         )
         latex_str += " \\\\\n"
         latex_str += "\\hline\n"
@@ -136,8 +143,8 @@ mdd_df["dev_sell"] = mdd_df["dev_sell"]
 
 
 # Dependency variables
-for k in FREQ_DICT:
-    mdd_df[k] = np.log(mdd_df[k] + 1)
+for y_var in FREQ_DICT:
+    mdd_df[f"ret_{y_var}"] = np.log(mdd_df[f"ret_{y_var}"] + 1)
 
 # Collect regression results
 for tab, x_var_info in NAMING_DICT.items():
@@ -146,10 +153,10 @@ for tab, x_var_info in NAMING_DICT.items():
         res_dict[x_var] = {}
         for y_var in FREQ_DICT:
             X = sm.add_constant(mdd_df[x_var])
-            y = mdd_df[y_var]
+            y = mdd_df[f"ret_{y_var}"]
             model = sm.OLS(y, X).fit()
             pval = model.pvalues[x_var]
-            res_dict[x_var][y_var] = {
+            res_dict[x_var][f"ret_{y_var}"] = {
                 "coef": model.params[x_var],
                 "coef_stderr": model.bse[x_var],
                 "coef_pval": model.pvalues[x_var],

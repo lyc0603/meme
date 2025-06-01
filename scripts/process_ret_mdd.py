@@ -51,11 +51,11 @@ for pool in tqdm(
     mdd_df = pd.DataFrame(
         {
             **{
-                name: meme.get_ret_before(info["freq"], info["before"])
+                f"ret_{name}": meme.get_ret_before(info["freq"], info["before"])
                 for name, info in FREQ_DICT.items()
             },
             **{
-                name: meme.get_mdd(info["freq"], info["before"])
+                f"mdd_{name}": meme.get_mdd(info["freq"], info["before"])
                 for name, info in FREQ_DICT.items()
             },
             **{
