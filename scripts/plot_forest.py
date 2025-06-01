@@ -13,7 +13,7 @@ plt.figure(figsize=(7, 3.5))
 
 # Load and preprocess data
 processed_path = Path(PROCESSED_DATA_PATH)
-mdd_path = processed_path / "mdd.csv"
+mdd_path = processed_path / "ret.csv"
 mdd_df = pd.read_csv(mdd_path)
 
 mdd_df["duration"] = np.log(mdd_df["duration"])
@@ -23,8 +23,11 @@ mdd_df["unique_transfer"] = np.log(mdd_df["unique_transfer"] + 1)
 # mdd_df["dev_transfer_amount"] = mdd_df["dev_transfer_amount"] / (
 #     1_000_000_000 - 206_900_000
 # )
-mdd_df["max_same_txn"] = np.log(mdd_df["max_same_txn"] / mdd_df["total_txn"])
-
+# mdd_df["max_same_txn"] = np.log(mdd_df["max_same_txn"] / mdd_df["total_txn"])
+# mdd_df["pos_to_number_of_swaps_ratio"] = np.log(mdd_df["pos_to_number_of_swaps_ratio"])
+# mdd_df["Unique Repliers"] = np.log(mdd_df["Unique Repliers"] + 1)
+# mdd_df["Unique Replies"] = np.log(mdd_df["Unique Replies"] + 1)
+# mdd_df["Non-Swapper Repliers"] = np.log(mdd_df["Unique Repliers"] + 1)
 
 FREQ_DICT = {
     "1 Min": {"freq": "1min", "before": 1},
@@ -46,12 +49,19 @@ NAMING_DICT = {
     # "in_degree_herf": "In Degree HERF",
     # "degree": "Degree",
     # "transfer_amount": "Transfer Amount",
-    "dev_transfer": "Transfer Dev",
-    "dev_txn": "Swap Dev",
+    # "dev_transfer": "Transfer Dev",
+    # "dev_txn": "Swap Dev",
+    "dev_buy": "Buy Dev",
+    "dev_sell": "Sell Dev",
     # "dev_transfer_amount": "Transfer Amount Dev",
-    "bundle": "Bundle HERF",
+    # "bundle": "Bundle HERF",
     # "txn_per_s": "Txn per Second",
-    "max_same_txn": "Max Same Txn",
+    # "max_same_txn": "Max Same Txn",
+    # "pos_to_number_of_swaps_ratio": "pos_to_number_of_swaps_ratio",
+    # "Unique Replies": "Unique Replies",
+    # "Reply Interval Herfindahl": "Reply Interval Herfindahl",
+    # "Unique Repliers": "Unique Repliers",
+    # "Non-Swapper Repliers": "Non-Swapper Repliers",
 }
 
 # plot the heatmap of the correlation matrix coefficients
@@ -134,7 +144,7 @@ plt.legend(
 )
 plt.tight_layout()
 plt.savefig(
-    FIGURE_PATH / "forest_plot_mdd.pdf",
+    FIGURE_PATH / "forest_plot_ret.pdf",
     dpi=300,
 )
 plt.show()

@@ -1,5 +1,7 @@
 """Class to fetch Solana data from the Solana API."""
 
+import time
+import random
 import argparse
 import json
 import os
@@ -10,12 +12,13 @@ from pathlib import Path
 from typing import Any, Iterable, Literal, Optional
 
 import dotenv
+import requests
 from flipside import Flipside
 from tenacity import retry, stop_after_attempt, wait_exponential
 from tqdm import tqdm
 
-from environ.constants import DATA_PATH, PROCESSED_DATA_PATH
-from environ.data_class import Swap, Txn, Transfer
+from environ.constants import DATA_PATH, HEADERS, PROCESSED_DATA_PATH
+from environ.data_class import Swap, Transfer, Txn
 
 dotenv.load_dotenv()
 FLIPSIDE_API_KEY = os.getenv("FLIPSIDE_API")
@@ -159,6 +162,59 @@ class SolanaFetcher:
             page_number=page_number,
         )
 
+    @default_retry
+    def fetch_reply(
+        self,
+        token_address: str | int | Any,
+        limit: int,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """Fetch replies from the pump.fun for a given token address."""
+
+        url = (
+            f"https://frontend-api-v3.pump.fun/replies/{token_address}"
+            f"?limit={limit}&offset={offset}"
+            "&user=B3vZuHWgsQqLctSvkexF1TzfBmo8EKAqGJpqvZwbeREH"
+        )
+        return requests.get(
+            url,
+            headers=HEADERS,
+            timeout=60,
+        ).json()
+
+    def fetch_replies(
+        self,
+        save_path: Path = DATA_PATH / "solana" / "raydium" / "reply",
+    ) -> None:
+        """Fetch replies from the pump.fun for all tokens in the pool."""
+
+        for token_address, _ in tqdm(
+            self.parse_task(save_path), desc="Fetching Replies"
+        ):
+            data_lst = []
+            offset = 0
+            has_more = True
+
+            while has_more:
+                try:
+                    time.sleep(random.uniform(3, 4))
+                    data = self.fetch_reply(token_address, 1000, offset)
+                    data_lst.extend(data["replies"])
+                    offset += len(data["replies"])
+                    if data["hasMore"] is False:
+                        has_more = False
+                except Exception as e:
+                    print(f"Error fetching replies for {token_address}: {e}")
+                    break
+
+            with open(
+                save_path / f"{token_address}.jsonl",
+                "w",
+                encoding="utf-8",
+            ) as f:
+                for row in data_lst:
+                    f.write(json.dumps(row) + "\n")
+
     def fetch(self, query: str, save_path: Path) -> Any:
         """Fetch transactions before 12 hours since the migration."""
 
@@ -301,7 +357,7 @@ def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
                 str(pool_info["launch_time"]), "%Y-%m-%dT%H:%M:%S.%fZ"
             ).timestamp()
         )
-        # processed the creation time data
+        # processed the creation data
         with open(
             PROCESSED_DATA_PATH / "creation" / category / f"{token_add}.json",
             "w",
@@ -313,6 +369,7 @@ def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
                     "launch_time": launch_ts,
                     "token_creator": pool_info["token_creator"],
                     "pumpfun_pool_address": pool_info["pumpfun_pool_address"],
+                    "launch_tx_id": pool_info["launch_tx_id"],
                 },
                 f,
                 indent=4,
@@ -487,13 +544,16 @@ if __name__ == "__main__":
     #     timestamp="2025-01-17 14:01:48",
     #     task_query=MIGRATION_QUERY,
     # )
-    # solana_fetcher.fetch_task(
-    #     MIGRATION_QUERY,
-    #     "2025-01-17 14:01:48",
-    #     1000,
-    #     DATA_PATH / "solana" / "raydium.jsonl",
-    # )
+    # # solana_fetcher.fetch_task(
+    # #     MIGRATION_QUERY,
+    # #     "2025-01-17 14:01:48",
+    # #     1000,
+    # #     DATA_PATH / "solana" / "raydium.jsonl",
+    # # )
     # # solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
     # # solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
+    # solana_fetcher.fetch_replies(
+    #     save_path=DATA_PATH / "solana" / "raydium" / "reply",
+    # )
     for category in ["raydium"]:
         process_txn(category)

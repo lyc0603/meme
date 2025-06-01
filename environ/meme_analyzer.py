@@ -12,7 +12,12 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from environ.constants import NATIVE_ADDRESS_DICT, PROCESSED_DATA_PATH, TRUMP_BLOCK
+from environ.constants import (
+    NATIVE_ADDRESS_DICT,
+    PROCESSED_DATA_PATH,
+    DATA_PATH,
+    TRUMP_BLOCK,
+)
 from environ.data_class import NewTokenPool, Swap
 from environ.db import fetch_native_pool_since_block
 from environ.sol_fetcher import import_pool
@@ -21,9 +26,12 @@ SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 MIGATOR = "39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg"
 
 
-def compute_herfindahl(var_dict: dict) -> float:
+def compute_herfindahl(var_dict: list | dict) -> float:
     """Compute Herfindahl index given a  dictionary"""
-    values = np.array(list(var_dict.values()))
+    if isinstance(var_dict, list):
+        values = np.array(var_dict)
+    else:
+        values = np.array(list(var_dict.values()))
     if values.sum() == 0:
         return 0.0
     normalized = values / values.sum()
@@ -40,10 +48,16 @@ class MemeAnalyzer:
         self.new_token_pool = new_token_pool
         self.txn = self._load_pickle("txn")
         self.transfer = self._load_pickle("transfer")
-        self.block_created_time, self.launch_time, self.creator, self.pool_add = (
-            self._load_creation()
-        )
-        self.dev_txn = 0
+        self.reply = self._load_reply()
+        (
+            self.block_created_time,
+            self.launch_time,
+            self.creator,
+            self.pool_add,
+            self.launch_txn_id,
+        ) = self._load_creation()
+        self.dev_buy = 0
+        self.dev_sell = 0
         self.dev_transfer = 0
         self.dev_transfer_amount = 0
         self.non_swap_transfer_hash = self._build_non_swap_transfer()
@@ -52,6 +66,7 @@ class MemeAnalyzer:
             self.block_created_time - self.pre_prc_date_df.index.min()
         ).total_seconds()
         self.swappers = self._build_swappers()
+        self.reply_list = self._build_reply_list()
 
     def _load_pickle(self, attr: str):
         path = (
@@ -61,7 +76,9 @@ class MemeAnalyzer:
         with open(path, "rb") as f:
             return pickle.load(f)
 
-    def _load_creation(self) -> tuple[datetime.datetime, datetime.datetime, str, str]:
+    def _load_creation(
+        self,
+    ) -> tuple[datetime.datetime, datetime.datetime, str, str, str]:
         """Method to load the creation time of the meme token"""
         path = (
             f"{PROCESSED_DATA_PATH}/creation/{self.new_token_pool.chain}/"
@@ -69,17 +86,24 @@ class MemeAnalyzer:
         )
         with open(path, "r", encoding="utf-8") as f:
             file = json.load(f)
-            creation_data = file["created_time"]
-            lauch_time = file["launch_time"]
-            creator_address = file["token_creator"]
-            pool_adress = file["pumpfun_pool_address"]
 
         return (
-            datetime.datetime.fromtimestamp(creation_data, UTC),
-            lauch_time,
-            creator_address,
-            pool_adress,
+            datetime.datetime.fromtimestamp(file["created_time"], UTC),
+            file["launch_time"],
+            file["token_creator"],
+            file["pumpfun_pool_address"],
+            file["launch_tx_id"],
         )
+
+    def _load_reply(self) -> list:
+        """Method to load the reply of the meme token"""
+        path = (
+            f"{DATA_PATH}/solana/{self.new_token_pool.chain}/reply/"
+            f"{self.new_token_pool.pool_add}.jsonl"
+        )
+        with open(path, "r", encoding="utf-8") as f:
+            file = f.readlines()
+            return [json.loads(line) for line in file]
 
     def _build_non_swap_transfer(self) -> set[str]:
         """Method to get the unique non-swap transfers of the meme token"""
@@ -93,8 +117,12 @@ class MemeAnalyzer:
         for txn in self.txn:
             non_swap_transfers.discard(txn.txn_hash)
 
-            if self.creator == txn.maker:
-                self.dev_txn = 1
+            if (self.creator == txn.maker) & (txn.txn_hash != self.launch_txn_id):
+                match txn.acts[0].typ:
+                    case "Buy":
+                        self.dev_buy = 1
+                    case "Sell":
+                        self.dev_sell = 1
 
         for transfer in self.transfer:
             if transfer.txn_hash in non_swap_transfers and self.creator in [
@@ -145,6 +173,22 @@ class MemeAnalyzer:
             swapers[swap["maker"]].append(swap)
         return swapers
 
+    def _build_reply_list(self) -> list[tuple[str, datetime.datetime]]:
+        """Method to build the reply dictionary of the meme token"""
+        reply_list = []
+        for reply in self.reply:
+            time = datetime.datetime.fromtimestamp(
+                reply["timestamp"] / 1000, tz=timezone.utc
+            )
+            if time <= self.block_created_time:
+                reply_list.append(
+                    (
+                        reply["user"],
+                        time,
+                    )
+                )
+        return sorted(reply_list, key=lambda x: x[1])
+
     def get_acts(self, act: type) -> list:
         """Method to get the swap transaction of the meme token"""
         acts_list = []
@@ -164,6 +208,30 @@ class MemeAnalyzer:
             )
         acts_list.sort(key=lambda x: x["date"])
         return acts_list
+
+    # Metrics for Bot
+    def get_unqiue_repliers(self) -> int:
+        """Method to get the unique repliers of the meme token"""
+        return len(set([_[0] for _ in self.reply_list]))
+
+    def get_reply_interval_herf(self) -> float:
+        """Method to get the Herfindahl index of the meme token"""
+
+        interval_list = []
+
+        for idx, (_, time) in enumerate(self.reply_list):
+            if idx == 0:
+                previous_reply_time = time
+            else:
+                interval_list.append((time - previous_reply_time).total_seconds())
+        return compute_herfindahl(interval_list)
+
+    def get_non_swapper_replier_num(self) -> int:
+        """Method to get the number of non-swapper repliers of the meme token"""
+        non_swapper_repliers = set([_[0] for _ in self.reply_list]) - set(
+            self.swappers.keys()
+        )
+        return len(non_swapper_repliers)
 
     # Metrics for Meme Token Analysis
     def get_block_bundle_herf(self) -> float:
@@ -187,6 +255,22 @@ class MemeAnalyzer:
             same_txn_list.append(Counter(txn_amount_list).most_common(1)[0][1])
 
         return max(same_txn_list) if same_txn_list else 0
+
+    def get_pos_to_number_of_swaps_ratio(self) -> float:
+        """Method to get the ratio of the number of positions to the number of swaps"""
+
+        pos_to_number_of_swaps_dict = defaultdict(list)
+        for swap in self.get_acts(Swap):
+            last_act = swap["acts"][list(swap["acts"].keys())[-1]]
+            if last_act.typ == "Buy":
+                pos_to_number_of_swaps_dict[swap["maker"]].append(last_act.base)
+            else:
+                pos_to_number_of_swaps_dict[swap["maker"]].append(-last_act.base)
+        pos_to_number_of_swaps = {
+            k: (len(v) / (np.abs(sum(v)) + 1))
+            for k, v in pos_to_number_of_swaps_dict.items()
+        }
+        return np.mean(list(pos_to_number_of_swaps.values()))
 
     def get_non_swap_transfer_amount(self) -> int:
         """Method to get the unique non-swap transfers of the meme token"""
@@ -228,27 +312,27 @@ class MemeAnalyzer:
                 G.add_edge(transfer.from_, transfer.to, weight=transfer.value)
 
         pos = nx.spring_layout(G)
-        plt.figure(figsize=(10, 7))
-        # color the dev transfer in red
-        for node in G.nodes:
-            if node == self.creator:
-                G.nodes[node]["color"] = "red"
-            else:
-                G.nodes[node]["color"] = "skyblue"
-        node_colors = [G.nodes[node]["color"] for node in G.nodes]
-        edge_widths = [
-            G[u][v]["weight"] / (1_000_000_00 - 206_900_00) for u, v in G.edges
-        ]
-        nx.draw(
-            G,
-            pos,
-            with_labels=True,
-            node_color=node_colors,
-            edge_color="gray",
-            width=edge_widths,
-            alpha=0.7,
-        )
-        plt.show()
+        # plt.figure(figsize=(10, 7))
+        # # color the dev transfer in red
+        # for node in G.nodes:
+        #     if node == self.creator:
+        #         G.nodes[node]["color"] = "red"
+        #     else:
+        #         G.nodes[node]["color"] = "skyblue"
+        # node_colors = [G.nodes[node]["color"] for node in G.nodes]
+        # edge_widths = [
+        #     G[u][v]["weight"] / (1_000_000_00 - 206_900_00) for u, v in G.edges
+        # ]
+        # nx.draw(
+        #     G,
+        #     pos,
+        #     with_labels=True,
+        #     node_color=node_colors,
+        #     edge_color="gray",
+        #     width=edge_widths,
+        #     alpha=0.7,
+        # )
+        # plt.show()
 
         # out_degree_centrality = nx.out_degree_centrality(G)
         # average_out_degree_centrality = np.mean(list(out_degree_centrality.values()))
@@ -438,13 +522,19 @@ if __name__ == "__main__":
                 # f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
                 # # f"Non-Swap Transfer Graph Out Herfindahl: {out_deg}, "
                 # # f"Non-Swap Transfer Graph In Herfindahl: {in_deg}",
-                f"Degree: {meme.analyze_non_swap_transfer_graph()}",
+                # f"Degree: {meme.analyze_non_swap_transfer_graph()}",
                 # f"Transfer amount: {meme.get_non_swap_transfer_amount()}",
-                # f"Dev Txn: {meme.dev_txn}, "
+                f"Dev Buy: {meme.dev_buy}, ",
+                f"Dev Sell: {meme.dev_sell}, ",
                 # f"Dev Transfer: {meme.dev_transfer}",
                 # f"Dev Transfer Amount: {meme.dev_transfer_amount}",
-                f"Return: {meme.get_ret_before(freq='1min', before=1) * 100:.2f}%, ",
-                f"Max Same Txn per Swaper: {meme.get_max_same_txn_per_swaper():.2f}, ",
-                f"Block Bundle Herfindahl: {meme.get_block_bundle_herf()}",
+                # f"Return: {meme.get_ret_before(freq='1min', before=1) * 100:.2f}%, ",
+                # f"Max Same Txn per Swaper: {meme.get_max_same_txn_per_swaper():.2f}, ",
+                # f"Block Bundle Herfindahl: {meme.get_block_bundle_herf()}",
+                # f"Pos to Number of Swaps Ratio: {meme.get_pos_to_number_of_swaps_ratio()}",
+                # f"Unique Replies: {len(meme.reply_list)}, ",
+                # f"Reply Interval Herfindahl: {meme.get_reply_interval_herf()}",
+                # f"Unique Repliers: {meme.get_unqiue_repliers()}, ",
+                # f"Non-Swapper Repliers: {meme.get_non_swapper_replier_num()}",
             )
             # (meme.get_ret(freq="1min") + 1).cumprod().plot()

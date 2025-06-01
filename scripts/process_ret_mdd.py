@@ -1,19 +1,16 @@
 """Process MDD (Maximum Drawdown) for pools on Raydium."""
 
-import matplotlib.pyplot as plt
 import pandas as pd
 from tqdm import tqdm
 
-
+from environ.constants import PROCESSED_DATA_PATH
 from environ.data_class import NewTokenPool
 from environ.meme_analyzer import MemeAnalyzer
 from environ.sol_fetcher import import_pool
-from environ.constants import PROCESSED_DATA_PATH
 
 CHAIN = "raydium"
 NUM_OF_OBSERVATIONS = 1000
 SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
-plt.rcParams["figure.figsize"] = (6, 4)
 
 mdd_list = []
 
@@ -54,22 +51,38 @@ for pool in tqdm(
     mdd_df = pd.DataFrame(
         {
             **{
+                name: meme.get_ret_before(info["freq"], info["before"])
+                for name, info in FREQ_DICT.items()
+            },
+            **{
                 name: meme.get_mdd(info["freq"], info["before"])
                 for name, info in FREQ_DICT.items()
             },
             **{
+                # Size
                 "duration": meme.migration_duration,
-                "unique_address": meme.get_unique_swapers(),
-                "unique_transfer": len(meme.non_swap_transfer_hash),
+                "#trader": meme.get_unique_swapers(),
+                "#transfer": len(meme.non_swap_transfer_hash),
+                "#txn": len(meme.txn),
+                # Bot
+                ## Bundle Bot
                 "holding_herf": meme.get_holdings_herf(),
-                "dev_transfer": meme.dev_transfer,
-                "dev_txn": meme.dev_txn,
-                # "dev_transfer_amount": meme.dev_transfer_amount,
                 "bundle": meme.get_block_bundle_herf(),
-                # "transfer_amount": meme.get_non_swap_transfer_amount(),
+                "transfer_amount": meme.get_non_swap_transfer_amount(),
                 # "degree": meme.analyze_non_swap_transfer_graph(),
+                ## Volume Bot / Wash Trading Bot
                 "max_same_txn": meme.get_max_same_txn_per_swaper(),
-                "total_txn": len(meme.txn),
+                "pos_to_number_of_swaps_ratio": meme.get_pos_to_number_of_swaps_ratio(),
+                ## Comments Bot
+                "unique_replies": len(meme.reply_list),
+                "reply_interval_herf": meme.get_reply_interval_herf(),
+                "unique_repliers": meme.get_unqiue_repliers(),
+                "non_swapper_repliers": meme.get_non_swapper_replier_num(),
+                # Devs Behavior
+                "dev_transfer": meme.dev_transfer,
+                "dev_buy": meme.dev_buy,
+                "dev_sell": meme.dev_sell,
+                "dev_transfer_amount": meme.dev_transfer_amount,
             },
         },
         index=[0],
@@ -79,6 +92,6 @@ for pool in tqdm(
 
 mdd_df = pd.concat(mdd_list, ignore_index=True)
 mdd_df.to_csv(
-    f"{PROCESSED_DATA_PATH}/mdd.csv",
+    f"{PROCESSED_DATA_PATH}/ret_mdd.csv",
     index=False,
 )
