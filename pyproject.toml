@@ -31,6 +31,7 @@ dependencies = [
     "tenacity==9.0.0",
     "flipside==2.1.0",
     "networkx==3.4.2",
+    "pyfixest==0.29.0"
 ]
 
 [project.optional-dependencies]

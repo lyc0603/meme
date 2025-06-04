@@ -59,10 +59,13 @@ for pool in tqdm(
                 for name, info in FREQ_DICT.items()
             },
             **{
+                # General Information
+                "chain": meme.new_token_pool.chain,
+                "token_address": meme.new_token_pool.pool_add,
                 # Size
                 "duration": meme.migration_duration,
                 "#trader": meme.get_unique_swapers(),
-                "#transfer": len(meme.non_swap_transfer_hash),
+                "#transfer": len(meme.non_swap_transfers),
                 "#txn": len(meme.txn),
                 # Bot
                 ## Bundle Bot

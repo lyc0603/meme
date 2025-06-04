@@ -1,10 +1,8 @@
 """Class to analyze meme token"""
 
 import datetime
-import json
-import pickle
-from collections import defaultdict, Counter
-from datetime import UTC, timezone
+from collections import Counter, defaultdict
+from datetime import timezone
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -12,17 +10,11 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from environ.constants import (
-    NATIVE_ADDRESS_DICT,
-    PROCESSED_DATA_PATH,
-    DATA_PATH,
-    TRUMP_BLOCK,
-)
+from environ.constants import SOL_TOKEN_ADDRESS
 from environ.data_class import NewTokenPool, Swap
-from environ.db import fetch_native_pool_since_block
+from environ.meme_base import MemeBase
 from environ.sol_fetcher import import_pool
 
-SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 MIGATOR = "39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg"
 
 
@@ -38,103 +30,19 @@ def compute_herfindahl(var_dict: list | dict) -> float:
     return np.sum(normalized**2)
 
 
-class MemeAnalyzer:
+class MemeAnalyzer(MemeBase):
     """Class to analyze meme token"""
 
     def __init__(
         self,
         new_token_pool: NewTokenPool,
     ):
-        self.new_token_pool = new_token_pool
-        self.txn = self._load_pickle("txn")
-        self.transfer = self._load_pickle("transfer")
-        self.reply = self._load_reply()
-        (
-            self.block_created_time,
-            self.launch_time,
-            self.creator,
-            self.pool_add,
-            self.launch_txn_id,
-        ) = self._load_creation()
-        self.dev_buy = 0
-        self.dev_sell = 0
-        self.dev_transfer = 0
-        self.dev_transfer_amount = 0
-        self.non_swap_transfer_hash = self._build_non_swap_transfer()
+        super().__init__(new_token_pool)
         self.prc_date_df, self.pre_prc_date_df = self._build_price_df()
         self.migration_duration = (
             self.block_created_time - self.pre_prc_date_df.index.min()
         ).total_seconds()
-        self.swappers = self._build_swappers()
         self.reply_list = self._build_reply_list()
-
-    def _load_pickle(self, attr: str):
-        path = (
-            f"{PROCESSED_DATA_PATH}/{attr}/"
-            f"{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.pkl"
-        )
-        with open(path, "rb") as f:
-            return pickle.load(f)
-
-    def _load_creation(
-        self,
-    ) -> tuple[datetime.datetime, datetime.datetime, str, str, str]:
-        """Method to load the creation time of the meme token"""
-        path = (
-            f"{PROCESSED_DATA_PATH}/creation/{self.new_token_pool.chain}/"
-            f"{self.new_token_pool.pool_add}.json"
-        )
-        with open(path, "r", encoding="utf-8") as f:
-            file = json.load(f)
-
-        return (
-            datetime.datetime.fromtimestamp(file["created_time"], UTC),
-            file["launch_time"],
-            file["token_creator"],
-            file["pumpfun_pool_address"],
-            file["launch_tx_id"],
-        )
-
-    def _load_reply(self) -> list:
-        """Method to load the reply of the meme token"""
-        path = (
-            f"{DATA_PATH}/solana/{self.new_token_pool.chain}/reply/"
-            f"{self.new_token_pool.pool_add}.jsonl"
-        )
-        with open(path, "r", encoding="utf-8") as f:
-            file = f.readlines()
-            return [json.loads(line) for line in file]
-
-    def _build_non_swap_transfer(self) -> set[str]:
-        """Method to get the unique non-swap transfers of the meme token"""
-        non_swap_transfers = set()
-        for transfer in self.transfer:
-            if (
-                transfer.date.replace(tzinfo=timezone.utc) < self.block_created_time
-            ) & (MIGATOR not in [transfer.from_, transfer.to]):
-                non_swap_transfers.add(transfer.txn_hash)
-
-        for txn in self.txn:
-            non_swap_transfers.discard(txn.txn_hash)
-
-            if (self.creator == txn.maker) & (txn.txn_hash != self.launch_txn_id):
-                match txn.acts[0].typ:
-                    case "Buy":
-                        self.dev_buy = 1
-                    case "Sell":
-                        self.dev_sell = 1
-
-        for transfer in self.transfer:
-            if transfer.txn_hash in non_swap_transfers and self.creator in [
-                transfer.from_,
-                transfer.to,
-            ]:
-                self.dev_transfer = 1
-
-                if transfer.to == self.creator:
-                    self.dev_transfer_amount += transfer.value
-
-        return non_swap_transfers
 
     def _build_price_df(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Method to build the price DataFrame of the meme token"""
@@ -166,13 +74,6 @@ class MemeAnalyzer:
 
         return prc_date_df, pre_prc_date_df
 
-    def _build_swappers(self) -> dict[str, list]:
-        """Method to get the swapers of the meme token"""
-        swapers = defaultdict(list)
-        for swap in self.get_acts(Swap):
-            swapers[swap["maker"]].append(swap)
-        return swapers
-
     def _build_reply_list(self) -> list[tuple[str, datetime.datetime]]:
         """Method to build the reply dictionary of the meme token"""
         reply_list = []
@@ -188,26 +89,6 @@ class MemeAnalyzer:
                     )
                 )
         return sorted(reply_list, key=lambda x: x[1])
-
-    def get_acts(self, act: type) -> list:
-        """Method to get the swap transaction of the meme token"""
-        acts_list = []
-        for txn in self.txn:
-            acts_dict = {
-                k: v for k, v in sorted(txn.acts.items()) if isinstance(v, act)
-            }
-            if not acts_dict:
-                continue
-            acts_list.append(
-                {
-                    "date": txn.date,
-                    "acts": acts_dict,
-                    "maker": txn.maker,
-                    "block": txn.block,
-                }
-            )
-        acts_list.sort(key=lambda x: x["date"])
-        return acts_list
 
     # Metrics for Bot
     def get_unqiue_repliers(self) -> int:
@@ -277,7 +158,7 @@ class MemeAnalyzer:
 
         transfer_amount = 0
         for transfer in self.transfer:
-            if transfer.txn_hash in self.non_swap_transfer_hash:
+            if transfer.txn_hash in self.non_swap_transfers:
                 transfer_amount += transfer.value
 
         return transfer_amount
@@ -312,27 +193,27 @@ class MemeAnalyzer:
                 G.add_edge(transfer.from_, transfer.to, weight=transfer.value)
 
         pos = nx.spring_layout(G)
-        # plt.figure(figsize=(10, 7))
-        # # color the dev transfer in red
-        # for node in G.nodes:
-        #     if node == self.creator:
-        #         G.nodes[node]["color"] = "red"
-        #     else:
-        #         G.nodes[node]["color"] = "skyblue"
-        # node_colors = [G.nodes[node]["color"] for node in G.nodes]
-        # edge_widths = [
-        #     G[u][v]["weight"] / (1_000_000_00 - 206_900_00) for u, v in G.edges
-        # ]
-        # nx.draw(
-        #     G,
-        #     pos,
-        #     with_labels=True,
-        #     node_color=node_colors,
-        #     edge_color="gray",
-        #     width=edge_widths,
-        #     alpha=0.7,
-        # )
-        # plt.show()
+        plt.figure(figsize=(10, 7))
+        # color the dev transfer in red
+        for node in G.nodes:
+            if node == self.creator:
+                G.nodes[node]["color"] = "red"
+            else:
+                G.nodes[node]["color"] = "skyblue"
+        node_colors = [G.nodes[node]["color"] for node in G.nodes]
+        edge_widths = [
+            G[u][v]["weight"] / (1_000_000_00 - 206_900_00) for u, v in G.edges
+        ]
+        nx.draw(
+            G,
+            pos,
+            with_labels=True,
+            node_color=node_colors,
+            edge_color="gray",
+            width=edge_widths,
+            alpha=0.7,
+        )
+        plt.show()
 
         # out_degree_centrality = nx.out_degree_centrality(G)
         # average_out_degree_centrality = np.mean(list(out_degree_centrality.values()))
@@ -452,68 +333,30 @@ class MemeAnalyzer:
 
 if __name__ == "__main__":
 
-    NUM_OF_OBSERVATIONS = 3
+    NUM_OF_OBSERVATIONS = 100
 
     for chain in [
         # "pumpfun",
         "raydium",
-        # "ethereum",
     ]:
-        for pool in (
-            fetch_native_pool_since_block(
-                chain, TRUMP_BLOCK[chain], pool_number=NUM_OF_OBSERVATIONS
-            )
-            if chain not in ["pumpfun", "raydium"]
-            else import_pool(
-                chain,
-                NUM_OF_OBSERVATIONS,
-            )
+        for pool in import_pool(
+            chain,
+            NUM_OF_OBSERVATIONS,
         ):
-            if chain not in ["pumpfun", "raydium"]:
-                args = pool["args"]
-                meme = MemeAnalyzer(
-                    NewTokenPool(
-                        token0=args["token0"],
-                        token1=args["token1"],
-                        fee=args["fee"],
-                        pool_add=args["pool"],
-                        block_number=pool["blockNumber"],
-                        chain=chain,
-                        base_token=(
-                            args["token0"]
-                            if args["token0"] != NATIVE_ADDRESS_DICT[chain]
-                            else args["token1"]
-                        ),
-                        quote_token=(
-                            args["token1"]
-                            if args["token1"] != NATIVE_ADDRESS_DICT[chain]
-                            else args["token0"]
-                        ),
-                        txns={},
-                    ),
-                )
-            else:
-                meme = MemeAnalyzer(
-                    NewTokenPool(
-                        token0=SOL_TOKEN_ADDRESS,
-                        token1=pool["token_address"],
-                        fee=0,
-                        pool_add=pool["token_address"],
-                        block_number=0,
-                        chain=chain,
-                        base_token=pool["token_address"],
-                        quote_token=SOL_TOKEN_ADDRESS,
-                        txns={},
-                    ),
-                )
-            # if len(meme.get_acts(Swap)) > 2:
-            # if (
-            #     pool["token_address"]
-            #     == "3quAiFqum25S7NtyDgzq8V3vhWB6U1v6GtWWNaNfpump"
-            # ):
-
+            meme = MemeAnalyzer(
+                NewTokenPool(
+                    token0=SOL_TOKEN_ADDRESS,
+                    token1=pool["token_address"],
+                    fee=0,
+                    pool_add=pool["token_address"],
+                    block_number=0,
+                    chain=chain,
+                    base_token=pool["token_address"],
+                    quote_token=SOL_TOKEN_ADDRESS,
+                    txns={},
+                ),
+            )
             # out_deg, in_deg = meme.analyze_non_swap_transfer_graph()
-
             print(
                 # f"Pool: {pool['token_address']}, "
                 f"Max Drawdown: {meme.get_mdd(freq="1min", before=1) * 100:.2f}%, "
@@ -522,7 +365,7 @@ if __name__ == "__main__":
                 # f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
                 # # f"Non-Swap Transfer Graph Out Herfindahl: {out_deg}, "
                 # # f"Non-Swap Transfer Graph In Herfindahl: {in_deg}",
-                # f"Degree: {meme.analyze_non_swap_transfer_graph()}",
+                f"Degree: {meme.analyze_non_swap_transfer_graph()}",
                 # f"Transfer amount: {meme.get_non_swap_transfer_amount()}",
                 f"Dev Buy: {meme.dev_buy}, ",
                 f"Dev Sell: {meme.dev_sell}, ",
