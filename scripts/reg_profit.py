@@ -3,13 +3,12 @@
 import pandas as pd
 import statsmodels.api as sm
 from pyfixest.estimation import feols
-from tqdm import tqdm
 
 from environ.constants import (
     PROCESSED_DATA_PATH,
-    SOL_TOKEN_ADDRESS,
     TABLE_PATH,
     NAMING_DICT,
+    PROFIT_NAMING_DICT,
 )
 
 x_var_list = [
@@ -30,16 +29,6 @@ x_var_creator_interaction = [
 
 y_var = "profit"
 
-PROFIT_NAMING_DICT = {
-    "profit": "$\\text{Profit}_{i}$",
-    "creator": "$\\text{Creator}_{i}$",
-}
-
-
-SIMPLE_X_NAMING_DICT = {
-    "creator": "$\\text{Creator}_{i}$",
-}
-
 
 # Remove the grouping in NAMING_DICT to create a flat dictionary
 flat_naming_dict = {
@@ -48,11 +37,11 @@ flat_naming_dict = {
     for sub_key, sub_value in category.items()
 }
 
-PROFIT_NAMING_DICT = {
-    "profit": "$\\text{Profit}_{i}$",
+profit_naming_dict = {
+    **PROFIT_NAMING_DICT,
     **{
         f"{k}{stats}": v if stats == "_coef" else ""
-        for k, v in SIMPLE_X_NAMING_DICT.items()
+        for k, v in PROFIT_NAMING_DICT.items()
         for stats in ["_coef", "_stderr"]
     },
     **{
@@ -96,7 +85,7 @@ def render_latex_table(
         + r"\multicolumn{"
         + str(col_len - 1)
         + r"}{c}{"
-        + PROFIT_NAMING_DICT[y_var]
+        + profit_naming_dict[y_var]
         + r"}"
         + r" \\"
     )
@@ -109,7 +98,7 @@ def render_latex_table(
     latex_str += r"\hline" + "\n"
     # Single variable regression
     for x_var_name, x_var_info in res_dict.items():
-        latex_str += f"{PROFIT_NAMING_DICT[x_var_name]}"
+        latex_str += f"{profit_naming_dict[x_var_name]}"
         for stats in x_var_info:
             latex_str += f"& {stats} "
         latex_str += "\\\\\n"

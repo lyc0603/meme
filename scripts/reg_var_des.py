@@ -1,6 +1,6 @@
 """Script for regression variable description"""
 
-from environ.constants import TABLE_PATH, NAMING_DICT
+from environ.constants import TABLE_PATH, NAMING_DICT, PROFIT_NAMING_DICT
 
 DES_DICT = {
     # Size
@@ -24,14 +24,27 @@ DES_DICT = {
     "dev_transfer": "Dummy variable equal to 1 if the meme coin's creator made transfers with other wallet, 0 otherwise.",
     "dev_buy": "Dummy variable equal to 1 if the meme coin's creator made buy transactions, 0 otherwise.",
     "dev_sell": "Dummy variable equal to 1 if the meme coin's creator made sell transactions, 0 otherwise.",
+    # Profit
+    "profit": "Each trader's profit from a given meme coin within 12 hours after its migration",
+    "creator": "Dummy variable equal to 1 if the trader is the meme coin's creator, 0 otherwise.",
+}
+
+flat_naming_dict = {
+    sub_key: sub_value
+    for category in NAMING_DICT.values()
+    for sub_key, sub_value in category.items()
+}
+
+naming_dict = {
+    **flat_naming_dict,
+    **PROFIT_NAMING_DICT,
 }
 
 latex_str = "\\begin{tabularx}{\\textwidth}{lX}\\hline\n"
 latex_str += "Variable & Description \\\\\n\\hline\n"
 
-for var_type, var_info in NAMING_DICT.items():
-    for var, var_name in var_info.items():
-        latex_str += f"{var_name} & {DES_DICT[var]} \\\\\n"
+for var, var_name in naming_dict.items():
+    latex_str += f"{var_name} & {DES_DICT[var]} \\\\\n"
 
 latex_str += "\\hline\n\\end{tabularx}\n"
 

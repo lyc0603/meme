@@ -50,6 +50,11 @@ NAMING_DICT = {
     },
 }
 
+PROFIT_NAMING_DICT = {
+    "profit": "$\\text{Profit}$",
+    "creator": "$\\text{Creator}$",
+}
+
 # before block for the TRUMP block 2025-01-17 14:01:48
 TRUMP_BLOCK = {
     "base": 25166580,
