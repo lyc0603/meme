@@ -3,7 +3,7 @@
 import datetime
 from collections import Counter, defaultdict
 from datetime import timezone
-from typing import Optional
+from typing import Optional, Any
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -44,6 +44,7 @@ class MemeAnalyzer(MemeBase):
         ).total_seconds()
         self.reply_list = self._build_reply_list()
 
+    # Build-in Methods
     def _build_price_df(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Method to build the price DataFrame of the meme token"""
         prc_date_dict = {
@@ -90,6 +91,31 @@ class MemeAnalyzer(MemeBase):
                 )
         return sorted(reply_list, key=lambda x: x[1])
 
+    # Dpendent Variables
+    def check_death(self, freq: str, before: Optional[int]) -> int:
+        """Method to check if the meme token is dead"""
+
+        if before is not None:
+            match freq:
+                case "1min":
+                    before = before * 60
+                case "1h":
+                    before = before * 3600
+
+        return int(
+            len(
+                [
+                    _
+                    for _ in self.get_acts(Swap)
+                    if (
+                        _["date"].replace(tzinfo=timezone.utc) - self.block_created_time
+                    ).total_seconds()
+                    > before
+                ]
+            )
+            == 0
+        )
+
     # Metrics for Bot
     def get_unqiue_repliers(self) -> int:
         """Method to get the unique repliers of the meme token"""
@@ -115,6 +141,15 @@ class MemeAnalyzer(MemeBase):
         return len(non_swapper_repliers)
 
     # Metrics for Meme Token Analysis
+    def get_txn_same_block(self) -> dict[str, list[dict[str, Any]]]:
+        """Method to get the transactions in the same block"""
+        txn_same_block = defaultdict(list)
+        for swap in self.get_acts(Swap):
+            if swap["date"].replace(tzinfo=timezone.utc) < self.block_created_time:
+                block = swap["block"]
+                txn_same_block[block].append(swap)
+        return {k: v for k, v in txn_same_block.items() if len(v) > 1}
+
     def get_block_bundle_herf(self) -> float:
         """Method to get the Herfindahl index of the block bundle of the meme token"""
         return compute_herfindahl(
@@ -333,7 +368,9 @@ class MemeAnalyzer(MemeBase):
 
 if __name__ == "__main__":
 
-    NUM_OF_OBSERVATIONS = 100
+    lst = []
+
+    NUM_OF_OBSERVATIONS = 1000
 
     for chain in [
         # "pumpfun",
@@ -357,27 +394,29 @@ if __name__ == "__main__":
                 ),
             )
             # out_deg, in_deg = meme.analyze_non_swap_transfer_graph()
-            print(
-                # f"Pool: {pool['token_address']}, "
-                f"Max Drawdown: {meme.get_mdd(freq="1min", before=1) * 100:.2f}%, "
-                # f"Unique Swapers: {meme.get_unique_swapers()},"
-                # f"Unique Non-Swap Transfers: {len(meme.non_swap_transfer_hash)}, ",
-                # f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
-                # # f"Non-Swap Transfer Graph Out Herfindahl: {out_deg}, "
-                # # f"Non-Swap Transfer Graph In Herfindahl: {in_deg}",
-                f"Degree: {meme.analyze_non_swap_transfer_graph()}",
-                # f"Transfer amount: {meme.get_non_swap_transfer_amount()}",
-                f"Dev Buy: {meme.dev_buy}, ",
-                f"Dev Sell: {meme.dev_sell}, ",
-                # f"Dev Transfer: {meme.dev_transfer}",
-                # f"Dev Transfer Amount: {meme.dev_transfer_amount}",
-                # f"Return: {meme.get_ret_before(freq='1min', before=1) * 100:.2f}%, ",
-                # f"Max Same Txn per Swaper: {meme.get_max_same_txn_per_swaper():.2f}, ",
-                # f"Block Bundle Herfindahl: {meme.get_block_bundle_herf()}",
-                # f"Pos to Number of Swaps Ratio: {meme.get_pos_to_number_of_swaps_ratio()}",
-                # f"Unique Replies: {len(meme.reply_list)}, ",
-                # f"Reply Interval Herfindahl: {meme.get_reply_interval_herf()}",
-                # f"Unique Repliers: {meme.get_unqiue_repliers()}, ",
-                # f"Non-Swapper Repliers: {meme.get_non_swapper_replier_num()}",
-            )
+            # print(
+            #     # f"Pool: {pool['token_address']}, "
+            #     f"Max Drawdown: {meme.get_mdd(freq="1min", before=1) * 100:.2f}%, "
+            #     # f"Unique Swapers: {meme.get_unique_swapers()},"
+            #     # f"Unique Non-Swap Transfers: {len(meme.non_swap_transfer_hash)}, ",
+            #     # f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
+            #     # # f"Non-Swap Transfer Graph Out Herfindahl: {out_deg}, "
+            #     # # f"Non-Swap Transfer Graph In Herfindahl: {in_deg}",
+            #     f"Degree: {meme.analyze_non_swap_transfer_graph()}",
+            #     # f"Transfer amount: {meme.get_non_swap_transfer_amount()}",
+            #     f"Dev Buy: {meme.dev_buy}, ",
+            #     f"Dev Sell: {meme.dev_sell}, ",
+            #     # f"Dev Transfer: {meme.dev_transfer}",
+            #     # f"Dev Transfer Amount: {meme.dev_transfer_amount}",
+            #     # f"Return: {meme.get_ret_before(freq='1min', before=1) * 100:.2f}%, ",
+            #     # f"Max Same Txn per Swaper: {meme.get_max_same_txn_per_swaper():.2f}, ",
+            #     # f"Block Bundle Herfindahl: {meme.get_block_bundle_herf()}",
+            #     # f"Pos to Number of Swaps Ratio: {meme.get_pos_to_number_of_swaps_ratio()}",
+            #     # f"Unique Replies: {len(meme.reply_list)}, ",
+            #     # f"Reply Interval Herfindahl: {meme.get_reply_interval_herf()}",
+            #     # f"Unique Repliers: {meme.get_unqiue_repliers()}, ",
+            #     # f"Non-Swapper Repliers: {meme.get_non_swapper_replier_num()}",
+            # )
             # (meme.get_ret(freq="1min") + 1).cumprod().plot()
+
+            print(meme.check_death(freq="1h", before=10))

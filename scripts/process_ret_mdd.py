@@ -21,8 +21,8 @@ FREQ_DICT = {
     "15 Mins": {"freq": "1min", "before": 15},
     "30 Mins": {"freq": "1min", "before": 30},
     "1 Hour": {"freq": "1h", "before": 1},
-    "6 Hours": {"freq": "1h", "before": 6},
-    "12 Hours": {"freq": "1h", "before": 12},
+    "5 Hours": {"freq": "1h", "before": 5},
+    "10 Hours": {"freq": "1h", "before": 10},
 }
 
 for pool in tqdm(
@@ -56,6 +56,10 @@ for pool in tqdm(
             },
             **{
                 f"mdd_{name}": meme.get_mdd(info["freq"], info["before"])
+                for name, info in FREQ_DICT.items()
+            },
+            **{
+                f"death_{name}": meme.check_death(info["freq"], info["before"])
                 for name, info in FREQ_DICT.items()
             },
             **{

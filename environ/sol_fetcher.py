@@ -103,7 +103,7 @@ class SolanaFetcher:
         timestamp: str,
         num: int,
         save_path: Path,
-    ) -> Any:
+    ) -> None:
         """Fetch the list of meme coins"""
         res = self.flipside.query(
             query.format(
@@ -125,6 +125,36 @@ class SolanaFetcher:
                 raise ValueError(
                     f"Invalid response type: {type(res.records)}. Expected Iterable."
                 )
+
+    def fetch_personal_transfer(self) -> None:
+        """Fetch personal transfer data."""
+
+        save_path = DATA_PATH / "solana" / self.category / "transfer"
+        os.makedirs(save_path, exist_ok=True)
+
+        for token_address, _ in tqdm(
+            self.parse_task(save_path), desc="Fetching Personal Transfers"
+        ):
+            try:
+                time.sleep(random.uniform(3, 4))
+                data = self.flipside.query(
+                    f"""
+                    SELECT *
+                    FROM solana.core.fact_transfers
+                    WHERE mint = '{token_address}'
+                    ORDER BY block_timestamp ASC;
+                    """
+                )
+
+                with open(
+                    save_path / f"{token_address}.jsonl",
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    for row in data.records:
+                        f.write(json.dumps(row) + "\n")
+            except Exception as e:
+                print(f"Error fetching personal transfers for {token_address}: {e}")
 
     def parse_task(
         self,
@@ -150,15 +180,12 @@ class SolanaFetcher:
     def fetch_data(
         self,
         query: str,
-        token_address: str | int | Any,
-        migration_timestamp: str,
         page_number: int,
+        **query_params: str | int | Any,
     ) -> Any:
         """Fetch transactions before 12 hours since the migration."""
         return self.flipside.query(
-            query.format(
-                token_address=token_address, migration_timestamp=migration_timestamp
-            ),
+            query.format(**query_params),
             page_number=page_number,
         )
 
@@ -232,11 +259,11 @@ class SolanaFetcher:
                     current_page_number += 1
                     self.cache = self.fetch_data(
                         query,
+                        current_page_number,
                         token_address,
                         datetime.strptime(
                             str(block_timestamp), "%Y-%m-%dT%H:%M:%S.%fZ"
                         ).strftime("%Y-%m-%d %H:%M:%S"),
-                        current_page_number,
                     )
                     data_lst.extend(self.cache.records)
                     total_pages = self.cache.page.totalPages

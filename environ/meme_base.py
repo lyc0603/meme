@@ -55,7 +55,7 @@ class MemeBase:
 
         return (
             datetime.datetime.fromtimestamp(file["created_time"], UTC),
-            file["launch_time"],
+            datetime.datetime.fromtimestamp(file["launch_time"], UTC),
             file["token_creator"],
             file["pumpfun_pool_address"],
             file["launch_tx_id"],

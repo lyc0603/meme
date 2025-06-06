@@ -17,8 +17,8 @@ FREQ_DICT = {
     "15 Mins": {"ret": "${\it Ret}_{\it 15min}$", "mdd": "${\it MDD}_{\it 15min}$"},
     "30 Mins": {"ret": "${\it Ret}_{\it 30min}$", "mdd": "${\it MDD}_{\it 30min}$"},
     "1 Hour": {"ret": "${\it Ret}_{\it 1h}$", "mdd": "${\it MDD}_{\it 1h}$"},
-    "6 Hours": {"ret": "${\it Ret}_{\it 6h}$", "mdd": "${\it MDD}_{\it 6h}$"},
-    "12 Hours": {"ret": "${\it Ret}_{\it 12h}$", "mdd": "${\it MDD}_{\it 12h}$"},
+    "5 Hours": {"ret": "${\it Ret}_{\it 5h}$", "mdd": "${\it MDD}_{\it 5h}$"},
+    "10 Hours": {"ret": "${\it Ret}_{\it 10h}$", "mdd": "${\it MDD}_{\it 10h}$"},
 }
 
 
@@ -152,8 +152,9 @@ for tab, x_var_info in NAMING_DICT.items():
     for x_var, x_name in x_var_info.items():
         res_dict[x_var] = {}
         for y_var in FREQ_DICT:
-            X = sm.add_constant(mdd_df[x_var])
-            y = mdd_df[f"ret_{y_var}"]
+            reg_df = mdd_df.loc[mdd_df[f"death_{y_var}"] == 0, :].copy()
+            X = sm.add_constant(reg_df[x_var])
+            y = reg_df[f"ret_{y_var}"]
             model = sm.OLS(y, X).fit()
             pval = model.pvalues[x_var]
             res_dict[x_var][f"ret_{y_var}"] = {
