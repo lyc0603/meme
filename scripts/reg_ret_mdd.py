@@ -6,20 +6,9 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 
-from environ.constants import PROCESSED_DATA_PATH, TABLE_PATH, NAMING_DICT
+from environ.constants import PROCESSED_DATA_PATH, TABLE_PATH, NAMING_DICT, FREQ_DICT
 
 mdd_df = pd.read_csv(Path(PROCESSED_DATA_PATH) / "ret_mdd.csv")
-
-FREQ_DICT = {
-    "1 Min": {"ret": "${\it Ret}_{\it 1min}$", "mdd": "${\it MDD}_{\it 1min}$"},
-    "5 Mins": {"ret": "${\it Ret}_{\it 5min}$", "mdd": "${\it MDD}_{\it 5min}$"},
-    "10 Mins": {"ret": "${\it Ret}_{\it 10min}$", "mdd": "${\it MDD}_{\it 10min}$"},
-    "15 Mins": {"ret": "${\it Ret}_{\it 15min}$", "mdd": "${\it MDD}_{\it 15min}$"},
-    "30 Mins": {"ret": "${\it Ret}_{\it 30min}$", "mdd": "${\it MDD}_{\it 30min}$"},
-    "1 Hour": {"ret": "${\it Ret}_{\it 1h}$", "mdd": "${\it MDD}_{\it 1h}$"},
-    "5 Hours": {"ret": "${\it Ret}_{\it 5h}$", "mdd": "${\it MDD}_{\it 5h}$"},
-    "10 Hours": {"ret": "${\it Ret}_{\it 10h}$", "mdd": "${\it MDD}_{\it 10h}$"},
-}
 
 
 def asterisk(pval: float) -> str:
@@ -131,6 +120,14 @@ mdd_df["max_same_txn"] = np.log(mdd_df["max_same_txn"] / mdd_df["#txn"])
 mdd_df["pos_to_number_of_swaps_ratio"] = np.log(mdd_df["pos_to_number_of_swaps_ratio"])
 
 ## Comments
+for _ in [
+    "unique_replies",
+    "unique_repliers",
+    "non_swapper_repliers",
+]:
+    mdd_df[f"{_}_1"] = mdd_df[_]
+    mdd_df[f"{_}_2"] = mdd_df[_] ** 2
+
 mdd_df["unique_replies"] = np.log(mdd_df["unique_replies"] + 1)
 mdd_df["reply_interval_herf"] = mdd_df["reply_interval_herf"]
 mdd_df["unique_repliers"] = np.log(mdd_df["unique_repliers"] + 1)

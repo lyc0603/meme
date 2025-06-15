@@ -38,10 +38,16 @@ NAMING_DICT = {
         "pos_to_number_of_swaps_ratio": "$\\text{Pos/\#Swaps}$",
     },
     "comment_bot": {
-        "unique_replies": "$\#\\text{Replies}$",
         "reply_interval_herf": "$\\text{HHI}_{\\text{Interval}}$",
-        "unique_repliers": "$\#\\text{Repliers}$",
-        "non_swapper_repliers": "$\#\\text{Non-Trader Repliers}$",
+        "unique_replies": "$\\text{ln}\#\\text{Replies}$",
+        "unique_repliers": "$\\text{ln}\#\\text{Repliers}$",
+        "non_swapper_repliers": "$\\text{ln}\#\\text{Non-Trader Repliers}$",
+        "unique_replies_1": "$\#\\text{Replies}$",
+        "unique_repliers_1": "$\#\\text{Repliers}$",
+        "non_swapper_repliers_1": "$\#\\text{Non-Trader Repliers}$",
+        "unique_replies_2": "$\#\\text{Replies}^{2}$",
+        "unique_repliers_2": "$\#\\text{Repliers}^{2}$",
+        "non_swapper_repliers_2": "$\#\\text{Non-Trader Repliers}^{2}$",
     },
     "dev": {
         "dev_transfer": "$\\text{Dev Transfer}$",
@@ -53,6 +59,17 @@ NAMING_DICT = {
 PROFIT_NAMING_DICT = {
     "profit": "$\\text{Profit}$",
     "creator": "$\\text{Creator}$",
+}
+
+FREQ_DICT = {
+    "1 Min": {"ret": "${\it Ret}_{\it 1min}$", "mdd": "${\it MDD}_{\it 1min}$"},
+    "5 Mins": {"ret": "${\it Ret}_{\it 5min}$", "mdd": "${\it MDD}_{\it 5min}$"},
+    "10 Mins": {"ret": "${\it Ret}_{\it 10min}$", "mdd": "${\it MDD}_{\it 10min}$"},
+    "15 Mins": {"ret": "${\it Ret}_{\it 15min}$", "mdd": "${\it MDD}_{\it 15min}$"},
+    "30 Mins": {"ret": "${\it Ret}_{\it 30min}$", "mdd": "${\it MDD}_{\it 30min}$"},
+    "1 Hour": {"ret": "${\it Ret}_{\it 1h}$", "mdd": "${\it MDD}_{\it 1h}$"},
+    "5 Hours": {"ret": "${\it Ret}_{\it 5h}$", "mdd": "${\it MDD}_{\it 5h}$"},
+    "10 Hours": {"ret": "${\it Ret}_{\it 10h}$", "mdd": "${\it MDD}_{\it 10h}$"},
 }
 
 # before block for the TRUMP block 2025-01-17 14:01:48
