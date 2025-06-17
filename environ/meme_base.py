@@ -1,5 +1,6 @@
 """Base Class for Meme Environment."""
 
+import os
 import datetime
 import json
 import pickle
@@ -19,9 +20,12 @@ class MemeBase:
         self.new_token_pool = new_token_pool
         self.txn = self._load_pickle("txn")
         self.transfer = self._load_pickle("transfer")
-        self.reply = self._load_reply()
+        self.comment = self._load_jsonl("comment")
+        self.launch_bundle = self._load_launch_bundle()
         (
-            self.block_created_time,
+            self.migrate_block,
+            self.launch_block,
+            self.migrate_time,
             self.launch_time,
             self.creator,
             self.pool_add,
@@ -42,9 +46,29 @@ class MemeBase:
         with open(path, "rb") as f:
             return pickle.load(f)
 
+    def _load_jsonl(self, attr: str):
+        """Method to load the jsonl file of the meme token"""
+        path = f"{PROCESSED_DATA_PATH}/{attr}/" f"{self.new_token_pool.pool_add}.jsonl"
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                file = f.readlines()
+                return [json.loads(line) for line in file]
+        else:
+            return []
+
+    def _load_launch_bundle(self) -> dict:
+        """Method to load the launch bundle of the meme token"""
+        path = (
+            f"{PROCESSED_DATA_PATH}/launch_bundle/"
+            f"{self.new_token_pool.pool_add}.pickle"
+        )
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                return pickle.load(f)
+
     def _load_creation(
         self,
-    ) -> tuple[datetime.datetime, datetime.datetime, str, str, str]:
+    ) -> tuple[int, int, datetime.datetime, datetime.datetime, str, str, str]:
         """Method to load the creation information of the meme token"""
         path = (
             f"{PROCESSED_DATA_PATH}/creation/{self.new_token_pool.chain}/"
@@ -54,30 +78,22 @@ class MemeBase:
             file = json.load(f)
 
         return (
-            datetime.datetime.fromtimestamp(file["created_time"], UTC),
+            file["migrate_block"],
+            file["launch_block"],
+            datetime.datetime.fromtimestamp(file["migrate_time"], UTC),
             datetime.datetime.fromtimestamp(file["launch_time"], UTC),
             file["token_creator"],
             file["pumpfun_pool_address"],
             file["launch_tx_id"],
         )
 
-    def _load_reply(self) -> list:
-        """Method to load the reply of the meme token"""
-        path = (
-            f"{DATA_PATH}/solana/{self.new_token_pool.chain}/reply/"
-            f"{self.new_token_pool.pool_add}.jsonl"
-        )
-        with open(path, "r", encoding="utf-8") as f:
-            file = f.readlines()
-            return [json.loads(line) for line in file]
-
     def _build_transfer_swap(self) -> tuple[list[str], dict[str, list]]:
         """Method to get the unique non-swap transfers of the meme token"""
         non_swap_transfers_hash = set()
         for transfer in self.transfer:
-            if (
-                transfer.date.replace(tzinfo=timezone.utc) < self.block_created_time
-            ) & (MIGATOR not in [transfer.from_, transfer.to]):
+            if (transfer.date.replace(tzinfo=timezone.utc) < self.migrate_time) & (
+                MIGATOR not in [transfer.from_, transfer.to]
+            ):
                 non_swap_transfers_hash.add(transfer.txn_hash)
 
         swappers = defaultdict(list)

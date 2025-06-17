@@ -33,7 +33,7 @@ default_retry = retry(
     wait=wait_exponential(multiplier=1, min=1, max=10),
 )
 
-bundle_dict = {}
+# bundle_dict = {}
 # for pool in tqdm(
 #     import_pool(
 #         CHAIN,
@@ -57,10 +57,13 @@ bundle_dict = {}
 #     txn_same_block = meme.get_txn_same_block()
 #     bundle_dict[pool_add] = {
 #         "maker": meme.creator,
+#         "launch_block": meme.launch_block,
 #         "launch_time": meme.launch_time,
-#         "migration_time": meme.block_created_time,
+#         "migrate_block": meme.migrate_block,
+#         "migration_time": meme.migrate_time,
 #         "bundle": txn_same_block,
 #     }
+
 
 # with open(PROCESSED_DATA_PATH / "bundle.pkl", "wb") as f:
 #     pickle.dump(bundle_dict, f)
@@ -122,7 +125,7 @@ def fetch_data(
 def save_bundle_data(data_lst: list[dict], token_add: str):
     """Save the bundle data to a JSONL file."""
     out_path = PROCESSED_DATA_PATH / "bundle" / f"{token_add}.jsonl"
-    with open(out_path, "w", encoding="utf-8") as f:
+    with open(out_path, "a", encoding="utf-8") as f:
         for row in data_lst:
             f.write(json.dumps(row) + "\n")
 
@@ -149,7 +152,6 @@ for token_address, bundle_info in bundle_dict.items():
     launch_time = bundle_info["launch_time"] - timedelta(hours=1)
     migration_time = bundle_info["migration_time"]
 
-    full_data = []
     time_ranges = list(datetime_range(launch_time, migration_time, QUERY_INTERVAL))
 
     try:
@@ -167,12 +169,11 @@ for token_address, bundle_info in bundle_dict.items():
             while current_page < total_pages:
                 data = fetch_data(query=query, page_number=current_page)
                 if data.records:
-                    full_data.extend(data.records)
+                    save_bundle_data(data.records, token_address)
                     total_pages = data.page.totalPages
                     current_page += 1
                 else:
                     break
-        save_bundle_data(full_data, token_address)
     except Exception as e:
         print(f"Error processing {token_address}: {e}")
         continue

@@ -22,38 +22,46 @@ SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 
 # Naming dictionary for regression variables
 NAMING_DICT = {
-    "size": {
-        "duration": "$\\text{Duration}$",
-        "#trader": "$\#\\text{Traders}$",
-        "#txn": "$\#\\text{Txns}$",
-        "#transfer": "$\#\\text{Transfers}$",
-    },
+    # "size": {
+    #     "duration": "$\\text{Duration}$",
+    #     "#trader": "$\#\\text{Traders}$",
+    #     "#txn": "$\#\\text{Txns}$",
+    #     "#transfer": "$\#\\text{Transfers}$",
+    # },
     "bundle_bot": {
-        "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
-        "bundle": "$\\text{HHI}_{\\text{Bundle}}$",
-        "transfer_amount": "$\\text{Transfer Amount (\%)}$",
+        "launch_bundle_transfer": "$\\text{Launch Bundle}$",
+        "bundle_creator_buy": "$\\text{Bundle Creator Buy}$",
+        "bundle_launch": "$\\text{Bundle Launch}$",
+        "bundle_buy": "$\\text{Bundle Buy}$",
+        "bundle_sell": "$\\text{Bundle Sell}$",
+        # "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
+        # "bundle": "$\\text{HHI}_{\\text{Bundle}}$",
+        # "transfer_amount": "$\\text{Transfer Amount (\%)}$",
     },
     "volume_bot": {
         "max_same_txn": "$\\text{Max Same Txn}$",
         "pos_to_number_of_swaps_ratio": "$\\text{Pos/\#Swaps}$",
     },
     "comment_bot": {
-        "reply_interval_herf": "$\\text{HHI}_{\\text{Interval}}$",
-        "unique_replies": "$\\text{ln}\#\\text{Replies}$",
-        "unique_repliers": "$\\text{ln}\#\\text{Repliers}$",
-        "non_swapper_repliers": "$\\text{ln}\#\\text{Non-Trader Repliers}$",
-        "unique_replies_1": "$\#\\text{Replies}$",
-        "unique_repliers_1": "$\#\\text{Repliers}$",
-        "non_swapper_repliers_1": "$\#\\text{Non-Trader Repliers}$",
-        "unique_replies_2": "$\#\\text{Replies}^{2}$",
-        "unique_repliers_2": "$\#\\text{Repliers}^{2}$",
-        "non_swapper_repliers_2": "$\#\\text{Non-Trader Repliers}^{2}$",
+        "bot_comment_num": "$\\text{Bot Comment}$",
+        "positive_bot_comment_num": "$\\text{Positive Bot Comment}$",
+        "negative_bot_comment_num": "$\\text{Negative Bot Comment}$",
+        # "reply_interval_herf": "$\\text{HHI}_{\\text{Interval}}$",
+        # "unique_replies": "$\\text{ln}\#\\text{Replies}$",
+        # "unique_repliers": "$\\text{ln}\#\\text{Repliers}$",
+        # "non_swapper_repliers": "$\\text{ln}\#\\text{Non-Trader Repliers}$",
+        # "unique_replies_1": "$\#\\text{Replies}$",
+        # "unique_repliers_1": "$\#\\text{Repliers}$",
+        # "non_swapper_repliers_1": "$\#\\text{Non-Trader Repliers}$",
+        # "unique_replies_2": "$\#\\text{Replies}^{2}$",
+        # "unique_repliers_2": "$\#\\text{Repliers}^{2}$",
+        # "non_swapper_repliers_2": "$\#\\text{Non-Trader Repliers}^{2}$",
     },
-    "dev": {
-        "dev_transfer": "$\\text{Dev Transfer}$",
-        "dev_buy": "$\\text{Dev Buy}$",
-        "dev_sell": "$\\text{Dev Sell}$",
-    },
+    # "dev": {
+    #     "dev_transfer": "$\\text{Dev Transfer}$",
+    #     "dev_buy": "$\\text{Dev Buy}$",
+    #     "dev_sell": "$\\text{Dev Sell}$",
+    # },
 }
 
 PROFIT_NAMING_DICT = {

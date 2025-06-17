@@ -101,43 +101,56 @@ def render_latex_table(
     return latex_str
 
 
-# Preprocess the data
-# size
-mdd_df["duration"] = np.log(mdd_df["duration"])
-mdd_df["#trader"] = np.log(mdd_df["#trader"])
-mdd_df["#txn"] = np.log(mdd_df["#txn"])
-mdd_df["#transfer"] = np.log(mdd_df["#transfer"] + 1)
+# # Preprocess the data
 
-# bots
+mdd_df.dropna(inplace=True)
+# # size
+# mdd_df["duration"] = np.log(mdd_df["duration"])
+# mdd_df["#trader"] = np.log(mdd_df["#trader"])
+# mdd_df["#txn"] = np.log(mdd_df["#txn"])
+# mdd_df["#transfer"] = np.log(mdd_df["#transfer"] + 1)
 
-## Bundle
-mdd_df["holding_herf"] = mdd_df["holding_herf"]
-mdd_df["bundle"] = mdd_df["bundle"]
-mdd_df["transfer_amount"] = mdd_df["transfer_amount"] / 206900000
+# # bots
 
-## Volume
-mdd_df["max_same_txn"] = np.log(mdd_df["max_same_txn"] / mdd_df["#txn"])
-mdd_df["pos_to_number_of_swaps_ratio"] = np.log(mdd_df["pos_to_number_of_swaps_ratio"])
+# ## Bundle
+# mdd_df["holding_herf"] = mdd_df["holding_herf"]
+# mdd_df["bundle"] = mdd_df["bundle"]
+# mdd_df["transfer_amount"] = mdd_df["transfer_amount"] / 206900000
 
-## Comments
-for _ in [
-    "unique_replies",
-    "unique_repliers",
-    "non_swapper_repliers",
+# ## Volume
+# mdd_df["max_same_txn"] = np.log(mdd_df["max_same_txn"] / mdd_df["#txn"])
+# mdd_df["pos_to_number_of_swaps_ratio"] = np.log(mdd_df["pos_to_number_of_swaps_ratio"])
+
+# ## Comments
+# for _ in [
+#     "unique_replies",
+#     "unique_repliers",
+#     "non_swapper_repliers",
+# ]:
+#     mdd_df[f"{_}_1"] = mdd_df[_]
+#     mdd_df[f"{_}_2"] = mdd_df[_] ** 2
+
+# mdd_df["unique_replies"] = np.log(mdd_df["unique_replies"] + 1)
+# mdd_df["reply_interval_herf"] = mdd_df["reply_interval_herf"]
+# mdd_df["unique_repliers"] = np.log(mdd_df["unique_repliers"] + 1)
+# mdd_df["non_swapper_repliers"] = np.log(mdd_df["non_swapper_repliers"] + 1)
+
+# ## Devs Behavior
+# mdd_df["dev_transfer"] = mdd_df["dev_transfer"]
+# mdd_df["dev_buy"] = mdd_df["dev_buy"]
+# mdd_df["dev_sell"] = mdd_df["dev_sell"]
+
+for var in [
+    "bundle_launch",
+    "bundle_buy",
+    "bundle_sell",
+    "max_same_txn",
+    "pos_to_number_of_swaps_ratio",
+    "bot_comment_num",
+    "positive_bot_comment_num",
+    "negative_bot_comment_num",
 ]:
-    mdd_df[f"{_}_1"] = mdd_df[_]
-    mdd_df[f"{_}_2"] = mdd_df[_] ** 2
-
-mdd_df["unique_replies"] = np.log(mdd_df["unique_replies"] + 1)
-mdd_df["reply_interval_herf"] = mdd_df["reply_interval_herf"]
-mdd_df["unique_repliers"] = np.log(mdd_df["unique_repliers"] + 1)
-mdd_df["non_swapper_repliers"] = np.log(mdd_df["non_swapper_repliers"] + 1)
-
-## Devs Behavior
-mdd_df["dev_transfer"] = mdd_df["dev_transfer"]
-mdd_df["dev_buy"] = mdd_df["dev_buy"]
-mdd_df["dev_sell"] = mdd_df["dev_sell"]
-
+    mdd_df[var] = mdd_df[var].apply(lambda x: 1 if x > mdd_df[var].median() else 0)
 
 # Dependency variables
 for y_var in FREQ_DICT:

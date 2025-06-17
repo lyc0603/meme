@@ -40,9 +40,9 @@ class MemeAnalyzer(MemeBase):
         super().__init__(new_token_pool)
         self.prc_date_df, self.pre_prc_date_df = self._build_price_df()
         self.migration_duration = (
-            self.block_created_time - self.pre_prc_date_df.index.min()
+            self.migrate_time - self.pre_prc_date_df.index.min()
         ).total_seconds()
-        self.reply_list = self._build_reply_list()
+        self.comment_list = self._build_comment_list()
 
     # Build-in Methods
     def _build_price_df(self) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -66,30 +66,28 @@ class MemeAnalyzer(MemeBase):
         prc_date_df = prc_date_df.set_index("date").sort_index()
         prc_date_df["price"] = prc_date_df["price"].replace(0, np.nan)
 
-        pre_prc_date_df = prc_date_df.loc[
-            prc_date_df.index < self.block_created_time
-        ].copy()
-        prc_date_df = prc_date_df.loc[
-            prc_date_df.index >= self.block_created_time
-        ].copy()
+        pre_prc_date_df = prc_date_df.loc[prc_date_df.index < self.migrate_time].copy()
+        prc_date_df = prc_date_df.loc[prc_date_df.index >= self.migrate_time].copy()
 
         return prc_date_df, pre_prc_date_df
 
-    def _build_reply_list(self) -> list[tuple[str, datetime.datetime]]:
-        """Method to build the reply dictionary of the meme token"""
+    def _build_comment_list(self) -> list[dict[str, Any]]:
+        """Method to build the comment dictionary of the meme token"""
         reply_list = []
-        for reply in self.reply:
+        for reply in self.comment:
             time = datetime.datetime.fromtimestamp(
-                reply["timestamp"] / 1000, tz=timezone.utc
+                reply["comment"]["timestamp"] / 1000, tz=timezone.utc
             )
-            if time <= self.block_created_time:
+            if time <= self.migrate_time:
                 reply_list.append(
-                    (
-                        reply["user"],
-                        time,
-                    )
+                    {
+                        "replier": reply["comment"]["user"],
+                        "time": time,
+                        "bot": reply["bot"],
+                        "sentiment": reply["sentiment"],
+                    }
                 )
-        return sorted(reply_list, key=lambda x: x[1])
+        return sorted(reply_list, key=lambda x: x["time"])
 
     # Dpendent Variables
     def check_death(self, freq: str, before: Optional[int]) -> int:
@@ -108,7 +106,7 @@ class MemeAnalyzer(MemeBase):
                     _
                     for _ in self.get_acts(Swap)
                     if (
-                        _["date"].replace(tzinfo=timezone.utc) - self.block_created_time
+                        _["date"].replace(tzinfo=timezone.utc) - self.migrate_time
                     ).total_seconds()
                     > before
                 ]
@@ -116,50 +114,122 @@ class MemeAnalyzer(MemeBase):
             == 0
         )
 
-    # Metrics for Bot
+    # Metrics for Bundle Bot
+    def get_bundle_launch_transfer_dummy(self) -> int | None:
+        """Method to get the launch bundle dummy variable"""
+        if self.launch_bundle is not None:
+            return int(len(self.launch_bundle["bundle_launch"]) > 0)
+
+    def get_bundle_creator_buy_dummy(self) -> int | None:
+        """Method to get the bundle creator buy dummy variable"""
+        if self.launch_bundle is not None:
+            return int(len(self.launch_bundle["bundle_creator_buy"]) > 0)
+
+    def get_bundle_launch_buy_sell_num(self) -> tuple[int, int, int] | None:
+        """Method to get the number of bundle buys"""
+        if self.launch_bundle is not None:
+            bundle_launch = 0
+            bundle_buy = 0
+            bunle_sell = 0
+
+            for block, bundle_info in self.launch_bundle["bundle"].items():
+                if block == self.launch_block:
+                    if (
+                        len(
+                            [
+                                row["maker"]
+                                for row in bundle_info
+                                if row["maker"] != self.creator
+                            ]
+                        )
+                        > 0
+                    ):
+                        bundle_launch += 1
+                else:
+                    bundle_length = len(bundle_info)
+                    if (
+                        len(
+                            [
+                                row["acts"][0]["typ"]
+                                for row in bundle_info
+                                if row["acts"][0]["typ"] == "Buy"
+                            ]
+                        )
+                        == bundle_length
+                    ):
+                        bundle_buy += 1
+
+                    elif (
+                        len(
+                            [
+                                row["acts"][0]["typ"]
+                                for row in bundle_info
+                                if row["acts"][0]["typ"] == "Sell"
+                            ]
+                        )
+                        == bundle_length
+                    ):
+                        bunle_sell += 1
+
+            return bundle_launch, bundle_buy, bunle_sell
+        else:
+            return None, None, None
+
+    # Metrics for Comment Bot
+    def get_comment_bot_num(self) -> int:
+        """Method to get the number of bot comments"""
+        return len([comment for comment in self.comment_list if comment["bot"]])
+
+    def get_positive_comment_bot_num(self) -> int:
+        """Method to get the number of positive comments"""
+        return len(
+            [
+                comment
+                for comment in self.comment_list
+                if comment["bot"] and comment["sentiment"] == "positive"
+            ]
+        )
+
+    def get_negative_comment_bot_num(self) -> int:
+        """Method to get the number of negative comments"""
+        return len(
+            [
+                comment
+                for comment in self.comment_list
+                if comment["bot"] and comment["sentiment"] == "negative"
+            ]
+        )
+
     def get_unqiue_repliers(self) -> int:
         """Method to get the unique repliers of the meme token"""
-        return len(set([_[0] for _ in self.reply_list]))
+        return len(set([comment["replier"] for comment in self.comment_list]))
 
     def get_reply_interval_herf(self) -> float:
         """Method to get the Herfindahl index of the meme token"""
 
         interval_list = []
 
-        for idx, (_, time) in enumerate(self.reply_list):
+        for idx, comment_info in enumerate(self.comment_list):
             if idx == 0:
-                previous_reply_time = time
+                previous_reply_time = comment_info["time"]
             else:
-                interval_list.append((time - previous_reply_time).total_seconds())
+                interval_list.append(
+                    (comment_info["time"] - previous_reply_time).total_seconds()
+                )
         return compute_herfindahl(interval_list)
 
     def get_non_swapper_replier_num(self) -> int:
         """Method to get the number of non-swapper repliers of the meme token"""
-        non_swapper_repliers = set([_[0] for _ in self.reply_list]) - set(
-            self.swappers.keys()
+        non_swapper_repliers = set(
+            [
+                comment["replier"]
+                for comment in self.comment_list
+                if comment["replier"] not in self.swappers
+            ]
         )
         return len(non_swapper_repliers)
 
-    # Metrics for Meme Token Analysis
-    def get_txn_same_block(self) -> dict[str, list[dict[str, Any]]]:
-        """Method to get the transactions in the same block"""
-        txn_same_block = defaultdict(list)
-        for swap in self.get_acts(Swap):
-            if swap["date"].replace(tzinfo=timezone.utc) < self.block_created_time:
-                block = swap["block"]
-                txn_same_block[block].append(swap)
-        return {k: v for k, v in txn_same_block.items() if len(v) > 1}
-
-    def get_block_bundle_herf(self) -> float:
-        """Method to get the Herfindahl index of the block bundle of the meme token"""
-        return compute_herfindahl(
-            self.pre_prc_date_df.groupby("block")["base"].sum().to_dict()
-        )
-
-    def get_unique_swapers(self) -> int:
-        """Method to get the unique swapers of the meme token"""
-        return len(self.swappers)
-
+    # Metrics for Volume Bot
     def get_max_same_txn_per_swaper(self) -> float:
         """Method to get the max number of same transaction per swaper"""
 
@@ -205,7 +275,7 @@ class MemeAnalyzer(MemeBase):
         for swap in [
             s
             for s in self.get_acts(Swap)
-            if s["date"].replace(tzinfo=timezone.utc) < self.block_created_time
+            if s["date"].replace(tzinfo=timezone.utc) < self.migrate_time
         ]:
             last_act = swap["acts"][list(swap["acts"].keys())[-1]]
             if last_act.typ == "Buy":
@@ -222,7 +292,7 @@ class MemeAnalyzer(MemeBase):
 
         for transfer in self.transfer:
             if (
-                transfer.date.replace(tzinfo=timezone.utc) < self.block_created_time
+                transfer.date.replace(tzinfo=timezone.utc) < self.migrate_time
                 and transfer.txn_hash not in swap_hashes
             ):
                 G.add_edge(transfer.from_, transfer.to, weight=transfer.value)
@@ -259,11 +329,9 @@ class MemeAnalyzer(MemeBase):
         """Method to resample the price data to the specified frequency"""
         # convert the index to how many seconds since the pool was created
         prc_resampled = self.prc_date_df.loc[
-            self.prc_date_df.index >= self.block_created_time
+            self.prc_date_df.index >= self.migrate_time
         ].copy()
-        prc_resampled.index = (
-            prc_resampled.index - self.block_created_time
-        ).total_seconds()
+        prc_resampled.index = (prc_resampled.index - self.migrate_time).total_seconds()
 
         # drop the duplicate index values
         prc_resampled = prc_resampled[~prc_resampled.index.duplicated(keep="last")]
@@ -393,30 +461,38 @@ if __name__ == "__main__":
                     txns={},
                 ),
             )
-            # out_deg, in_deg = meme.analyze_non_swap_transfer_graph()
-            # print(
-            #     # f"Pool: {pool['token_address']}, "
-            #     f"Max Drawdown: {meme.get_mdd(freq="1min", before=1) * 100:.2f}%, "
-            #     # f"Unique Swapers: {meme.get_unique_swapers()},"
-            #     # f"Unique Non-Swap Transfers: {len(meme.non_swap_transfer_hash)}, ",
-            #     # f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
-            #     # # f"Non-Swap Transfer Graph Out Herfindahl: {out_deg}, "
-            #     # # f"Non-Swap Transfer Graph In Herfindahl: {in_deg}",
-            #     f"Degree: {meme.analyze_non_swap_transfer_graph()}",
-            #     # f"Transfer amount: {meme.get_non_swap_transfer_amount()}",
-            #     f"Dev Buy: {meme.dev_buy}, ",
-            #     f"Dev Sell: {meme.dev_sell}, ",
-            #     # f"Dev Transfer: {meme.dev_transfer}",
-            #     # f"Dev Transfer Amount: {meme.dev_transfer_amount}",
-            #     # f"Return: {meme.get_ret_before(freq='1min', before=1) * 100:.2f}%, ",
-            #     # f"Max Same Txn per Swaper: {meme.get_max_same_txn_per_swaper():.2f}, ",
-            #     # f"Block Bundle Herfindahl: {meme.get_block_bundle_herf()}",
-            #     # f"Pos to Number of Swaps Ratio: {meme.get_pos_to_number_of_swaps_ratio()}",
-            #     # f"Unique Replies: {len(meme.reply_list)}, ",
-            #     # f"Reply Interval Herfindahl: {meme.get_reply_interval_herf()}",
-            #     # f"Unique Repliers: {meme.get_unqiue_repliers()}, ",
-            #     # f"Non-Swapper Repliers: {meme.get_non_swapper_replier_num()}",
-            # )
+            print(
+                # f"Pool: {pool['token_address']}, "
+                f"Max Drawdown: {meme.get_mdd(freq="1min", before=1) * 100:.2f}%, "
+                # f"Unique Swapers: {meme.get_unique_swapers()},"
+                # f"Unique Non-Swap Transfers: {len(meme.non_swap_transfer_hash)}, ",
+                # # Bundle Bot Metrics
+                f"Bundle Launch Transfer Dummy: {meme.get_bundle_launch_transfer_dummy()}, ",
+                f"Bundle Creator Buy Dummy: {meme.get_bundle_creator_buy_dummy()}, ",
+                f"Bundle Launch Buy Sell Num: {meme.get_bundle_launch_buy_sell_num()}",
+                # f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
+                # # f"Non-Swap Transfer Graph Out Herfindahl: {out_deg}, "
+                # # f"Non-Swap Transfer Graph In Herfindahl: {in_deg}",
+                # f"Degree: {meme.analyze_non_swap_transfer_graph()}",
+                # f"Transfer amount: {meme.get_non_swap_transfer_amount()}",
+                # # Dev Metrics
+                # f"Dev Buy: {meme.dev_buy}, ",
+                # f"Dev Sell: {meme.dev_sell}, ",
+                # f"Dev Transfer: {meme.dev_transfer}",
+                # f"Dev Transfer Amount: {meme.dev_transfer_amount}",
+                # f"Return: {meme.get_ret_before(freq='1min', before=1) * 100:.2f}%, ",
+                # f"Max Same Txn per Swaper: {meme.get_max_same_txn_per_swaper():.2f}, ",
+                # f"Block Bundle Herfindahl: {meme.get_block_bundle_herf()}",
+                # f"Pos to Number of Swaps Ratio: {meme.get_pos_to_number_of_swaps_ratio()}",
+                # # Comment Bot Metrics
+                f"Bot Comment Num: {meme.get_comment_bot_num()}, ",
+                f"Positive Bot Comment Num: {meme.get_positive_comment_bot_num()}, ",
+                f"Negative Bot Comment Num: {meme.get_negative_comment_bot_num()}, ",
+                # f"Unique Replies: {len(meme.reply_list)}, ",
+                # f"Reply Interval Herfindahl: {meme.get_reply_interval_herf()}",
+                # f"Unique Repliers: {meme.get_unqiue_repliers()}, ",
+                # f"Non-Swapper Repliers: {meme.get_non_swapper_replier_num()}",
+            )
             # (meme.get_ret(freq="1min") + 1).cumprod().plot()
 
-            print(meme.check_death(freq="1h", before=10))
+            # print(meme.check_death(freq="1h", before=10))

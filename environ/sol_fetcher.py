@@ -21,7 +21,7 @@ from environ.constants import DATA_PATH, HEADERS, PROCESSED_DATA_PATH
 from environ.data_class import Swap, Transfer, Txn
 
 dotenv.load_dotenv()
-FLIPSIDE_API_KEY = os.getenv("FLIPSIDE_API")
+FLIPSIDE_API_KEY = os.getenv("FLIPSIDE_API_KEY")
 FLIPSIDE_BASE_URL = "https://api-v2.flipsidecrypto.xyz"
 default_retry = retry(
     reraise=True,
@@ -318,17 +318,20 @@ ORDER BY block_timestamp
 LIMIT {num};"""
 
 MIGRATION_QUERY = """SELECT
+  mig.block_id AS block_id, 
   mig.block_timestamp AS block_timestamp,
   mig.tx_id AS tx_id,
   mig.token_address,
   mig.sol_lamports,
   mig.meme_amount,
+  lau.block_id AS launch_block_id,
   lau.block_timestamp AS launch_time,
   lau.tx_id AS launch_tx_id,
   lau.token_creator,
   lau.pumpfun_pool_address
 FROM (
   SELECT
+    block_id,
     block_timestamp,
     tx_id,
     decoded_instruction:accounts[9]:pubkey::string AS token_address,
@@ -348,6 +351,7 @@ FROM (
 ) mig
 LEFT JOIN (
   SELECT
+    block_id,
     block_timestamp,
     tx_id,
     decoded_instruction:accounts[0]:pubkey::string AS token_address,
@@ -374,7 +378,7 @@ def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
 
     for pool_info in tqdm(import_pool(category)):
         token_add = pool_info["token_address"]
-        block_ts = int(
+        migrate_ts = int(
             datetime.strptime(
                 str(pool_info["block_timestamp"]), "%Y-%m-%dT%H:%M:%S.%fZ"
             ).timestamp()
@@ -392,8 +396,10 @@ def process_txn(category: Literal["pumpfun", "raydium"]) -> None:
         ) as f:
             json.dump(
                 {
-                    "created_time": block_ts,
+                    "migrate_time": migrate_ts,
+                    "migrate_block": int(pool_info["block_id"]),
                     "launch_time": launch_ts,
+                    "launch_block": int(pool_info["launch_block_id"]),
                     "token_creator": pool_info["token_creator"],
                     "pumpfun_pool_address": pool_info["pumpfun_pool_address"],
                     "launch_tx_id": pool_info["launch_tx_id"],
@@ -571,14 +577,14 @@ if __name__ == "__main__":
     #     timestamp="2025-01-17 14:01:48",
     #     task_query=MIGRATION_QUERY,
     # )
-    # # solana_fetcher.fetch_task(
-    # #     MIGRATION_QUERY,
-    # #     "2025-01-17 14:01:48",
-    # #     1000,
-    # #     DATA_PATH / "solana" / "raydium.jsonl",
-    # # )
-    # # solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
-    # # solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
+    # solana_fetcher.fetch_task(
+    #     MIGRATION_QUERY,
+    #     "2025-01-17 14:01:48",
+    #     1000,
+    #     DATA_PATH / "solana" / "raydium.jsonl",
+    # )
+    # solana_fetcher.fetch(SWAP_QUERY, DATA_PATH / "solana" / "raydium" / "txn")
+    # solana_fetcher.fetch(TRANSFER_QUERY, DATA_PATH / "solana" / "raydium" / "transfer")
     # solana_fetcher.fetch_replies(
     #     save_path=DATA_PATH / "solana" / "raydium" / "reply",
     # )
