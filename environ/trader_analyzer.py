@@ -38,12 +38,12 @@ class Trader(Account):
     def buy(self, swap) -> None:
         """Method to handle buy transactions"""
         self.balance += swap.base if swap.base else 0.0
-        self.profit -= swap.quote if swap.quote else 0.0
+        # self.profit -= swap.usd if swap.usd else 0.0
 
     def sell(self, swap) -> None:
         """Method to handle sell transactions"""
         self.balance -= swap.base if swap.base else 0.0
-        self.profit += swap.quote if swap.quote else 0.0
+        # self.profit += swap.usd if swap.usd else 0.0
 
 
 class TraderAnalyzer(MemeBase):
@@ -51,10 +51,11 @@ class TraderAnalyzer(MemeBase):
 
     def __init__(self, new_token_pool: NewTokenPool):
         super().__init__(new_token_pool)
-        self.traders = self._load_profit()
+        self.traders = self._load_swaps()
         self._merge_traders()
+        self._calculate_profit()
 
-    def _load_profit(self):
+    def _load_swaps(self):
         """Method to load the profit of the traders"""
         traders = {}
         for swapper, swaps_list in self.swappers.items():
@@ -65,6 +66,33 @@ class TraderAnalyzer(MemeBase):
                 trader.swap(swap["acts"][0])
             traders[(swapper,)] = trader
         return traders
+
+    def _calculate_profit(self) -> None:
+        """Method to calculate the profit of the traders"""
+        for trader_add, trader in self.traders.items():
+            # get the list of buy and sell swaps
+            buy_swaps = [swap for swap in trader.swaps if swap.typ == "Buy"]
+            sell_swaps = [swap for swap in trader.swaps if swap.typ == "Sell"]
+
+            # get the use and amount of the swaps
+            if len(sell_swaps) > 0:
+                buy_amount = sum(
+                    swap.base for swap in buy_swaps if swap.base is not None
+                )
+                sell_amount = sum(
+                    swap.base for swap in sell_swaps if swap.base is not None
+                )
+                buy_usd = sum(swap.usd for swap in buy_swaps if swap.usd is not None)
+                sell_usd = sum(swap.usd for swap in sell_swaps if swap.usd is not None)
+
+                # calculate the average realized profit based on the sell
+                trader.profit = (
+                    ((sell_usd / sell_amount) - (buy_usd / buy_amount)) * sell_amount
+                    if buy_amount > 0
+                    else 0.0
+                )
+
+            self.traders[trader_add] = trader
 
     def _merge_traders(self) -> None:
         """Method to merge traders from another TraderAnalyzer"""
