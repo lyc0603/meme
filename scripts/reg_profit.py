@@ -140,6 +140,8 @@ res_dict = {
     "obs": [],
     "r2": [],
 }
+
+## Creator's profit regression
 for x_var in x_var_list + x_var_creator_interaction:
 
     X = (
@@ -192,5 +194,48 @@ for x_var in x_var_list + x_var_creator_interaction:
 # Render the LaTeX table
 latex_str = render_latex_table(res_dict)
 
-with open(TABLE_PATH / f"reg_profit_creator.tex", "w") as f:
+with open(TABLE_PATH / "reg_profit_creator.tex", "w", encoding="utf-8") as f:
+    f.write(latex_str)
+
+# Participants' profit regression
+for x_var in x_var_creator_interaction:
+
+    X = (
+        sm.add_constant(pd.DataFrame(reg_tab[x_var]))
+        if x_var not in x_var_creator_interaction
+        else sm.add_constant(
+            pd.DataFrame(
+                {
+                    x_var: reg_tab[x_var],
+                }
+            )
+        )
+    )
+    y = pd.Series(reg_tab[y_var])
+    model = sm.OLS(y, X).fit()
+    print(model.summary())
+
+    reg_var_non_none_list = []
+    res_dict[f"{x_var}_coef"].append(
+        f"{model.params[x_var]:.2f}{asterisk(model.pvalues[x_var])}"
+    )
+    res_dict[f"{x_var}_stderr"].append(f"({model.bse[x_var]:.2f})")
+    reg_var_non_none_list.extend([f"{x_var}_coef", f"{x_var}_stderr"])
+
+    res_dict["con"].append(
+        f"{model.params['const']:.2f}{asterisk(model.pvalues['const'])}"
+    )
+    res_dict["con_stderr"].append(f"({model.bse['const']:.2f})")
+    res_dict["obs"].append(f"{model.nobs:.0f}")
+    res_dict["r2"].append(f"{model.rsquared:.2f}")
+    reg_var_non_none_list.extend(["con", "con_stderr", "obs", "r2"])
+
+    for _ in res_dict.keys():
+        if _ not in reg_var_non_none_list:
+            res_dict[_].append("")
+
+# Render the LaTeX table
+latex_str = render_latex_table(res_dict)
+
+with open(TABLE_PATH / f"participant_profit_creator.tex", "w", encoding="utf-8") as f:
     f.write(latex_str)
