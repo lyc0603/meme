@@ -17,14 +17,16 @@ x_var_list = [
 ]
 
 x_var_creator_interaction = [
-    "holding_herf",
-    "bundle",
+    "launch_bundle_transfer",
+    "bundle_creator_buy",
+    "bundle_launch",
+    "bundle_buy",
+    "bundle_sell",
     "max_same_txn",
     "pos_to_number_of_swaps_ratio",
-    "unique_replies",
-    "reply_interval_herf",
-    "unique_repliers",
-    "non_swapper_repliers",
+    "bot_comment_num",
+    "positive_bot_comment_num",
+    "negative_bot_comment_num",
 ]
 
 y_var = "profit"
@@ -66,6 +68,7 @@ profit_naming_dict = {
 }
 
 reg_tab = pd.read_csv(f"{PROCESSED_DATA_PATH}/profit.csv")
+reg_tab.dropna(inplace=True)
 
 
 # Render the Latex Table

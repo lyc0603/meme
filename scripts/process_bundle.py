@@ -1,5 +1,7 @@
 """Script to process launch bundles from a bundle dictionary with processing tqdm."""
 
+from datetime import datetime
+from environ.data_class import Transfer
 import glob
 import json
 import os
@@ -43,17 +45,29 @@ def worker(task_queue: Queue, done_queue: Queue):
                                     if row["tx_to"] in set(
                                         [_["maker"] for _ in bundle]
                                     ) - set([creator]):
+                                        transfer = Transfer(
+                                            date=datetime.strptime(
+                                                row["block_timestamp"],
+                                                "%Y-%m-%dT%H:%M:%S.%fZ",
+                                            ),
+                                            block=row["block_id"],
+                                            txn_hash=row["tx_id"],
+                                            log_index=row["index"],
+                                            from_=row["tx_from"],
+                                            to=row["tx_to"],
+                                            value=row["amount"],
+                                        )
                                         if block == launch_block:
                                             if block not in result["bundle_launch"]:
                                                 result["bundle_launch"][block] = {
                                                     "block_id": block,
                                                     "bundle": bundle,
-                                                    "transfer": [row],
+                                                    "transfer": [transfer],
                                                 }
                                             else:
                                                 result["bundle_launch"][block][
                                                     "transfer"
-                                                ].append(row)
+                                                ].append(transfer)
                                         else:
                                             if (
                                                 block
@@ -62,12 +76,12 @@ def worker(task_queue: Queue, done_queue: Queue):
                                                 result["bundle_creator_buy"][block] = {
                                                     "block_id": block,
                                                     "bundle": bundle,
-                                                    "transfer": [row],
+                                                    "transfer": [transfer],
                                                 }
                                             else:
                                                 result["bundle_creator_buy"][block][
                                                     "transfer"
-                                                ].append(row)
+                                                ].append(transfer)
             else:
                 done_queue.put(token_address)  # Mark as done even if skipped
                 continue

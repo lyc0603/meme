@@ -68,7 +68,27 @@ class TraderAnalyzer(MemeBase):
 
     def _merge_traders(self) -> None:
         """Method to merge traders from another TraderAnalyzer"""
-        for non_swap_transfer in self.non_swap_transfers:
+        sol_launch_transfers = (
+            [
+                transfer
+                for _, bundle_info in self.launch_bundle["bundle_launch"].items()
+                for transfer in bundle_info["transfer"]
+            ]
+            if self.launch_bundle
+            else []
+        )
+        sol_bundle_creator_buy = (
+            [
+                transfer
+                for _, bundle_info in self.launch_bundle["bundle_creator_buy"].items()
+                for transfer in bundle_info["transfer"]
+            ]
+            if self.launch_bundle
+            else []
+        )
+        for non_swap_transfer in (
+            self.non_swap_transfers + sol_launch_transfers + sol_bundle_creator_buy
+        ):
             from_trader_address, from_trader = self.search_trader(
                 non_swap_transfer.from_
             )
@@ -106,7 +126,7 @@ class TraderAnalyzer(MemeBase):
 
 
 if __name__ == "__main__":
-    NUM_OF_OBSERVATIONS = 1000
+    NUM_OF_OBSERVATIONS = 10
 
     creator_profit = []
 
@@ -132,7 +152,6 @@ if __name__ == "__main__":
                     txns={},
                 ),
             )
-            meme.run()
 
             # print({k: v.profit for k, v in meme.traders.items() if v.creator})
             # collect creator profits
