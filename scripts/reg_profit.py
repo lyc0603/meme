@@ -159,9 +159,6 @@ for x_var in x_var_list + x_var_creator_interaction:
     )
     y = pd.Series(reg_tab[y_var])
     model = sm.OLS(y, X).fit()
-    # model = feols(
-    #     f"profit ~ {x_var}| token_address", data=reg_tab, vcov={"CRV1": "token_address"}
-    # )
     print(model.summary())
 
     reg_var_non_none_list = []
@@ -198,6 +195,17 @@ with open(TABLE_PATH / "reg_profit_creator.tex", "w", encoding="utf-8") as f:
     f.write(latex_str)
 
 # Participants' profit regression
+res_dict = {
+    **{
+        f"{x_var}{stats}": []
+        for x_var in x_var_creator_interaction
+        for stats in ["_coef", "_stderr"]
+    },
+    "con": [],
+    "con_stderr": [],
+    "obs": [],
+    "r2": [],
+}
 for x_var in x_var_creator_interaction:
 
     X = (
@@ -237,5 +245,5 @@ for x_var in x_var_creator_interaction:
 # Render the LaTeX table
 latex_str = render_latex_table(res_dict)
 
-with open(TABLE_PATH / f"participant_profit_creator.tex", "w", encoding="utf-8") as f:
+with open(TABLE_PATH / "reg_participant_profit.tex", "w", encoding="utf-8") as f:
     f.write(latex_str)
