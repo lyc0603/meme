@@ -3,30 +3,22 @@
 from environ.constants import TABLE_PATH, NAMING_DICT, PROFIT_NAMING_DICT
 
 DES_DICT = {
-    # Size
-    "duration": "Log number of seconds between the meme coin's launch on Pump.fun and its migration to Raydium.",
-    "#trader": "Log number of unique traders of the meme coin on Pump.fun before migration.",
-    "#txn": "Log number of transactions of the meme coin on Pump.fun before migration.",
-    "#transfer": "Log number of transfers of the meme coin between wallets before migration.",
     # Bundle Bot
-    "holding_herf": "Herfindahl index of the meme coin's holdings before migration.",
-    "bundle": "Herfindahl index of the transactions number per block before migration.",
-    "transfer_amount": "Log total amount of meme coin transfer between wallets divided by the total supply before migration.",
+    "launch_bundle_transfer": "Dummy variable that equals 1 if the meme coin has creator wallet funded launch bundle, 0 otherwise.",
+    "bundle_creator_buy": "Dummy variable that equals 1 if the meme coin has any creator wallet funded bundle buy, 0 otherwise.",
+    "bundle_launch": "Dummy variable that equals 1 if the meme coin has any launch bundle, 0 otherwise.",
+    "bundle_buy": "Dummy variable that equals 1 if the buy bundle number is above the sample median, 0 otherwise.",
+    "bundle_sell": "Dummy variable that equals 1 if the sell bundle number is above the sample median, 0 otherwise.",
     # Volume Bot / Wash Trading Bot
-    "max_same_txn": "Log maximum number of transactions with same token quantity made by a single trader of this meme coin before migration.",
-    "pos_to_number_of_swaps_ratio": "Average ratio of net position plus one to the number of swaps made by traders of this meme coin before migration.",
+    "max_same_txn": "Dummy variable that equals 1 if the maximum number of transactions with the same token quantity made by a single trader of this meme coin before migration is above the sample median, 0 otherwise.",
+    "pos_to_number_of_swaps_ratio": "Dummy variable that equals 1 if the average ratio of net position plus one to the number of swaps made by traders of this meme coin before migration is above the sample median, 0 otherwise.",
     # Comments Bot
-    "unique_replies": "Log number of unique comments to the meme coin on Pump.fun before migration.",
-    "reply_interval_herf": "Herfindahl index of the time intervals between comments to the meme coin on Pump.fun before migration.",
-    "unique_repliers": "Log number of unique users who commented on the meme coin on Pump.fun before migration.",
-    "non_swapper_repliers": "Log number of unique users who commented on the meme coin on Pump.fun before migration but did not trade it.",
-    # Devs Behavior
-    "dev_transfer": "Dummy variable equal to 1 if the meme coin's creator made transfers with other wallet, 0 otherwise.",
-    "dev_buy": "Dummy variable equal to 1 if the meme coin's creator made buy transactions, 0 otherwise.",
-    "dev_sell": "Dummy variable equal to 1 if the meme coin's creator made sell transactions, 0 otherwise.",
+    "positive_bot_comment_num": "Dummy variable that equals 1 if the number of positive comments made by bots is above the sample median, 0 otherwise.",
+    "negative_bot_comment_num": "Dummy variable that equals 1 if the number of negative comments made by bots is above the sample median, 0 otherwise.",
+    "bot_comment_num": "Dummy variable that equals 1 if the number of comments made by bots is above the sample median, 0 otherwise.",
     # Profit
     "profit": "Each trader's profit from a given meme coin within 12 hours after its migration",
-    "creator": "Dummy variable equal to 1 if the trader is the meme coin's creator, 0 otherwise.",
+    "creator": "Dummy variable that equals 1 if the trader is the meme coin's creator, 0 otherwise.",
 }
 
 flat_naming_dict = {

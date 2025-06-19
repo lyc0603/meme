@@ -1,23 +1,17 @@
 \begin{tabularx}{\textwidth}{lX}\hline
 Variable & Description \\
 \hline
-$\text{Duration}$ & Log number of seconds between the meme coin's launch on Pump.fun and its migration to Raydium. \\
-$\#\text{Traders}$ & Log number of unique traders of the meme coin on Pump.fun before migration. \\
-$\#\text{Txns}$ & Log number of transactions of the meme coin on Pump.fun before migration. \\
-$\#\text{Transfers}$ & Log number of transfers of the meme coin between wallets before migration. \\
-$\text{HHI}_{\text{Holding}}$ & Herfindahl index of the meme coin's holdings before migration. \\
-$\text{HHI}_{\text{Bundle}}$ & Herfindahl index of the transactions number per block before migration. \\
-$\text{Transfer Amount (\%)}$ & Log total amount of meme coin transfer between wallets divided by the total supply before migration. \\
-$\text{Max Same Txn}$ & Log maximum number of transactions with same token quantity made by a single trader of this meme coin before migration. \\
-$\text{Pos/\#Swaps}$ & Average ratio of net position plus one to the number of swaps made by traders of this meme coin before migration. \\
-$\#\text{Replies}$ & Log number of unique comments to the meme coin on Pump.fun before migration. \\
-$\text{HHI}_{\text{Interval}}$ & Herfindahl index of the time intervals between comments to the meme coin on Pump.fun before migration. \\
-$\#\text{Repliers}$ & Log number of unique users who commented on the meme coin on Pump.fun before migration. \\
-$\#\text{Non-Trader Repliers}$ & Log number of unique users who commented on the meme coin on Pump.fun before migration but did not trade it. \\
-$\text{Dev Transfer}$ & Dummy variable equal to 1 if the meme coin's creator made transfers with other wallet, 0 otherwise. \\
-$\text{Dev Buy}$ & Dummy variable equal to 1 if the meme coin's creator made buy transactions, 0 otherwise. \\
-$\text{Dev Sell}$ & Dummy variable equal to 1 if the meme coin's creator made sell transactions, 0 otherwise. \\
+$\text{Creator Bundle Launch}$ & Dummy variable that equals 1 if the meme coin has creator wallet funded launch bundle, 0 otherwise. \\
+$\text{Creator Bundle Buy}$ & Dummy variable that equals 1 if the meme coin has any creator wallet funded bundle buy, 0 otherwise. \\
+$\text{Bundle Launch}$ & Dummy variable that equals 1 if the meme coin has any launch bundle, 0 otherwise. \\
+$\text{Buy Bundle}$ & Dummy variable that equals 1 if the buy bundle number is above the sample median, 0 otherwise. \\
+$\text{Sell Bundle}$ & Dummy variable that equals 1 if the sell bundle number is above the sample median, 0 otherwise. \\
+$\text{Max Same Txn}$ & Dummy variable that equals 1 if the maximum number of transactions with the same token quantity made by a single trader of this meme coin before migration is above the sample median, 0 otherwise. \\
+$\text{Pos-\#Swaps Ratio}$ & Dummy variable that equals 1 if the average ratio of net position plus one to the number of swaps made by traders of this meme coin before migration is above the sample median, 0 otherwise. \\
+$\text{Bot Comment}$ & Dummy variable that equals 1 if the number of comments made by bots is above the sample median, 0 otherwise. \\
+$\text{Positive Comment Bot}$ & Dummy variable that equals 1 if the number of positive comments made by bots is above the sample median, 0 otherwise. \\
+$\text{Negative Comment Bot}$ & Dummy variable that equals 1 if the number of negative comments made by bots is above the sample median, 0 otherwise. \\
 $\text{Profit}$ & Each trader's profit from a given meme coin within 12 hours after its migration \\
-$\text{Creator}$ & Dummy variable equal to 1 if the trader is the meme coin's creator, 0 otherwise. \\
+$\text{Creator}$ & Dummy variable that equals 1 if the trader is the meme coin's creator, 0 otherwise. \\
 \hline
 \end{tabularx}

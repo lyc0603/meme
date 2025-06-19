@@ -29,23 +29,23 @@ NAMING_DICT = {
     #     "#transfer": "$\#\\text{Transfers}$",
     # },
     "bundle_bot": {
-        "launch_bundle_transfer": "$\\text{Launch Bundle}$",
-        "bundle_creator_buy": "$\\text{Bundle Creator Buy}$",
+        "launch_bundle_transfer": "$\\text{Creator Bundle Launch}$",
+        "bundle_creator_buy": "$\\text{Creator Bundle Buy}$",
         "bundle_launch": "$\\text{Bundle Launch}$",
-        "bundle_buy": "$\\text{Bundle Buy}$",
-        "bundle_sell": "$\\text{Bundle Sell}$",
+        "bundle_buy": "$\\text{Buy Bundle}$",
+        "bundle_sell": "$\\text{Sell Bundle}$",
         # "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
         # "bundle": "$\\text{HHI}_{\\text{Bundle}}$",
         # "transfer_amount": "$\\text{Transfer Amount (\%)}$",
     },
     "volume_bot": {
         "max_same_txn": "$\\text{Max Same Txn}$",
-        "pos_to_number_of_swaps_ratio": "$\\text{Pos/\#Swaps}$",
+        "pos_to_number_of_swaps_ratio": "$\\text{Pos-\#Swaps Ratio}$",
     },
     "comment_bot": {
         "bot_comment_num": "$\\text{Bot Comment}$",
-        "positive_bot_comment_num": "$\\text{Positive Bot Comment}$",
-        "negative_bot_comment_num": "$\\text{Negative Bot Comment}$",
+        "positive_bot_comment_num": "$\\text{Positive Comment Bot}$",
+        "negative_bot_comment_num": "$\\text{Negative Comment Bot}$",
         # "reply_interval_herf": "$\\text{HHI}_{\\text{Interval}}$",
         # "unique_replies": "$\\text{ln}\#\\text{Replies}$",
         # "unique_repliers": "$\\text{ln}\#\\text{Repliers}$",
@@ -70,9 +70,9 @@ PROFIT_NAMING_DICT = {
 }
 
 FREQ_DICT = {
-    "1 Min": {"ret": "${\it Ret}_{\it 1min}$", "mdd": "${\it MDD}_{\it 1min}$"},
-    "1 Hour": {"ret": "${\it Ret}_{\it 1h}$", "mdd": "${\it MDD}_{\it 1h}$"},
-    "10 Hours": {"ret": "${\it Ret}_{\it 10h}$", "mdd": "${\it MDD}_{\it 10h}$"},
+    "1 Min": "$\\text{Ret}_{\\text{1min}}$",
+    "1 Hour": "$\\text{Ret}_{\\text{1h}}$",
+    "10 Hours": "$\\text{Ret}_{\\text{10h}}$",
 }
 
 # before block for the TRUMP block 2025-01-17 14:01:48
