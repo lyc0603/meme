@@ -29,9 +29,9 @@ NAMING_DICT = {
     #     "#transfer": "$\#\\text{Transfers}$",
     # },
     "bundle_bot": {
-        "launch_bundle_transfer": "$\\text{Creator Bundle Launch}$",
-        "bundle_creator_buy": "$\\text{Creator Bundle Buy}$",
-        "bundle_launch": "$\\text{Bundle Launch}$",
+        "launch_bundle_transfer": "$\\text{Creator Launch Bundle}$",
+        "bundle_creator_buy": "$\\text{Creator Buy Bundle}$",
+        "bundle_launch": "$\\text{Launch Bundle}$",
         "bundle_buy": "$\\text{Buy Bundle}$",
         "bundle_sell": "$\\text{Sell Bundle}$",
         # "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
