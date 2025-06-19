@@ -1,5 +1,6 @@
 """Script to process return and maximum drawdown (MDD) for token pools."""
 
+import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from multiprocessing import Process, Queue, cpu_count
@@ -15,12 +16,7 @@ SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 
 FREQ_DICT = {
     "1 Min": {"freq": "1min", "before": 1},
-    "5 Mins": {"freq": "1min", "before": 5},
-    "10 Mins": {"freq": "1min", "before": 10},
-    "15 Mins": {"freq": "1min", "before": 15},
-    "30 Mins": {"freq": "1min", "before": 30},
     "1 Hour": {"freq": "1h", "before": 1},
-    "5 Hours": {"freq": "1h", "before": 5},
     "10 Hours": {"freq": "1h", "before": 10},
 }
 
@@ -31,7 +27,7 @@ def worker(task_queue: Queue, result_queue: Queue):
         pool = task_queue.get()
         if pool is None:
             break  # Sentinel value received
-        # try:
+
         token_add = pool["token_address"]
         meme = MemeAnalyzer(
             NewTokenPool(
@@ -54,16 +50,15 @@ def worker(task_queue: Queue, result_queue: Queue):
                     for name, info in FREQ_DICT.items()
                 },
                 **{
-                    f"mdd_{name}": meme.get_mdd(info["freq"], info["before"])
-                    for name, info in FREQ_DICT.items()
-                },
-                **{
                     f"death_{name}": meme.check_death(info["freq"], info["before"])
                     for name, info in FREQ_DICT.items()
                 },
+                "survive": meme.get_survive(),
                 **{
                     "chain": meme.new_token_pool.chain,
                     "token_address": meme.new_token_pool.pool_add,
+                    # Trade Size
+                    "#trader": len(meme.swappers),
                     # Bundle Bot
                     "launch_bundle_transfer": meme.get_bundle_launch_transfer_dummy(),
                     "bundle_creator_buy": meme.get_bundle_creator_buy_dummy(),
@@ -86,8 +81,6 @@ def worker(task_queue: Queue, result_queue: Queue):
         )
 
         result_queue.put(mdd_df)
-        # except Exception as e:
-        #     print(f"Error processing pool {pool.get('token_address')}: {e}")
 
 
 if __name__ == "__main__":
@@ -125,4 +118,24 @@ if __name__ == "__main__":
 
     # Combine and save
     mdd_df = pd.concat(mdd_list, ignore_index=True)
+
+    # Preprocess the data
+    # Independent variables
+    for var in [
+        "#trader",
+        "bundle_launch",
+        "bundle_buy",
+        "bundle_sell",
+        "max_same_txn",
+        "pos_to_number_of_swaps_ratio",
+        "bot_comment_num",
+        "positive_bot_comment_num",
+        "negative_bot_comment_num",
+    ]:
+        mdd_df[var] = mdd_df[var].apply(lambda x: 1 if x > mdd_df[var].median() else 0)
+
+    # Dependency variables
+    for y_var in FREQ_DICT:
+        mdd_df[f"ret_{y_var}"] = np.log(mdd_df[f"ret_{y_var}"] + 1)
+
     mdd_df.to_csv(f"{PROCESSED_DATA_PATH}/ret_mdd.csv", index=False)

@@ -1,0 +1,134 @@
+"""Script to regress factors against returns and survival."""
+
+from pathlib import Path
+import pandas as pd
+import statsmodels.api as sm
+
+from environ.constants import PROCESSED_DATA_PATH, TABLE_PATH, NAMING_DICT, FREQ_DICT
+from environ.utils import asterisk
+from typing import Any, Dict, List
+
+
+def flatten_naming_dict(naming_dict: Dict[str, Dict[str, str]]) -> Dict[str, str]:
+    """Flatten the nested naming dictionary into a single-level dictionary."""
+    return {k: v for category in naming_dict.values() for k, v in category.items()}
+
+
+PROFIT_NAMING_DICT = {
+    **flatten_naming_dict(NAMING_DICT),
+    "con": "$\\text{Constant}$",
+    "obs": "$\\text{Obs}$",
+    "r2": "$R^2$",
+}
+
+X_VAR_LIST = [
+    "launch_bundle_transfer",
+    "bundle_creator_buy",
+    "bundle_launch",
+    "bundle_buy",
+    "bundle_sell",
+    "max_same_txn",
+    "pos_to_number_of_swaps_ratio",
+    "positive_bot_comment_num",
+    "negative_bot_comment_num",
+]
+
+mdd_df = pd.read_csv(Path(PROCESSED_DATA_PATH) / "ret_mdd.csv")
+
+
+def reg_survive(
+    df: pd.DataFrame,
+    x_var_list: List[str],
+) -> Dict[str, Dict[str, Any]]:
+    """Run regression analysis on return and survival data."""
+    results = {}
+
+    for y_var in FREQ_DICT:
+        key = f"ret_{y_var}"
+        reg_df = df.loc[df[f"death_{y_var}"] == 0, :].copy()
+
+        X = sm.add_constant(reg_df[x_var_list])
+        y = reg_df[f"ret_{y_var}"]
+        model = sm.OLS(y, X).fit()
+
+        results[key] = {
+            "model": model,
+            "params": model.params,
+            "pvalues": model.pvalues,
+            "bse": model.bse,
+            "r2": model.rsquared,
+            "nobs": int(model.nobs),
+        }
+
+    X = sm.add_constant(df[x_var_list])
+    y = df["survive"]
+    model_survive = sm.OLS(y, X).fit()
+    results["survive"] = {
+        "model": model_survive,
+        "params": model_survive.params,
+        "pvalues": model_survive.pvalues,
+        "bse": model_survive.bse,
+        "r2": model_survive.rsquared,
+        "nobs": int(model_survive.nobs),
+    }
+
+    return results
+
+
+def render_latex_table(
+    results: Dict[str, Dict[str, Any]], x_var_list: List[str]
+) -> str:
+    """Render regression results into a LaTeX table."""
+    keys = list(results.keys())
+    lines = []
+
+    lines.append("\\begin{tabular}{l" + "c" * len(keys) + "}")
+    lines.append("\\hline")
+    lines.append(" & " + " & ".join(keys) + r" \\")
+    lines.append("\\hline")
+
+    for var in x_var_list + ["const"]:
+        row_coef = PROFIT_NAMING_DICT.get(var, var)
+        row_stderr = ""
+        for key in keys:
+            model_res = results[key]
+            if var in model_res["params"]:
+                coef = model_res["params"][var]
+                stderr = model_res["bse"][var]
+                pval = model_res["pvalues"][var]
+                row_coef += f" & {coef:.2f}{asterisk(pval)}"
+                row_stderr += f" & ({stderr:.2f})"
+            else:
+                row_coef += " & "
+                row_stderr += " & "
+        lines.append(row_coef + r" \\")
+        lines.append(row_stderr + r" \\")
+
+    # Add Obs and R²
+    obs_row = (
+        PROFIT_NAMING_DICT["obs"]
+        + " "
+        + " ".join(f"& {results[key]['nobs']}" for key in keys)
+        + r" \\"
+    )
+    r2_row = (
+        PROFIT_NAMING_DICT["r2"]
+        + " "
+        + " ".join(f"& {results[key]['r2']:.2f}" for key in keys)
+        + r" \\"
+    )
+
+    lines.append(obs_row)
+    lines.append(r2_row)
+    lines.append("\\hline")
+    lines.append("\\end{tabular}")
+
+    return "\n".join(lines)
+
+
+if __name__ == "__main__":
+    results = reg_survive(mdd_df, X_VAR_LIST)
+    latex_table = render_latex_table(results, X_VAR_LIST)
+
+    with open(TABLE_PATH / "reg_ret_survive.tex", "w", encoding="utf-8") as f:
+        f.write(latex_table)

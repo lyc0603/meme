@@ -11,24 +11,6 @@ from environ.trader_analyzer import TraderAnalyzer
 chain = "raydium"
 
 
-def preprocess_tab(ret_mdd_tab):
-    """Preprocess the ret_mdd_tab DataFrame."""
-    for var in [
-        "bundle_launch",
-        "bundle_buy",
-        "bundle_sell",
-        "max_same_txn",
-        "pos_to_number_of_swaps_ratio",
-        "bot_comment_num",
-        "positive_bot_comment_num",
-        "negative_bot_comment_num",
-    ]:
-        ret_mdd_tab[var] = ret_mdd_tab[var].apply(
-            lambda x: 1 if x > ret_mdd_tab[var].median() else 0
-        )
-    return ret_mdd_tab
-
-
 x_var_list = ["creator", "txn_number"]
 x_var_creator_interaction = [
     "launch_bundle_transfer",
@@ -92,7 +74,6 @@ def consumer(task_queue, result_queue):
 def main():
     """Main function to process profit data."""
     ret_mdd_tab = pd.read_csv(f"{PROCESSED_DATA_PATH}/ret_mdd.csv")
-    ret_mdd_tab = preprocess_tab(ret_mdd_tab)
 
     num_workers = max(1, multiprocessing.cpu_count() - 5)
     task_queue = multiprocessing.Queue(maxsize=num_workers * 2)

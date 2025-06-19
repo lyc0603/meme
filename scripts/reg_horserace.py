@@ -18,12 +18,6 @@ mdd_df["#trader"] = np.log(mdd_df["#trader"])
 mdd_df["#txn"] = np.log(mdd_df["#txn"])
 mdd_df["#transfer"] = np.log(mdd_df["#transfer"] + 1)
 
-
-# Dependency variables
-for y_var in FREQ_DICT:
-    mdd_df[f"ret_{y_var}"] = np.log(mdd_df[f"ret_{y_var}"] + 1)
-
-
 # VIF
 for y_var in FREQ_DICT:
     reg_df = mdd_df.loc[mdd_df[f"death_{y_var}"] == 0, :].copy()

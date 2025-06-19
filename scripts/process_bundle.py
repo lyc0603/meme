@@ -33,58 +33,50 @@ def worker(task_queue: Queue, done_queue: Queue):
             sol_transfer_path = (
                 PROCESSED_DATA_PATH / "bundle" / f"{token_address}.jsonl"
             )
-            if os.path.exists(sol_transfer_path):
-
-                # Process Solana transfer data
-                with open(sol_transfer_path, "r", encoding="utf-8") as f:
-                    for line in f:
-                        row = json.loads(line)
-                        if row["tx_from"] == creator:
-                            for block, bundle in bundle_info["bundle"].items():
-                                if row["block_id"] <= block:
-                                    if row["tx_to"] in set(
-                                        [_["maker"] for _ in bundle]
-                                    ) - set([creator]):
-                                        transfer = Transfer(
-                                            date=datetime.strptime(
-                                                row["block_timestamp"],
-                                                "%Y-%m-%dT%H:%M:%S.%fZ",
-                                            ),
-                                            block=row["block_id"],
-                                            txn_hash=row["tx_id"],
-                                            log_index=row["index"],
-                                            from_=row["tx_from"],
-                                            to=row["tx_to"],
-                                            value=row["amount"],
-                                        )
-                                        if block == launch_block:
-                                            if block not in result["bundle_launch"]:
-                                                result["bundle_launch"][block] = {
-                                                    "block_id": block,
-                                                    "bundle": bundle,
-                                                    "transfer": [transfer],
-                                                }
-                                            else:
-                                                result["bundle_launch"][block][
-                                                    "transfer"
-                                                ].append(transfer)
+            # Process Solana transfer data
+            with open(sol_transfer_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    row = json.loads(line)
+                    if row["tx_from"] == creator:
+                        for block, bundle in bundle_info["bundle"].items():
+                            if row["block_id"] <= block:
+                                if row["tx_to"] in set(
+                                    [_["maker"] for _ in bundle]
+                                ) - set([creator]):
+                                    transfer = Transfer(
+                                        date=datetime.strptime(
+                                            row["block_timestamp"],
+                                            "%Y-%m-%dT%H:%M:%S.%fZ",
+                                        ),
+                                        block=row["block_id"],
+                                        txn_hash=row["tx_id"],
+                                        log_index=row["index"],
+                                        from_=row["tx_from"],
+                                        to=row["tx_to"],
+                                        value=row["amount"],
+                                    )
+                                    if block == launch_block:
+                                        if block not in result["bundle_launch"]:
+                                            result["bundle_launch"][block] = {
+                                                "block_id": block,
+                                                "bundle": bundle,
+                                                "transfer": [transfer],
+                                            }
                                         else:
-                                            if (
-                                                block
-                                                not in result["bundle_creator_buy"]
-                                            ):
-                                                result["bundle_creator_buy"][block] = {
-                                                    "block_id": block,
-                                                    "bundle": bundle,
-                                                    "transfer": [transfer],
-                                                }
-                                            else:
-                                                result["bundle_creator_buy"][block][
-                                                    "transfer"
-                                                ].append(transfer)
-            else:
-                done_queue.put(token_address)  # Mark as done even if skipped
-                continue
+                                            result["bundle_launch"][block][
+                                                "transfer"
+                                            ].append(transfer)
+                                    else:
+                                        if block not in result["bundle_creator_buy"]:
+                                            result["bundle_creator_buy"][block] = {
+                                                "block_id": block,
+                                                "bundle": bundle,
+                                                "transfer": [transfer],
+                                            }
+                                        else:
+                                            result["bundle_creator_buy"][block][
+                                                "transfer"
+                                            ].append(transfer)
 
             output_path = (
                 PROCESSED_DATA_PATH / "launch_bundle" / f"{token_address}.pickle"

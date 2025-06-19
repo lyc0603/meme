@@ -22,6 +22,18 @@ from environ.constants import (
 logger = logging.getLogger(__name__)
 
 
+def asterisk(pval: float) -> str:
+    """Return asterisks based on standard significance levels."""
+    if pval < 0.01:
+        return "***"
+    elif pval < 0.05:
+        return "**"
+    elif pval < 0.10:
+        return "*"
+    else:
+        return ""
+
+
 def extract_pool_set() -> set:
     """Fetch the set of pools from the file"""
 

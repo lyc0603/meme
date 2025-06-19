@@ -89,91 +89,61 @@ class MemeAnalyzer(MemeBase):
                 )
         return sorted(reply_list, key=lambda x: x["time"])
 
-    # Dpendent Variables
-    def check_death(self, freq: str, before: Optional[int]) -> int:
-        """Method to check if the meme token is dead"""
-
-        if before is not None:
-            match freq:
-                case "1min":
-                    before = before * 60
-                case "1h":
-                    before = before * 3600
-
-        return int(
-            len(
-                [
-                    _
-                    for _ in self.get_acts(Swap)
-                    if (
-                        _["date"].replace(tzinfo=timezone.utc) - self.migrate_time
-                    ).total_seconds()
-                    > before
-                ]
-            )
-            == 0
-        )
-
     # Metrics for Bundle Bot
-    def get_bundle_launch_transfer_dummy(self) -> int | None:
+    def get_bundle_launch_transfer_dummy(self) -> int:
         """Method to get the launch bundle dummy variable"""
-        if self.launch_bundle is not None:
-            return int(len(self.launch_bundle["bundle_launch"]) > 0)
+        return int(len(self.launch_bundle["bundle_launch"]) > 0)
 
-    def get_bundle_creator_buy_dummy(self) -> int | None:
+    def get_bundle_creator_buy_dummy(self) -> int:
         """Method to get the bundle creator buy dummy variable"""
-        if self.launch_bundle is not None:
-            return int(len(self.launch_bundle["bundle_creator_buy"]) > 0)
+        return int(len(self.launch_bundle["bundle_creator_buy"]) > 0)
 
-    def get_bundle_launch_buy_sell_num(self) -> tuple[int, int, int] | None:
+    def get_bundle_launch_buy_sell_num(self) -> tuple[int, int, int]:
         """Method to get the number of bundle buys"""
-        if self.launch_bundle is not None:
-            bundle_launch = 0
-            bundle_buy = 0
-            bunle_sell = 0
+        bundle_launch = 0
+        bundle_buy = 0
+        bunle_sell = 0
 
-            for block, bundle_info in self.launch_bundle["bundle"].items():
-                if block == self.launch_block:
-                    if (
-                        len(
-                            [
-                                row["maker"]
-                                for row in bundle_info
-                                if row["maker"] != self.creator
-                            ]
-                        )
-                        > 0
-                    ):
-                        bundle_launch += 1
-                else:
-                    bundle_length = len(bundle_info)
-                    if (
-                        len(
-                            [
-                                row["acts"][0]["typ"]
-                                for row in bundle_info
-                                if row["acts"][0]["typ"] == "Buy"
-                            ]
-                        )
-                        == bundle_length
-                    ):
-                        bundle_buy += 1
+        for block, bundle_info in self.launch_bundle["bundle"].items():
+            if block == self.launch_block:
+                if (
+                    len(
+                        [
+                            row["maker"]
+                            for row in bundle_info
+                            if row["maker"] != self.creator
+                        ]
+                    )
+                    > 0
+                ):
+                    bundle_launch += 1
+            else:
+                bundle_length = len(bundle_info)
+                if (
+                    len(
+                        [
+                            row["acts"][0]["typ"]
+                            for row in bundle_info
+                            if row["acts"][0]["typ"] == "Buy"
+                        ]
+                    )
+                    == bundle_length
+                ):
+                    bundle_buy += 1
 
-                    elif (
-                        len(
-                            [
-                                row["acts"][0]["typ"]
-                                for row in bundle_info
-                                if row["acts"][0]["typ"] == "Sell"
-                            ]
-                        )
-                        == bundle_length
-                    ):
-                        bunle_sell += 1
+                elif (
+                    len(
+                        [
+                            row["acts"][0]["typ"]
+                            for row in bundle_info
+                            if row["acts"][0]["typ"] == "Sell"
+                        ]
+                    )
+                    == bundle_length
+                ):
+                    bunle_sell += 1
 
-            return bundle_launch, bundle_buy, bunle_sell
-        else:
-            return None, None, None
+        return bundle_launch, bundle_buy, bunle_sell
 
     # Metrics for Comment Bot
     def get_comment_bot_num(self) -> int:
@@ -380,6 +350,36 @@ class MemeAnalyzer(MemeBase):
 
         return prc_resampled
 
+    # Dpendent Variables
+
+    def get_survive(self, txn_num: int = 10) -> int:
+        """Method to get the seconds since the migration time to the last N swaps"""
+        swaps = self.get_acts(Swap)
+        if len(swaps) < txn_num:
+            return 0
+
+        last_act_time = swaps[-txn_num]["date"].replace(tzinfo=timezone.utc)
+        return int((last_act_time - self.migrate_time).total_seconds())
+
+    def check_death(self, freq: str, before: Optional[int], txn_num: int = 10) -> int:
+        """Method to check if the meme token is dead"""
+
+        if before is not None:
+            match freq:
+                case "1min":
+                    before = before * 60
+                case "1h":
+                    before = before * 3600
+
+        swaps = self.get_acts(Swap)
+        if len(swaps) < txn_num:
+            return 1
+        last_act_time = swaps[-txn_num]["date"].replace(tzinfo=timezone.utc)
+        if last_act_time > self.migrate_time + datetime.timedelta(seconds=before):
+            return 0
+        else:
+            return 1
+
     def get_ret_before(
         self, freq: str = "1min", before: Optional[float] = None
     ) -> float:
@@ -438,7 +438,7 @@ if __name__ == "__main__":
 
     lst = []
 
-    NUM_OF_OBSERVATIONS = 1000
+    NUM_OF_OBSERVATIONS = 10
 
     for chain in [
         # "pumpfun",
@@ -464,12 +464,14 @@ if __name__ == "__main__":
             print(
                 # f"Pool: {pool['token_address']}, "
                 f"Max Drawdown: {meme.get_mdd(freq="1min", before=1) * 100:.2f}%, "
+                f"Survive: {meme.get_survive()}, "
+                f"Death 1min: {meme.check_death(freq='1min', before=1)}, "
                 # f"Unique Swapers: {meme.get_unique_swapers()},"
                 # f"Unique Non-Swap Transfers: {len(meme.non_swap_transfer_hash)}, ",
                 # # Bundle Bot Metrics
-                f"Bundle Launch Transfer Dummy: {meme.get_bundle_launch_transfer_dummy()}, ",
-                f"Bundle Creator Buy Dummy: {meme.get_bundle_creator_buy_dummy()}, ",
-                f"Bundle Launch Buy Sell Num: {meme.get_bundle_launch_buy_sell_num()}",
+                # f"Bundle Launch Transfer Dummy: {meme.get_bundle_launch_transfer_dummy()}, ",
+                # f"Bundle Creator Buy Dummy: {meme.get_bundle_creator_buy_dummy()}, ",
+                # f"Bundle Launch Buy Sell Num: {meme.get_bundle_launch_buy_sell_num()}",
                 # f"Holdings Herfindal Index: {meme.get_holdings_herf()}",
                 # # f"Non-Swap Transfer Graph Out Herfindahl: {out_deg}, "
                 # # f"Non-Swap Transfer Graph In Herfindahl: {in_deg}",
@@ -485,9 +487,9 @@ if __name__ == "__main__":
                 # f"Block Bundle Herfindahl: {meme.get_block_bundle_herf()}",
                 # f"Pos to Number of Swaps Ratio: {meme.get_pos_to_number_of_swaps_ratio()}",
                 # # Comment Bot Metrics
-                f"Bot Comment Num: {meme.get_comment_bot_num()}, ",
-                f"Positive Bot Comment Num: {meme.get_positive_comment_bot_num()}, ",
-                f"Negative Bot Comment Num: {meme.get_negative_comment_bot_num()}, ",
+                # f"Bot Comment Num: {meme.get_comment_bot_num()}, ",
+                # f"Positive Bot Comment Num: {meme.get_positive_comment_bot_num()}, ",
+                # f"Negative Bot Comment Num: {meme.get_negative_comment_bot_num()}, ",
                 # f"Unique Replies: {len(meme.reply_list)}, ",
                 # f"Reply Interval Herfindahl: {meme.get_reply_interval_herf()}",
                 # f"Unique Repliers: {meme.get_unqiue_repliers()}, ",

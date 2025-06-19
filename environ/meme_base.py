@@ -7,7 +7,7 @@ import pickle
 from collections import defaultdict
 from datetime import UTC, timezone
 
-from environ.constants import DATA_PATH, PROCESSED_DATA_PATH
+from environ.constants import PROCESSED_DATA_PATH
 from environ.data_class import NewTokenPool, Swap
 
 MIGATOR = "39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg"

@@ -7,20 +7,9 @@ import pandas as pd
 import statsmodels.api as sm
 
 from environ.constants import PROCESSED_DATA_PATH, TABLE_PATH, NAMING_DICT, FREQ_DICT
+from environ.utils import asterisk
 
 mdd_df = pd.read_csv(Path(PROCESSED_DATA_PATH) / "ret_mdd.csv")
-
-
-def asterisk(pval: float) -> str:
-    """Return asterisks based on standard significance levels."""
-    if pval < 0.01:
-        return "***"
-    elif pval < 0.05:
-        return "**"
-    elif pval < 0.10:
-        return "*"
-    else:
-        return ""
 
 
 # Render the Latex Table
@@ -139,22 +128,6 @@ mdd_df.dropna(inplace=True)
 # mdd_df["dev_transfer"] = mdd_df["dev_transfer"]
 # mdd_df["dev_buy"] = mdd_df["dev_buy"]
 # mdd_df["dev_sell"] = mdd_df["dev_sell"]
-
-for var in [
-    "bundle_launch",
-    "bundle_buy",
-    "bundle_sell",
-    "max_same_txn",
-    "pos_to_number_of_swaps_ratio",
-    "bot_comment_num",
-    "positive_bot_comment_num",
-    "negative_bot_comment_num",
-]:
-    mdd_df[var] = mdd_df[var].apply(lambda x: 1 if x > mdd_df[var].median() else 0)
-
-# Dependency variables
-for y_var in FREQ_DICT:
-    mdd_df[f"ret_{y_var}"] = np.log(mdd_df[f"ret_{y_var}"] + 1)
 
 # Collect regression results
 for tab, x_var_info in NAMING_DICT.items():

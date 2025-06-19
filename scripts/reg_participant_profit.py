@@ -28,6 +28,7 @@ X_VAR_LIST = [
 
 # Flatten NAMING_DICT for LaTeX column naming
 def flatten_naming_dict(naming_dict: Dict[str, Dict[str, str]]) -> Dict[str, str]:
+    """Flatten the nested naming dictionary into a single-level dictionary."""
     return {k: v for category in naming_dict.values() for k, v in category.items()}
 
 
@@ -49,6 +50,7 @@ Y_VAR = "profit"
 
 
 def asterisk(pval: float) -> str:
+    """Return asterisks based on standard significance levels."""
     if pval < 0.01:
         return "***"
     elif pval < 0.05:
@@ -71,6 +73,7 @@ def run_regression(
 def render_latex_table(
     var_names: List[str], res_dict: Dict[str, List[str]], y_var: str = "profit"
 ) -> str:
+    """Render the results dictionary into a LaTeX table string."""
     col_len = len(res_dict["con"])
     lines = []
     lines.append("\\begin{tabular}{l" + "c" * col_len + "}")
@@ -107,7 +110,8 @@ def render_latex_table(
 
 
 def main():
-    reg_tab = pd.read_csv(f"{PROCESSED_DATA_PATH}/profit.csv").dropna()
+    """Main function to run the regression analysis on profit data."""
+    reg_tab = pd.read_csv(f"{PROCESSED_DATA_PATH}/profit.csv")
     res_dict: Dict[str, List[Any]] = {
         k: []
         for k in [

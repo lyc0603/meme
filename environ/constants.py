@@ -71,12 +71,7 @@ PROFIT_NAMING_DICT = {
 
 FREQ_DICT = {
     "1 Min": {"ret": "${\it Ret}_{\it 1min}$", "mdd": "${\it MDD}_{\it 1min}$"},
-    "5 Mins": {"ret": "${\it Ret}_{\it 5min}$", "mdd": "${\it MDD}_{\it 5min}$"},
-    "10 Mins": {"ret": "${\it Ret}_{\it 10min}$", "mdd": "${\it MDD}_{\it 10min}$"},
-    "15 Mins": {"ret": "${\it Ret}_{\it 15min}$", "mdd": "${\it MDD}_{\it 15min}$"},
-    "30 Mins": {"ret": "${\it Ret}_{\it 30min}$", "mdd": "${\it MDD}_{\it 30min}$"},
     "1 Hour": {"ret": "${\it Ret}_{\it 1h}$", "mdd": "${\it MDD}_{\it 1h}$"},
-    "5 Hours": {"ret": "${\it Ret}_{\it 5h}$", "mdd": "${\it MDD}_{\it 5h}$"},
     "10 Hours": {"ret": "${\it Ret}_{\it 10h}$", "mdd": "${\it MDD}_{\it 10h}$"},
 }
 

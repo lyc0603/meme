@@ -25,7 +25,7 @@ FLIPSIDE_API_KEY = "4db69d1d-d55a-497c-82e4-93933c22e5f1"
 FLIPSIDE_BASE_URL = "https://api-v2.flipsidecrypto.xyz"
 
 CHAIN = "raydium"
-QUERY_INTERVAL = timedelta(days=1)
+QUERY_INTERVAL = timedelta(hours=6)
 
 default_retry = retry(
     reraise=True,
