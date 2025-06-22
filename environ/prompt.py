@@ -2,6 +2,7 @@
 
 import json
 
+
 # Comment Bot Detection
 SYSTEM_INSTRUCTION_COMMENT_BOT = (
     "You are a meme coin comment analyzer. "
@@ -116,3 +117,16 @@ JSON_SCHEMA_COMMENT_BOT = {
     },
     "strict": True,
 }
+
+
+# Chain of Thought (CoT) Prompt
+
+SYSTEM_INSTRUCTION_COT = (
+    "You are a professioannal meme coin analyst. "
+    "Your will be given the pre-migration candlestick chart, transaction history, and comment history of a meme coin. "
+    "Your task is to classify the meme coin as a potential rug pull or not. "
+    "A meme coin will be migrated to the decentralized exchange if it reaches a certain threshold of market capitalization. "
+    "A rug pull is a type of scam where the developers of a cryptocurrency project abandon it and run away with investors' funds. "
+    "A rug pull typically involves a sharp pre-migration price spike driven by wallets funded by the creator, lots of transactions bundled together in a block. "
+    ""
+)

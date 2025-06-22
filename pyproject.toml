@@ -33,7 +33,10 @@ dependencies = [
     "networkx==3.4.2",
     "pyfixest==0.29.0",
     "openai==1.84.0",
-    "tqdm==4.67.1"
+    "tqdm==4.67.1",
+    "plotly==6.1.2",
+    "nbformat==5.10.4",
+    "kaleido==1.0.0,
 ]
 
 [project.optional-dependencies]

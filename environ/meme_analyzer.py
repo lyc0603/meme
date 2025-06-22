@@ -4,6 +4,9 @@ import datetime
 from collections import Counter, defaultdict
 from datetime import timezone
 from typing import Optional, Any
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -14,6 +17,7 @@ from environ.constants import SOL_TOKEN_ADDRESS
 from environ.data_class import NewTokenPool, Swap
 from environ.meme_base import MemeBase
 from environ.sol_fetcher import import_pool
+import mplfinance as mpf
 
 MIGATOR = "39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg"
 
@@ -52,16 +56,22 @@ class MemeAnalyzer(MemeBase):
             "date": [],
             "price": [],
             "base": [],
+            "quote": [],
+            "usd": [],
         }
         for _, acts in enumerate(self.get_acts(Swap)):
+            last_act = acts["acts"][list(acts["acts"].keys())[-1]]
+
             prc_date_dict["block"].append(acts["block"])
             prc_date_dict["date"].append(acts["date"].replace(tzinfo=timezone.utc))
-            prc_date_dict["price"].append(
-                acts["acts"][list(acts["acts"].keys())[-1]].price
-            )
-            prc_date_dict["base"].append(
-                acts["acts"][list(acts["acts"].keys())[-1]].base
-            )
+            for key, value in {
+                "price": last_act.price,
+                "base": last_act.base,
+                "quote": last_act.quote,
+                "usd": last_act.usd,
+            }.items():
+                prc_date_dict[key].append(value)
+
         prc_date_df = pd.DataFrame(prc_date_dict)
         prc_date_df = prc_date_df.set_index("date").sort_index()
         prc_date_df["price"] = prc_date_df["price"].replace(0, np.nan)
@@ -438,7 +448,7 @@ if __name__ == "__main__":
 
     lst = []
 
-    NUM_OF_OBSERVATIONS = 10
+    NUM_OF_OBSERVATIONS = 20
 
     for chain in [
         # "pumpfun",
@@ -496,5 +506,4 @@ if __name__ == "__main__":
                 # f"Non-Swapper Repliers: {meme.get_non_swapper_replier_num()}",
             )
             # (meme.get_ret(freq="1min") + 1).cumprod().plot()
-
             # print(meme.check_death(freq="1h", before=10))
