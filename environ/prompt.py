@@ -2,6 +2,8 @@
 
 import json
 
+IMAGE_URL_TEMP = "https://raw.githubusercontent.com/lyc0603/meme/\
+refs/heads/main/figures/candle/{ca}.png"
 
 # Comment Bot Detection
 SYSTEM_INSTRUCTION_COMMENT_BOT = (
@@ -119,14 +121,365 @@ JSON_SCHEMA_COMMENT_BOT = {
 }
 
 
-# Chain of Thought (CoT) Prompt
+# Technical Agent
 
-SYSTEM_INSTRUCTION_COT = (
-    "You are a professioannal meme coin analyst. "
-    "Your will be given the pre-migration candlestick chart, transaction history, and comment history of a meme coin. "
-    "Your task is to classify the meme coin as a potential rug pull or not. "
-    "A meme coin will be migrated to the decentralized exchange if it reaches a certain threshold of market capitalization. "
-    "A rug pull is a type of scam where the developers of a cryptocurrency project abandon it and run away with investors' funds. "
-    "A rug pull typically involves a sharp pre-migration price spike driven by wallets funded by the creator, lots of transactions bundled together in a block. "
-    ""
+SYSTEM_INSTRUCTION_TECHNICAL_AGENT = (
+    "You are a professional meme coin technical analyst. "
+    "You will be provided with the pre-migration candlestick chart of a meme coin. "
+    "Your task is to assess whether the meme coin exhibits good farming potential after its migration to a decentralized exchange. "
+    "Good farming potential suggests that the coin is likely to experience sustainable upside performance in the future. "
+    "Your response should follow this format: "
+    '{"reasoning": <your reasoning>, "good_farming": <true/false>}'
 )
+
+PROMPT_TECHNICAL_AGENT = """Does this meme coin have good farming potential?"""
+
+COT_TECHNICAL_AGENT = [
+    # Short pre-migration duration, large price spike
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": PROMPT_TECHNICAL_AGENT},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": IMAGE_URL_TEMP.format(
+                        ca="DTosa6Pe8y3435LtWZvJgkjLCb6wAbnDdP6ek4CN8Hd1"
+                    ),
+                    "detail": "high",
+                },
+            },
+        ],
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "First, the pre-migration duration is very short, which suggests there was limited time for organic price discovery and community engagement. '
+            "Second, the candlestick chart reveals a significant price spike just before migration, indicating that early actors likely opened large positions in anticipation of dumping. "
+            'These two factors strongly suggest that the meme coin does not exhibit good farming potential.", '
+            '"good_farming": false}'
+        ),
+    },
+    # Long pre-migration duration, has significant price spike
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": PROMPT_TECHNICAL_AGENT},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": IMAGE_URL_TEMP.format(
+                        ca="3MA25YiqyaGUJ7GVZSsNYrJ3URqraWMmLQ6k8qrvpump"
+                    ),
+                    "detail": "high",
+                },
+            },
+        ],
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "First, the candlestick chart shows a long pre-migration duration, which suggests sufficient time for organic price formation and community participation. '
+            "Second, although there is a minor price spike before migration, it is preceded by a stable price range, indicating the growth is more likely organic rather than speculative. "
+            'These two factors suggest that the meme coin exhibits good farming potential.", '
+            '"good_farming": true}'
+        ),
+    },
+    # Long pre-migration duration, has significant price spike and missing transactions
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": PROMPT_TECHNICAL_AGENT},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": IMAGE_URL_TEMP.format(
+                        ca="6fudFtspNwdjDbLiE2MXHPsSuS5uJry5PCSQc9LLpump"
+                    ),
+                    "detail": "high",
+                },
+            },
+        ],
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "First, the candlestick chart shows a long pre-migration duration, which typically allows time for organic growth and community engagement. '
+            "Second, there appears to be a lack of transaction activity prior to the price spike, suggesting limited interest or participation during this period. "
+            'These two factors suggest that the meme coin does not exhibit good farming potential.", '
+            '"good_farming": false}'
+        ),
+    },
+    # Long pre-migration duration, no significant price spike
+    {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": PROMPT_TECHNICAL_AGENT},
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": IMAGE_URL_TEMP.format(
+                        ca="FrVqKZKwxT4zHWufUqvwfqH3jmP7WWSKMykMpkPXpump"
+                    ),
+                    "detail": "high",
+                },
+            },
+        ],
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "First, the candlestick chart shows a long pre-migration duration, which typically allows for organic growth and community engagement. '
+            "Second, there is no significant price spike before migration, indicating that the price movements are more stable and less speculative. "
+            'These two factors suggest that the meme coin exhibits good farming potential.", '
+            '"good_farming": true}'
+        ),
+    },
+]
+
+# Transaction Agent
+SYSTEM_INSTRUCTION_TRANSACTION_AGENT = (
+    "You are a professional meme coin transaction analyst. "
+    "You will be provided with the indicators of pre-migration transactions of a meme coin. "
+    "Your task is to assess whether the meme coin exhibits good farming potential after its migration to a decentralized exchange. "
+    "Your response should follow this format: "
+    '{"reasoning": <your reasoning>, "good_farming": <true/false>}'
+)
+
+COT_TRANSACTION_AGENT = [
+    # Perfect farming potential
+    {
+        "role": "user",
+        "content": (
+            "Creator-funded Bundle: No\n"
+            "Creator-funded Buy Bundle: No\n"
+            "Buy Bundle: Middle\n"
+            "Sell Bundle: Middle\n"
+            "Pre-migration Duration: High\n"
+            "Number of Unique Traders: High\n"
+            "Number of Transactions: High\n"
+            "Holding Centralization: Low\n"
+            "Does this meme coin have good farming potential?"
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "First, this meme coin does not have a creator-funded bundle and a creator-funded buy bundle, '
+            "indicating that the creator is not manipulating the market. "
+            "Second, the buy bundle and sell bundle are both in the middle range, suggesting a medium level of bot activity. "
+            "Third, the pre-migration duration, number of unique traders, and number of transactions are all high, "
+            "indicating a healthy level of community engagement and activity. "
+            "Finally, the holding centralization is low, suggesting a decentralized distribution of tokens. "
+            'These factors suggest that the meme coin exhibits good farming potential.", '
+            '"good_farming": true}'
+        ),
+    },
+    # Farming with creator-funded bundle
+    {
+        "role": "user",
+        "content": (
+            "Creator-funded Bundle: Yes\n"
+            "Creator-funded Buy Bundle: No\n"
+            "Buy Bundle: Low\n"
+            "Sell Bundle: Low\n"
+            "Pre-migration Duration: High\n"
+            "Number of Unique Traders: High\n"
+            "Number of Transactions: High\n"
+            "Holding Centralization: Low\n"
+            "Does this meme coin have good farming potential?"
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "This meme coin involves a creator-funded bundle, indicating the creator accumulated a significant share of tokens before migration. '
+            "Such behavior often signals an intent to dump post-migration, which undermines the coin's sustainability. "
+            'Despite favorable metrics in trader activity and decentralization, the presence of a creator-funded bundle strongly suggests poor farming potential.", '
+            '"good_farming": false}'
+        ),
+    },
+    # Farming with high buy bundle
+    {
+        "role": "user",
+        "content": (
+            "Creator-funded Bundle: No\n"
+            "Creator-funded Buy Bundle: No\n"
+            "Buy Bundle: High\n"
+            "Sell Bundle: Low\n"
+            "Pre-migration Duration: High\n"
+            "Number of Unique Traders: High\n"
+            "Number of Transactions: High\n"
+            "Holding Centralization: Low\n"
+            "Does this meme coin have good farming potential?"
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "This meme coin has a high buy bundle, indicating significant bot activity. '
+            "While the pre-migration duration, number of unique traders, and number of transactions are all high, "
+            "the presence of a high buy bundle suggests that the coin is likely to experience a price spike followed by a decline. "
+            'These factors suggest that the meme coin exhibits poor farming potential.", '
+            '"good_farming": false}'
+        ),
+    },
+    # Low pre-migration duration, traders, and transactions
+    {
+        "role": "user",
+        "content": (
+            "Creator-funded Bundle: No\n"
+            "Creator-funded Buy Bundle: No\n"
+            "Buy Bundle: Low\n"
+            "Sell Bundle: Low\n"
+            "Pre-migration Duration: Low\n"
+            "Number of Unique Traders: Low\n"
+            "Number of Transactions: Low\n"
+            "Holding Centralization: High\n"
+            "Does this meme coin have good farming potential?"
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "This meme coin has a low pre-migration duration, indicating limited time for organic growth and community engagement. '
+            "Additionally, the low number of unique traders and transactions suggests a lack of interest and activity. "
+            "The holding centralization is high, indicating that a small number of holders control a significant portion of the tokens, which is often a sign of poor distribution. "
+            'These factors strongly suggest that the meme coin exhibits poor farming potential.", '
+            '"good_farming": false}'
+        ),
+    },
+]
+
+PROMPT_TRANSACTION_AGENT = (
+    "Creator-funded Bundle: {creator_funded_bundle}\n"
+    "Creator-funded Buy Bundle: {creator_funded_buy_bundle}\n"
+    "Buy Bundle: {buy_bundle}\n"
+    "Sell Bundle: {sell_bundle}\n"
+    "Pre-migration Duration: {pre_migration_duration}\n"
+    "Number of Unique Traders: {number_of_unique_traders}\n"
+    "Number of Transactions: {number_of_transactions}\n"
+    "Holding Centralization: {holding_centralization}\n"
+    "Does this meme coin have good farming potential?"
+)
+
+
+# Comment Agent
+
+SYSTEM_INSTRUCTION_COMMENT_AGENT = (
+    "You are a professional meme coin comment analyzer. "
+    "You will be provided with the comment history of a meme coin. "
+    "Your task is to assess whether the meme coin demonstrates poor farming potential following its migration to a decentralized exchange. "
+    "Good farming potential suggests that the coin is likely to experience sustainable upside performance in the future. "
+    "Your response should follow this format: "
+    '{"reasoning": <your reasoning>, "good_farming": <true/false>}'
+)
+
+FEW_SHOT_EXAMPLES_COMMENT_AGENT = {
+    "BeMqCPzbhXKzFScmTwcWwa97XHE11ANoqn1psDfJpump": (
+        '{"reasoning": "The comment history shows a high volume of engagement. '
+        "While some comments are short and context-less—suggesting possible bot activity—this level of activity is likely to attract more human attention and participation. "
+        'As a result, the meme coin demonstrates good farming potential.", '
+        '"good_farming": true}'
+    ),
+    # Good example
+    "G4xMM7G1zURuTpVMLfd7cZh2oDu6myxVyJD2nxfpump": (
+        '{"reasoning": "First, the comment history shows a medium number of comments, '
+        "indicating a moderate level of community engagement. Second, the comments are more personalized and nuanced, "
+        "suggesting that they are likely human-generated. Third, these comments are generally positive, "
+        'indicating a healthy level of community sentiment. These factors suggest that the meme coin exhibits good farming potential.", '
+        '"good_farming": true}'
+    ),
+    # Few comments, mostly bot
+    "6xXo7nm18w5mC1yraGDvyv9u5Qxhs6WDgvWLzM1Npump": (
+        '{"reasoning": "First, the comment history shows a low number of comments, indicating a limited level of community engagement. '
+        "Second, the comments are mostly short and context-less, suggesting that they are likely bot-generated. "
+        'These two factors suggest that the meme coin does not exhibit good farming potential.", '
+        '"good_farming": false}'
+    ),
+    # No comments
+    "3ZSotNTYuXXmqvVg4jHxFPSonz8A5rgnZ4oG5f4xpump": (
+        '{"reasoning": "The comment history shows no comments, indicating a lack of community engagement. '
+        "Without any community interaction, it is difficult to assess the sentiment or engagement level. "
+        'This lack of engagement suggests that the meme coin does not exhibit good farming potential.", '
+        '"good_farming": false}'
+    ),
+}
+
+PROMPT_COMMENT_AGENT = """Comment History:
+{comment_history}
+Does this meme coin have good farming potential?"""
+
+# JSON Schema for Coin Agent
+JSON_SCHEMA_COIN_AGENT = {
+    "name": "meme_coin_analyzer",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "reasoning": {
+                "type": "string",
+                "description": "Your reasoning for the assessment of the meme coin's farming potential.",
+            },
+            "good_farming": {
+                "type": "boolean",
+                "description": "Indicates whether the meme coin exhibits good farming potential (true) or not (false).",
+            },
+        },
+        "required": ["reasoning", "good_farming"],
+        "additionalProperties": False,
+    },
+    "strict": True,
+}
+
+# Single Coin Agent
+SYSTEM_INSTRUCTION_COIN_AGENT_ZERO_SHOT = (
+    "You are a professional meme coin analyst. "
+    "You will be provided with the pre-migration candlestick chart, transaction history, and comment history of a meme coin. "
+    "Your task is to assess whether the meme coin demonstrates strong farming potential following its migration to a decentralized exchange. "
+    "Good farming potential suggests that the coin is likely to experience sustainable upside performance in the future. "
+    "Indicators of poor farming include a sudden price spike, "
+    "bundled transactions funded by the creator, and limited or predominantly negative community engagement. "
+    "Indicators of good farming include a long pre-migration period, decentralized token distribution, and positive community sentiment. "
+    "Your response should follow this format: "
+    '{"reasoning": <your reasoning>, "good_farming": <true/false>}'
+)
+
+PROMPT_COIN_AGENT_ZERO_SHOT = """Transaction History:
+{txn_history}
+Comment History:
+{comment_history}
+Does this meme coin have good farming potential? Let's think step by step.
+"""
+
+JSON_SCHEMA_COIN_AGENT_ZERO_SHOT = {
+    "name": "meme_coin_comment_analyzer",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "reasoning": {
+                "type": "string",
+                "description": "Your reasoning for the assessment of the meme coin's farming potential.",
+            },
+            "poor_farming": {
+                "type": "boolean",
+                "description": "Indicates whether the meme coin exhibits poor farming potential (true) or not (false).",
+            },
+        },
+        "required": ["reasoning", "poor_farming"],
+        "additionalProperties": False,
+    },
+    "strict": True,
+}
+
+# Very Good Performance
+
+good = [
+    "4wuQr1AWuXzMTkx4TPBBq65SYmeqTtPRU3e6GDDypump",
+    "3sBDqocAhuCnHaidLirVf4Gs4NZnk7exoQmygw6Lpump",
+    "G4xMM7G1zURuTpVMLfd7cZh2oDu6myxVyJD2nxfpump",
+    "3ZSotNTYuXXmqvVg4jHxFPSonz8A5rgnZ4oG5f4xpump",
+    "8iTx2BUANb9NhfBvnWCdNvaTyddgAfvctSNQAfTBpump",
+    "9E6PfjKH7TcJ6T75FN5h1HRNnUVhTT6vNsudauyWCxza",
+    # Gradual Pump
+    "5NbzXLkBZA4yVExrVdNJiYi8RAsmNPeTMFGxeRWupump",
+]

@@ -432,6 +432,26 @@ class MemeAnalyzer(MemeBase):
         mdd = prc_date_df["drawdown"].min()
         return mdd
 
+    def get_mdu(self, freq: str = "1min", before: Optional[float] = None) -> float:
+        """Method to get the maximum drawup of the meme token"""
+        prc_date_df = self.resample_price()
+        prc_date_df = self.append_pre_prc_date_df(prc_date_df)
+
+        if before is not None:
+            match freq:
+                case "1min":
+                    before = before * 60
+                case "1h":
+                    before = before * 3600
+            prc_date_df = prc_date_df[(prc_date_df.index <= before)]
+
+        prc_date_df["running_min"] = prc_date_df["price"].cummin()
+        prc_date_df["drawup"] = (
+            prc_date_df["price"] - prc_date_df["running_min"]
+        ) / prc_date_df["running_min"]
+        mdu = prc_date_df["drawup"].max()
+        return mdu
+
     def get_ret(self, freq: str) -> pd.DataFrame:
         """Method to get the return of the meme token"""
 

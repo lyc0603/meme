@@ -1,15 +1,16 @@
 """Script to process launch bundles from a bundle dictionary with processing tqdm."""
 
-from datetime import datetime
-from environ.data_class import Transfer
 import glob
 import json
 import os
 import pickle
+from datetime import datetime
 from multiprocessing import Process, Queue, cpu_count
+
 from tqdm import tqdm
 
-from environ.constants import PROCESSED_DATA_PATH, DATA_PATH
+from environ.constants import DATA_PATH, PROCESSED_DATA_PATH
+from environ.data_class import Transfer
 
 
 def worker(task_queue: Queue, done_queue: Queue):

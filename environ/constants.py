@@ -23,9 +23,9 @@ SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 # Naming dictionary for regression variables
 NAMING_DICT = {
     # "size": {
-    #     "duration": "$\\text{Duration}$",
-    #     "#trader": "$\#\\text{Traders}$",
-    #     "#txn": "$\#\\text{Txns}$",
+    # "duration": "$\\text{Duration}$",
+    # "#trader": "$\#\\text{Traders}$",
+    # "#txn": "$\#\\text{Txns}$",
     #     "#transfer": "$\#\\text{Transfers}$",
     # },
     "bundle_bot": {
@@ -34,7 +34,7 @@ NAMING_DICT = {
         "bundle_launch": "$\\text{Launch Bundle}$",
         "bundle_buy": "$\\text{Buy Bundle}$",
         "bundle_sell": "$\\text{Sell Bundle}$",
-        # "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
+        "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
         # "bundle": "$\\text{HHI}_{\\text{Bundle}}$",
         # "transfer_amount": "$\\text{Transfer Amount (\%)}$",
     },
