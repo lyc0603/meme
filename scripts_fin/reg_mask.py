@@ -29,6 +29,7 @@ Y_NAMING_DICT = {
 
 X_VAR_LIST = [
     "launch_bundle_transfer",
+    "bundle_launch",
     "max_same_txn",
     "pos_to_number_of_swaps_ratio",
 ]
@@ -39,10 +40,20 @@ REG_LIST = [
         "1 Min",
         ["launch_bundle_transfer", "max_same_txn", "pos_to_number_of_swaps_ratio"],
     ),
+    ("1 Min", ["bundle_launch"]),
+    (
+        "1 Min",
+        ["bundle_launch", "max_same_txn", "pos_to_number_of_swaps_ratio"],
+    ),
     ("survive", ["launch_bundle_transfer"]),
     (
         "survive",
         ["launch_bundle_transfer", "max_same_txn", "pos_to_number_of_swaps_ratio"],
+    ),
+    ("survive", ["bundle_launch"]),
+    (
+        "survive",
+        ["bundle_launch", "max_same_txn", "pos_to_number_of_swaps_ratio"],
     ),
 ]
 
@@ -86,7 +97,16 @@ def reg_survive(
 
 def render_latex_table(results: List[Dict[str, Any]], x_var_list: List[str]) -> str:
     """Render regression results into a LaTeX table."""
-    keys = ["ret_1 Min", "ret_1 Min", "survive", "survive"]
+    keys = [
+        "ret_1 Min",
+        "ret_1 Min",
+        "ret_1 Min",
+        "ret_1 Min",
+        "survive",
+        "survive",
+        "survive",
+        "survive",
+    ]
     lines = []
 
     lines.append("\\begin{tabular}{l" + "c" * len(keys) + "}")

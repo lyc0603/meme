@@ -4,3 +4,5 @@ zero-shot 100 20
 2025-06-24 technical 1010 $1.42
 2025-06-26 comment $1.86
 2025-06-27 technical $7.19
+2025-06-27 technical $2.22
+2025-06-27 coin 11.79

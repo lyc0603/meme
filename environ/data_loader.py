@@ -204,7 +204,7 @@ if __name__ == "__main__":
         #     )
         # ):
         pool = {
-            "token_address": "figures/candle/5NbzXLkBZA4yVExrVdNJiYi8RAsmNPeTMFGxeRWupump.png".split(
+            "token_address": "figures/candle/6QXbUVM4KmpLuFvUWP3mrTqVB4nn1idfK1PdXQaYqycv.png".split(
                 "/"
             )[
                 -1
