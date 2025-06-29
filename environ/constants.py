@@ -31,10 +31,10 @@ NAMING_DICT = {
     "bundle_bot": {
         "launch_bundle_transfer": "$\\text{Creator Launch Bundle}$",
         "bundle_creator_buy": "$\\text{Creator Buy Bundle}$",
-        "bundle_launch": "$\\text{Launch Bundle}$",
+        "bundle_launch": "$\\text{General Launch Bundle}$",
         "bundle_buy": "$\\text{Buy Bundle}$",
         "bundle_sell": "$\\text{Sell Bundle}$",
-        "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
+        # "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
         # "bundle": "$\\text{HHI}_{\\text{Bundle}}$",
         # "transfer_amount": "$\\text{Transfer Amount (\%)}$",
     },
@@ -43,7 +43,7 @@ NAMING_DICT = {
         "pos_to_number_of_swaps_ratio": "$\\text{Pos-\#Swaps Ratio}$",
     },
     "comment_bot": {
-        "bot_comment_num": "$\\text{Bot Comment}$",
+        # "bot_comment_num": "$\\text{Bot Comment}$",
         "positive_bot_comment_num": "$\\text{Positive Comment Bot}$",
         "negative_bot_comment_num": "$\\text{Negative Comment Bot}$",
         # "reply_interval_herf": "$\\text{HHI}_{\\text{Interval}}$",

@@ -15,7 +15,6 @@ DES_DICT = {
     # Comments Bot
     "positive_bot_comment_num": "Dummy variable that equals 1 if the number of positive comments made by bots is above the sample median, 0 otherwise.",
     "negative_bot_comment_num": "Dummy variable that equals 1 if the number of negative comments made by bots is above the sample median, 0 otherwise.",
-    "bot_comment_num": "Dummy variable that equals 1 if the number of comments made by bots is above the sample median, 0 otherwise.",
     # Profit
     "profit": "Each trader's profit from a given meme coin within 12 hours after its migration",
     "creator": "Dummy variable that equals 1 if the trader is the meme coin's creator, 0 otherwise.",

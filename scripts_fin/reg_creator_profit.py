@@ -22,7 +22,6 @@ X_VAR_CREATOR_INTERACTION = [
     "bundle_sell",
     "max_same_txn",
     "pos_to_number_of_swaps_ratio",
-    "bot_comment_num",
     "positive_bot_comment_num",
     "negative_bot_comment_num",
 ]
