@@ -112,6 +112,7 @@ def render_latex_table(
 def main():
     """Main function to run the regression analysis on profit data."""
     reg_tab = pd.read_csv(f"{PROCESSED_DATA_PATH}/profit.csv")
+    reg_tab = reg_tab.loc[reg_tab["creator"] == 0]  # Exclude creator
     res_dict: Dict[str, List[Any]] = {
         k: []
         for k in [

@@ -11,10 +11,19 @@ from tenacity import retry, stop_after_attempt
 from environ.constants import FIGURE_PATH, SOL_TOKEN_ADDRESS
 from environ.data_class import NewTokenPool, Swap
 from environ.meme_analyzer import MemeAnalyzer
+from environ.trader_analyzer import TraderAnalyzer
 from environ.sol_fetcher import import_pool
 
 IMAGE_URL_TEMP = "https://raw.githubusercontent.com/lyc0603/meme/\
 refs/heads/main/figures/candle/{ca}.png"
+
+
+class WalletLoader(TraderAnalyzer):
+    """Wallet Loader for the multi-agent system."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the WalletLoader."""
+        super().__init__(*args, **kwargs)
 
 
 class DataLoader(MemeAnalyzer):
