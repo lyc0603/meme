@@ -28,7 +28,7 @@ x = np.linspace(0, 90, 10)
 y_tokens = token_amount(x)
 z_price = price(x)
 
-fig, ax1 = plt.subplots(figsize=(10, 7))
+fig, ax1 = plt.subplots(figsize=(10, 6))
 
 # Total tokens (left y)
 ax1.plot(
