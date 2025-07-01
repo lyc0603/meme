@@ -468,7 +468,7 @@ if __name__ == "__main__":
 
     lst = []
 
-    NUM_OF_OBSERVATIONS = 20
+    NUM_OF_OBSERVATIONS = 1
 
     for chain in [
         # "pumpfun",
