@@ -24,7 +24,7 @@ def price(x):
 
 
 # range of SOL
-x = np.linspace(0, 90, 10)
+x = np.linspace(0, 85, 10)
 y_tokens = token_amount(x)
 z_price = price(x)
 
@@ -65,6 +65,41 @@ ax2.plot(
 ax2.set_ylabel("Price, SOL per Meme Coin", fontsize=FONT_SIZE)
 ax2.tick_params(axis="y", labelsize=FONT_SIZE)
 
+
+# enlarge offset text font sizes
+ax1.yaxis.get_offset_text().set_fontsize(FONT_SIZE)
+ax2.yaxis.get_offset_text().set_fontsize(FONT_SIZE)
+
+
+formatter2 = ScalarFormatter(useMathText=True)
+formatter2.set_scientific(True)
+formatter2.set_powerlimits((0, 0))
+ax2.yaxis.set_major_formatter(formatter2)
+
+initial_price = price(0)
+migration_price = 85
+ax2.axhline(
+    y=initial_price, color="blue", linestyle="--", linewidth=2, label="Initial Price"
+)
+# ax2.axhline(y=price(85), color="red", linestyle="--", linewidth=2, label="Migration")
+ax2.axvline(
+    x=migration_price, color="red", linestyle="--", linewidth=2, label="Migration"
+)
+
+
+yticks = ax2.get_yticks()
+new_yticks = np.sort(np.append(yticks, initial_price))[
+    1:-1
+]  # remove first and last tick
+ax2.set_yticks(new_yticks)
+
+xticks = ax1.get_xticks()
+new_xticks = np.sort(np.append(xticks, migration_price))[
+    1:-1
+]  # remove first and last tick
+ax1.set_xticks(new_xticks)
+
+
 # legend in a box below, Stata style
 lines_1, labels_1 = ax1.get_legend_handles_labels()
 lines_2, labels_2 = ax2.get_legend_handles_labels()
@@ -81,24 +116,6 @@ legend = fig.legend(
 )
 legend.get_frame().set_edgecolor("black")
 ax1.tick_params(axis="x", labelsize=FONT_SIZE)
-
-# enlarge offset text font sizes
-ax1.yaxis.get_offset_text().set_fontsize(FONT_SIZE)
-ax2.yaxis.get_offset_text().set_fontsize(FONT_SIZE)
-
-
-formatter2 = ScalarFormatter(useMathText=True)
-formatter2.set_scientific(True)
-formatter2.set_powerlimits((0, 0))
-ax2.yaxis.set_major_formatter(formatter2)
-
-initial_price = price(0)
-ax2.axhline(y=initial_price, color="blue", linestyle="--", linewidth=2)
-
-yticks = ax2.get_yticks()
-new_yticks = np.sort(np.append(yticks, initial_price))
-ax2.set_yticks(new_yticks)
-
 
 # title
 plt.tight_layout(rect=[0, 0.05, 1, 0.95])
