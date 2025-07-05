@@ -121,6 +121,102 @@ JSON_SCHEMA_COMMENT_BOT = {
 }
 
 
+# Wallet Agent
+SYSTEM_INSTRUCTION_WALLET_AGENT = (
+    "You are a professional meme coin wallet analyst. "
+    "You will be provided with the indicators of a wallet from the past 50 migrated meme coins. "
+    "Your task is to assess whether the wallet is appropriate for the copy trading. "
+    "Your response should follow this format: "
+    '{"reasoning": <your reasoning>, "good_wallet": <true/false>}'
+)
+
+PROMPT_WALLET_AGENT = (
+    "Total Profit: {total_profit}\n"
+    "Total Profit Std: {total_profit_std}\n"
+    "Total Average Transaction Number: {total_avg_transaction_number}\n"
+    "Total Transaction Number Std: {total_transaction_number_std}\n"
+    "Total Token Participated: {total_token_participated}\n"
+    "Does this wallet have good copy trading potential?"
+)
+
+COT_WALLET_AGENT = [
+    # Perfect copy trading potential
+    {
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": PROMPT_WALLET_AGENT.format(
+                    total_profit=6359.5,
+                    total_profit_std=332.5,
+                    total_avg_transaction_number=18.4,
+                    total_transaction_number_std=26.3,
+                    total_token_participated=34,
+                ),
+            }
+        ],
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "First, the total profit is very high, indicating that the wallet has been successful in its trading activities. '
+            "Second, the total profit standard deviation is also high, suggesting that the wallet has made many profitable trades. "
+            "Third, the average transaction number is high, indicating a high level of trading activity. "
+            "Fourth, the number of tokens participated is also high, suggesting a diversified portfolio. "
+            'Taken together, these factors suggest that the wallet has good copy trading potential.", '
+            '"good_wallet": true}'
+        ),
+    },
+    # Poor copy trading potential
+    {
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": PROMPT_WALLET_AGENT.format(
+                    total_profit=10.0,
+                    total_profit_std=0.0,
+                    total_avg_transaction_number=2.0,
+                    total_transaction_number_std=0.0,
+                    total_token_participated=1,
+                ),
+            }
+        ],
+    },
+    {
+        "role": "assistant",
+        "content": (
+            '{"reasoning": "First, the total profit is very low, indicating that the wallet has not been successful in its trading activities. '
+            "Second, the total profit standard deviation is zero, suggesting that the wallet has not made one profitable trade. "
+            "Third, the average transaction number is low, indicating a lack of trading activity. "
+            "Fourth, the number of tokens participated is also low, suggesting a lack of diversification. "
+            'Taken together, these factors suggest that the wallet does not have good copy trading potential.", '
+            '"good_wallet": false}'
+        ),
+    },
+]
+
+JSON_SCHEMA_WALLET_AGENT = {
+    "name": "meme_coin_wallet_analyzer",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "reasoning": {
+                "type": "string",
+                "description": "Your reasoning for the assessment of the wallet's copy trading potential.",
+            },
+            "good_wallet": {
+                "type": "boolean",
+                "description": "Indicates whether the wallet has good copy trading potential (true) or not (false).",
+            },
+        },
+        "required": ["reasoning", "good_wallet"],
+        "additionalProperties": False,
+    },
+    "strict": True,
+}
+
+
 # Technical Agent
 
 SYSTEM_INSTRUCTION_TECHNICAL_AGENT = (

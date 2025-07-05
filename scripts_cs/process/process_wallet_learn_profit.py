@@ -44,7 +44,7 @@ def process_token(idx):
                 current_trader_info.append((block, profit))
 
         past_profit = (
-            sorted(current_trader_info, key=lambda x: x[0], reverse=True)[-1][1]
+            sorted(current_trader_info, key=lambda x: x[0])[-1][1]
             if current_trader_info
             else 0.0
         )
@@ -77,6 +77,16 @@ if __name__ == "__main__":
     ]
 
     df_trader = pd.DataFrame(flat_results)
-    df_trader = df_trader.loc[df_trader["learn_profit"] > 0]
+    # df_trader = df_trader.loc[df_trader["learn_profit"] > 0]
+    # calculate group total learn_profit and broadcast it back
+    df_trader["total_learn_profit"] = df_trader.groupby(
+        ["eval_token", "wallet_address"]
+    )["learn_profit"].transform("sum")
+
+    # keep only rows belonging to positive-total wallets
+    # df_trader = df_trader.loc[df_trader["total_learn_profit"] > 0]
+
+    # optionally drop the helper column if you don’t want to store it
+    # df_trader = df_trader.drop(columns="total_learn_profit")
     with open(PROCESSED_DATA_PATH / "wallet_stats.pkl", "wb") as f:
         pickle.dump(df_trader, f)

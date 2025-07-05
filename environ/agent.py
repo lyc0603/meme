@@ -53,7 +53,7 @@ def batch(
     system_instruction: str,
     json_schema: dict,
     image_url: Optional[str] = None,
-    few_shot_examples: Optional[dict] = None,
+    few_shot_examples: Optional[list] = None,
     model: str = "gpt-4o",
 ) -> dict:
     """Function to construct a valid GPT-4o batch request with image and schema."""
