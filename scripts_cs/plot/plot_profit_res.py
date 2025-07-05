@@ -104,5 +104,5 @@ ax.yaxis.get_offset_text().set_fontsize(FONT_SIZE)
 
 # final layout
 plt.tight_layout(rect=[0, 0.05, 1, 0.95])
-plt.savefig(PROCESSED_DATA_PATH / "profit_cs.pdf", bbox_inches="tight")
+plt.savefig(FIGURE_PATH / "profit_cs.pdf", bbox_inches="tight")
 plt.show()
