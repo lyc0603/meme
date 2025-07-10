@@ -1,12 +1,13 @@
 """Script to plot cumulative profit for copy trading with a single y-axis, no markers, bonding curve style."""
 
-import pandas as pd
 import json
 import pickle
+
 import matplotlib.pyplot as plt
+import pandas as pd
 from matplotlib.ticker import ScalarFormatter
 
-from environ.constants import PROCESSED_DATA_PATH, FIGURE_PATH
+from environ.constants import FIGURE_PATH, PROCESSED_DATA_PATH
 
 FONT_SIZE = 18
 

@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 import pandas as pd
 import statsmodels.api as sm
 
-from environ.constants import FREQ_DICT, NAMING_DICT, PROCESSED_DATA_PATH, TABLE_PATH
+from environ.constants import NAMING_DICT, PROCESSED_DATA_PATH, TABLE_PATH
 from environ.utils import asterisk
 
 
@@ -23,23 +23,24 @@ PROFIT_NAMING_DICT = {
 }
 
 Y_NAMING_DICT = {
-    **{f"ret_{k}": v for k, v in FREQ_DICT.items()},
-    "survive": "$\\text{Duration}$",
+    "max_ret": "$\\text{Max Ret}$",
+    "pre_migration_duration": "$\\text{Pre-Migration Duration}$",
+    "pump_duration": "$\\text{Pump Duration}$",
+    "dump_duration": "$\\text{Dump Duration}$",
+    "pre_migration_vol": "$\\text{Pre-Migration Volatility}$",
+    "post_migration_vol": "$\\text{Post-Migration Volatility}$",
 }
 
 X_VAR_LIST = [
-    "launch_bundle_transfer",
-    "bundle_creator_buy",
-    "bundle_launch",
+    "launch_bundle",
     "bundle_buy",
     "bundle_sell",
-    "max_same_txn",
-    "pos_to_number_of_swaps_ratio",
+    "volume_bot",
     "positive_bot_comment_num",
     "negative_bot_comment_num",
 ]
 
-mdd_df = pd.read_csv(Path(PROCESSED_DATA_PATH) / "ret_mdd.csv")
+pfm = pd.read_csv(Path(PROCESSED_DATA_PATH) / "pfm.csv")
 
 
 def reg_survive(
@@ -49,15 +50,13 @@ def reg_survive(
     """Run regression analysis on return and survival data."""
     results = {}
 
-    for y_var in FREQ_DICT:
-        key = f"ret_{y_var}"
-        reg_df = df.loc[df[f"death_{y_var}"] == 0, :].copy()
-
-        X = sm.add_constant(reg_df[x_var_list])
-        y = reg_df[f"ret_{y_var}"]
+    for y_var in Y_NAMING_DICT:
+        df = df.dropna(subset=[y_var] + x_var_list).copy()
+        X = sm.add_constant(df[x_var_list])
+        y = df[y_var]
         model = sm.OLS(y, X).fit()
 
-        results[key] = {
+        results[y_var] = {
             "model": model,
             "params": model.params,
             "pvalues": model.pvalues,
@@ -65,18 +64,6 @@ def reg_survive(
             "r2": model.rsquared,
             "nobs": int(model.nobs),
         }
-
-    X = sm.add_constant(df[x_var_list])
-    y = df["survive"]
-    model_survive = sm.OLS(y, X).fit()
-    results["survive"] = {
-        "model": model_survive,
-        "params": model_survive.params,
-        "pvalues": model_survive.pvalues,
-        "bse": model_survive.bse,
-        "r2": model_survive.rsquared,
-        "nobs": int(model_survive.nobs),
-    }
 
     return results
 
@@ -136,8 +123,8 @@ def render_latex_table(
 
 
 if __name__ == "__main__":
-    results = reg_survive(mdd_df, X_VAR_LIST)
+    results = reg_survive(pfm, X_VAR_LIST)
     latex_table = render_latex_table(results, X_VAR_LIST)
 
-    with open(TABLE_PATH / "reg_ret_survive.tex", "w", encoding="utf-8") as f:
+    with open(TABLE_PATH / "pfm.tex", "w", encoding="utf-8") as f:
         f.write(latex_table)

@@ -1,13 +1,13 @@
 """Script to process wallet data"""
 
+import multiprocessing
+
 import pandas as pd
 from tqdm import tqdm
-import multiprocessing
 
 from environ.constants import PROCESSED_DATA_PATH, SOL_TOKEN_ADDRESS
 from environ.data_class import NewTokenPool, Swap, Transfer
 from environ.meme_base import MemeBase
-from environ.sol_fetcher import import_pool
 
 chain = "raydium"
 x_var_list = ["creator"]
@@ -33,6 +33,8 @@ class Trader(Account):
         self.swaps: list[Swap] = []
         self.non_swap_transfers: list[Transfer] = []
         self.profits: list[float] = []
+        self.buy_amounts: list[float] = []
+        self.sell_amounts: list[float] = []
 
     def swap(self, swap: Swap) -> None:
         """Method to handle swap transactions"""
@@ -104,15 +106,23 @@ class TraderAnalyzer(MemeBase):
                     )
 
                     # calculate the average realized profit based on the sell
-                    trader.profit = (
-                        ((sell_usd / sell_amount) - (buy_usd / buy_amount))
-                        * sell_amount
-                        if buy_amount > 0
-                        else 0.0
-                    )
+                    if buy_amount > 0:
+                        trader.profit = (
+                            ((sell_usd / sell_amount) - (buy_usd / buy_amount))
+                            * sell_amount
+                            if buy_amount >= sell_amount
+                            else ((sell_usd / sell_amount) - (buy_usd / buy_amount))
+                            * buy_amount
+                        )
+                    else:
+                        trader.profit = 0.0
+
                     trader.profits.append(trader.profit)
                 else:
                     trader.profits.append(0.0)
+
+                trader.buy_amounts.append(swap.usd)
+                trader.sell_amounts.append(swap.base)
 
             self.traders[trader_add] = trader
 
@@ -213,7 +223,14 @@ def consumer(task_queue, result_queue):
                 "wallet_address": trader.address,
                 "creator": 1 if trader.creator else 0,
                 "profits": sorted(
-                    list(zip([_["block"] for _ in trader.swaps], trader.profits)),
+                    list(
+                        zip(
+                            [_["block"] for _ in trader.swaps],
+                            trader.profits,
+                            trader.buy_amounts,
+                            trader.sell_amounts,
+                        )
+                    ),
                     key=lambda x: x[0],
                 ),
             }

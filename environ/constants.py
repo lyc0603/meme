@@ -22,57 +22,26 @@ SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 
 # Naming dictionary for regression variables
 NAMING_DICT = {
-    # "size": {
-    # "duration": "$\\text{Duration}$",
-    # "#trader": "$\#\\text{Traders}$",
-    # "#txn": "$\#\\text{Txns}$",
-    #     "#transfer": "$\#\\text{Transfers}$",
-    # },
     "bundle_bot": {
-        "launch_bundle_transfer": "$\\text{Creator Launch Bundle}$",
-        "bundle_creator_buy": "$\\text{Creator Buy Bundle}$",
-        "bundle_launch": "$\\text{General Launch Bundle}$",
-        "bundle_buy": "$\\text{Buy Bundle}$",
-        "bundle_sell": "$\\text{Sell Bundle}$",
-        # "holding_herf": "$\\text{HHI}_{\\text{Holding}}$",
-        # "bundle": "$\\text{HHI}_{\\text{Bundle}}$",
-        # "transfer_amount": "$\\text{Transfer Amount (\%)}$",
+        "launch_bundle": "$\\text{Launch Bundle Bot}$",
+        # "launch_bundle_transfer": "$\\text{Creator Launch Bundle}$",
+        # "bundle_creator_buy": "$\\text{Creator Buy Bundle}$",
+        # "bundle_launch": "$\\text{General Launch Bundle}$",
+        "bundle_buy": "$\\text{Buy Bundle Bot}$",
+        "bundle_sell": "$\\text{Sell Bundle Bot}$",
     },
     "volume_bot": {
-        "max_same_txn": "$\\text{Max Same Txn}$",
-        "pos_to_number_of_swaps_ratio": "$\\text{Pos-\#Swaps Ratio}$",
+        "volume_bot": "$\\text{Volume Bot}$",
     },
     "comment_bot": {
-        # "bot_comment_num": "$\\text{Bot Comment}$",
         "positive_bot_comment_num": "$\\text{Positive Comment Bot}$",
         "negative_bot_comment_num": "$\\text{Negative Comment Bot}$",
-        # "reply_interval_herf": "$\\text{HHI}_{\\text{Interval}}$",
-        # "unique_replies": "$\\text{ln}\#\\text{Replies}$",
-        # "unique_repliers": "$\\text{ln}\#\\text{Repliers}$",
-        # "non_swapper_repliers": "$\\text{ln}\#\\text{Non-Trader Repliers}$",
-        # "unique_replies_1": "$\#\\text{Replies}$",
-        # "unique_repliers_1": "$\#\\text{Repliers}$",
-        # "non_swapper_repliers_1": "$\#\\text{Non-Trader Repliers}$",
-        # "unique_replies_2": "$\#\\text{Replies}^{2}$",
-        # "unique_repliers_2": "$\#\\text{Repliers}^{2}$",
-        # "non_swapper_repliers_2": "$\#\\text{Non-Trader Repliers}^{2}$",
     },
-    # "dev": {
-    #     "dev_transfer": "$\\text{Dev Transfer}$",
-    #     "dev_buy": "$\\text{Dev Buy}$",
-    #     "dev_sell": "$\\text{Dev Sell}$",
-    # },
 }
 
 PROFIT_NAMING_DICT = {
     "profit": "$\\text{Profit}$",
     "creator": "$\\text{Creator}$",
-}
-
-FREQ_DICT = {
-    "1 Min": "$\\text{Ret}_{\\text{1min}}$",
-    "1 Hour": "$\\text{Ret}_{\\text{1h}}$",
-    "10 Hours": "$\\text{Ret}_{\\text{10h}}$",
 }
 
 # before block for the TRUMP block 2025-01-17 14:01:48

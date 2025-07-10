@@ -15,13 +15,10 @@ from typing import List, Dict, Any
 X_VAR_LIST = ["creator"]
 
 X_VAR_CREATOR_INTERACTION = [
-    "launch_bundle_transfer",
-    "bundle_creator_buy",
     "bundle_launch",
     "bundle_buy",
     "bundle_sell",
-    "max_same_txn",
-    "pos_to_number_of_swaps_ratio",
+    "volume_bot",
     "positive_bot_comment_num",
     "negative_bot_comment_num",
 ]
@@ -136,7 +133,7 @@ def main():
     """Main function to run the regression analysis and generate LaTeX table."""
     # Ensure the output directory
     # Read data
-    reg_tab = pd.read_csv(f"{PROCESSED_DATA_PATH}/profit.csv")
+    reg_tab = pd.read_csv(f"{PROCESSED_DATA_PATH}/pft.csv")
 
     res_dict: Dict[str, List[Any]] = {
         k: []
@@ -198,7 +195,7 @@ def main():
 
     latex_str = render_latex_table(var_names, res_dict)
 
-    with open(TABLE_PATH / "reg_profit_creator.tex", "w", encoding="utf-8") as f:
+    with open(TABLE_PATH / "reg_pft.tex", "w", encoding="utf-8") as f:
         f.write(latex_str)
 
 

@@ -20,5 +20,5 @@ df_res = (
 )
 
 df_res = df_res.fillna(0)
-# df_res = df_res.loc[df_res["learn_profit_sum"] > 500]
+df_res = df_res.loc[df_res["learn_profit_sum"] > 500]
 df_res.to_csv(PROCESSED_DATA_PATH / "wallet_agent.csv", index=False)
