@@ -43,11 +43,7 @@ def worker(tq: Queue, rq: Queue):
         creator_buy_bundle = meme.get_bundle_creator_buy_dummy()
         bundle_launch, bundle_buy, bundle_sell = meme.get_bundle_launch_buy_sell_num()
 
-        launch_bundle = int(
-            bool(creator_launch_bundle)
-            or bool(bundle_launch)
-            or bool(creator_buy_bundle)
-        )
+        launch_bundle = int(bool(creator_launch_bundle) or bool(bundle_launch))
 
         pfm_dict = {
             "max_ret": max_ret,
@@ -56,6 +52,7 @@ def worker(tq: Queue, rq: Queue):
             "dump_duration": meme.get_dump_duration(),
             "pre_migration_vol": meme.get_pre_migration_volatility(),
             "post_migration_vol": meme.get_post_migration_volatility(),
+            "number_of_traders": meme.get_number_of_traders(),
         }
 
         bot_dict = {
@@ -81,6 +78,7 @@ def worker(tq: Queue, rq: Queue):
                 "trader_address": trader_add,
                 "creator": 1 if trader.creator else 0,
                 "profit": trader.profit,
+                "wash_trading_score": trader.wash_trading_score,
             }
             for x_var, x_var_value in bot_dict.items():
                 row[x_var] = x_var_value
@@ -148,6 +146,7 @@ if __name__ == "__main__":
         "pre_migration_duration",
         "pump_duration",
         "dump_duration",
+        "number_of_traders",
     ]:
         pfm[var] = np.log(pfm[var] + 1)
 

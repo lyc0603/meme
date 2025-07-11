@@ -13,7 +13,6 @@ from environ.constants import (
 from typing import List, Dict, Any
 
 X_VAR_CREATOR_INTERACTION = [
-    "bot_comment_num",
     "positive_bot_comment_num",
     "negative_bot_comment_num",
 ]
@@ -24,15 +23,8 @@ CONTROL_VAR_LIST = [
 ]
 
 
-def flatten_naming_dict(naming_dict: Dict[str, Dict[str, str]]) -> Dict[str, str]:
-    """Flatten the nested naming dictionary into a single-level dictionary."""
-    return {k: v for category in naming_dict.values() for k, v in category.items()}
-
-
-FLAT_NAMING_DICT = flatten_naming_dict(NAMING_DICT)
-
 PROFIT_NAMING_DICT = {
-    **FLAT_NAMING_DICT,
+    **NAMING_DICT,
     "profit": "$\\text{Profit}$",
     # Main effects
     "creator_coef": "$\\text{Creator}$",
@@ -74,14 +66,12 @@ def asterisk(pval: float) -> str:
 
 
 def run_regression(
-    df: pd.DataFrame, x_var: str, y_var: str
+    df: pd.DataFrame, x_var: str, y_var: str, control: bool = True
 ) -> sm.regression.linear_model.RegressionResultsWrapper:
     """
     Run OLS regression for the given x_var (optionally with creator interaction).
     """
-    if x_var == "creator":
-        X = sm.add_constant(df[["creator"]])
-    else:
+    if control:
         X = sm.add_constant(
             pd.DataFrame(
                 {
@@ -91,6 +81,16 @@ def run_regression(
                         f"creator_{var}": df["creator"] * df[var]
                         for var in [x_var] + CONTROL_VAR_LIST
                     },
+                }
+            )
+        )
+    else:
+        X = sm.add_constant(
+            pd.DataFrame(
+                {
+                    "creator": df["creator"],
+                    x_var: df[x_var],
+                    f"creator_{x_var}": df["creator"] * df[x_var],
                 }
             )
         )
@@ -147,7 +147,7 @@ def render_latex_table(
 
 def main():
     """Main function to run the regression analysis and generate LaTeX table."""
-    df = pd.read_csv(f"{PROCESSED_DATA_PATH}/profit.csv")
+    df = pd.read_csv(f"{PROCESSED_DATA_PATH}/pft.csv")
 
     res_dict: Dict[str, List[Any]] = {
         k: []
@@ -175,23 +175,10 @@ def main():
     var_names = []
 
     for x_var in X_VAR_CREATOR_INTERACTION:
-        model = run_regression(df, x_var, Y_VAR)
-        print(model.summary())  # optional: comment out if not needed
+        for control_var in [False, True]:
+            model = run_regression(df, x_var, Y_VAR, control=control_var)
+            print(model.summary())  # optional: comment out if not needed
 
-        if x_var == "creator":
-            var_names.append("")
-            res_dict["creator_coef"].append(
-                f"{model.params['creator']:.2f}{asterisk(model.pvalues['creator'])}"
-            )
-            res_dict["creator_stderr"].append(f"({model.bse['creator']:.2f})")
-            for key in [
-                "x_var_coef",
-                "x_var_stderr",
-                "creator_x_var_coef",
-                "creator_x_var_stderr",
-            ]:
-                res_dict[key].append("")
-        else:
             var_names.append(PROFIT_NAMING_DICT.get(x_var, x_var))
             for var, dict_key in [
                 ("creator", "creator"),
@@ -213,12 +200,12 @@ def main():
                     f"({model.bse[var]:.2f})" if var in model.bse else ""
                 )
 
-        res_dict["con"].append(
-            f"{model.params['const']:.2f}{asterisk(model.pvalues['const'])}"
-        )
-        res_dict["con_stderr"].append(f"({model.bse['const']:.2f})")
-        res_dict["obs"].append(str(int(model.nobs)))
-        res_dict["r2"].append(f"{model.rsquared:.2f}")
+            res_dict["con"].append(
+                f"{model.params['const']:.2f}{asterisk(model.pvalues['const'])}"
+            )
+            res_dict["con_stderr"].append(f"({model.bse['const']:.2f})")
+            res_dict["obs"].append(str(int(model.nobs)))
+            res_dict["r2"].append(f"{model.rsquared:.2f}")
 
     latex_str = render_latex_table(var_names, res_dict)
 

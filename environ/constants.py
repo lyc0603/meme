@@ -20,28 +20,34 @@ HEADERS = {
 
 SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 
-# Naming dictionary for regression variables
+# naming dictionary for independent variables in regression analysis
 NAMING_DICT = {
-    "bundle_bot": {
-        "launch_bundle": "$\\text{Launch Bundle Bot}$",
-        # "launch_bundle_transfer": "$\\text{Creator Launch Bundle}$",
-        # "bundle_creator_buy": "$\\text{Creator Buy Bundle}$",
-        # "bundle_launch": "$\\text{General Launch Bundle}$",
-        "bundle_buy": "$\\text{Buy Bundle Bot}$",
-        "bundle_sell": "$\\text{Sell Bundle Bot}$",
-    },
-    "volume_bot": {
-        "volume_bot": "$\\text{Volume Bot}$",
-    },
-    "comment_bot": {
-        "positive_bot_comment_num": "$\\text{Positive Comment Bot}$",
-        "negative_bot_comment_num": "$\\text{Negative Comment Bot}$",
-    },
+    # bundle bots
+    "launch_bundle": "$\\text{Launch Bundle Bot}_{i}$",
+    "bundle_buy": "$\\text{Buy Bundle Bot}_{i}$",
+    "bundle_sell": "$\\text{Sell Bundle Bot}_{i}$",
+    # volume bots
+    "volume_bot": "$\\text{Volume Bot}_{i}$",
+    "wash_trading_volume_frac": "$\\text{Wash Trading Volume \%}_{i}$",
+    # comment bots
+    "positive_bot_comment_num": "$\\text{Positive Comment Bot}_{i}$",
+    "negative_bot_comment_num": "$\\text{Negative Comment Bot}_{i}$",
+}
+
+# naming dictionary for project performance metrics
+PFM_NAMING_DICT = {
+    "max_ret": "$\\text{Ln(Max Ret)}_{i}$",
+    "pre_migration_duration": "$\\text{Ln(Pre-Migration Duration)}_{i}$",
+    "pump_duration": "$\\text{Ln(Pump Duration)}_{i}$",
+    "dump_duration": "$\\text{Ln(Dump Duration)}_{i}$",
+    "pre_migration_vol": "$\\text{Pre-Migration Volatility}_{i}$",
+    "post_migration_vol": "$\\text{Post-Migration Volatility}_{i}$",
+    "number_of_traders": "$\\text{Ln(Number of Traders)}_{i}$",
 }
 
 PROFIT_NAMING_DICT = {
-    "profit": "$\\text{Profit}$",
-    "creator": "$\\text{Creator}$",
+    "profit": "$\\text{Profit}_{i,j}$",
+    "creator": "$\\text{Creator}_{i,j}$",
 }
 
 # before block for the TRUMP block 2025-01-17 14:01:48

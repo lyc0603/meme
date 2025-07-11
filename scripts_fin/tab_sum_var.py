@@ -1,62 +1,82 @@
-"""Script for regression variable summary statistics"""
+"""Generate summary statistics for project and trader characteristics"""
 
 import pandas as pd
-from environ.constants import TABLE_PATH, PROCESSED_DATA_PATH, NAMING_DICT
-
-X_VAR = [
-    "launch_bundle_transfer",
-    "bundle_creator_buy",
-    "bundle_launch",
-    "bundle_buy",
-    "bundle_sell",
-    "max_same_txn",
-    "pos_to_number_of_swaps_ratio",
-    "positive_bot_comment_num",
-    "negative_bot_comment_num",
-]
-
-project_tab = pd.read_csv(f"{PROCESSED_DATA_PATH}/ret_mdd.csv")
-
-flat_naming_dict = {
-    sub_key: sub_value
-    for category in NAMING_DICT.values()
-    for sub_key, sub_value in category.items()
-}
-
-# calculate descriptive stats
-summary = {}
-for var in X_VAR:
-    values = project_tab[var].dropna()
-    summary[var] = {
-        "num_obs": len(values),
-        "mean": values.mean(),
-        "std": values.std(),
-        "p10": values.quantile(0.1),
-        "median": values.median(),
-        "p90": values.quantile(0.9),
-    }
-
-# generate LaTeX
-latex_str = (
-    "\\begin{tabular}{lcccccc}\n"
-    "\\hline\n"
-    "Variable & Num. Obs. & Mean & Std. Dev. & 10th & Median & 90th \\\\\n"
-    "\\hline\n"
+from environ.constants import (
+    TABLE_PATH,
+    PROCESSED_DATA_PATH,
+    NAMING_DICT,
+    PFM_NAMING_DICT,
+    PROFIT_NAMING_DICT,
 )
 
-for var in X_VAR:
-    stats = summary[var]
-    latex_str += (
-        f"{flat_naming_dict[var]} & "
-        f"{stats['num_obs']} & "
-        f"{stats['mean']:.3f} & "
-        f"{stats['std']:.3f} & "
-        f"{stats['p10']:.3f} & "
-        f"{stats['median']:.3f} & "
-        f"{stats['p90']:.3f} \\\\\n"
-    )
+# Define variable groups
+X_VAR_PANEL_A = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
+X_VAR_PANEL_B = list(PROFIT_NAMING_DICT.keys())
 
-latex_str += "\\hline\n\\end{tabular}\n"
+# Load data
+pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
+pft = pd.read_csv(f"{PROCESSED_DATA_PATH}/profit.csv")
 
+
+# Compute summary statistics
+def compute_summary(df, var_list):
+    """Compute summary statistics for a list of variables in a DataFrame."""
+    summary = {}
+    for var in var_list:
+        if var not in df:
+            continue
+        values = df[var].dropna()
+        summary[var] = {
+            "num_obs": len(values),
+            "mean": values.mean(),
+            "std": values.std(),
+            "p10": values.quantile(0.1),
+            "median": values.median(),
+            "p90": values.quantile(0.9),
+        }
+    return summary
+
+
+summary_a = compute_summary(pfm, X_VAR_PANEL_A)
+summary_b = compute_summary(pft, X_VAR_PANEL_B)
+
+# Generate LaTeX code
+latex_lines = [
+    "\\begin{tabular}{lcccccc}",
+    "\\hline",
+    "Variable & Num. Obs. & Mean & Std. Dev. & P10 & Median & P90 \\\\",
+    "\\hline",
+    "\\textbf{Panel A. Project characteristics} \\\\",
+]
+
+PANEL_A_NAMING_DICT = {
+    **NAMING_DICT,
+    **PFM_NAMING_DICT,
+}
+
+PABE_NAMING_DICT = {
+    **PROFIT_NAMING_DICT,
+}
+
+for var in X_VAR_PANEL_A:
+    if var in summary_a:
+        s = summary_a[var]
+        latex_lines.append(
+            f"{PANEL_A_NAMING_DICT[var]} & {s['num_obs']} & {s['mean']:.2f} & {s['std']:.2f} & {s['p10']:.2f} & {s['median']:.2f} & {s['p90']:.2f} \\\\"
+        )
+
+latex_lines.append("\\addlinespace")
+latex_lines.append("\\textbf{Panel B. Trader characteristics} \\\\")
+
+for var in X_VAR_PANEL_B:
+    if var in summary_b:
+        s = summary_b[var]
+        latex_lines.append(
+            f"{PABE_NAMING_DICT[var]} & {s['num_obs']} & {s['mean']:.2f} & {s['std']:.2f} & {s['p10']:.2f} & {s['median']:.2f} & {s['p90']:.2f} \\\\"
+        )
+
+latex_lines.extend(["\\hline", "\\end{tabular}"])
+
+# Save to file
 with open(TABLE_PATH / "reg_var_summary.tex", "w", encoding="utf-8") as f:
-    f.write(latex_str)
+    f.write("\n".join(latex_lines))

@@ -6,29 +6,22 @@ from typing import Any, Dict, List
 import pandas as pd
 import statsmodels.api as sm
 
-from environ.constants import NAMING_DICT, PROCESSED_DATA_PATH, TABLE_PATH
+from environ.constants import (
+    NAMING_DICT,
+    PROCESSED_DATA_PATH,
+    TABLE_PATH,
+    PFM_NAMING_DICT,
+)
 from environ.utils import asterisk
-
-
-def flatten_naming_dict(naming_dict: Dict[str, Dict[str, str]]) -> Dict[str, str]:
-    """Flatten the nested naming dictionary into a single-level dictionary."""
-    return {k: v for category in naming_dict.values() for k, v in category.items()}
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 
 PROFIT_NAMING_DICT = {
-    **flatten_naming_dict(NAMING_DICT),
+    **NAMING_DICT,
+    **PFM_NAMING_DICT,
     "const": "$\\text{Constant}$",
     "obs": "$\\text{Observations}$",
     "r2": "$R^2$",
-}
-
-Y_NAMING_DICT = {
-    "max_ret": "$\\text{Max Ret}$",
-    "pre_migration_duration": "$\\text{Pre-Migration Duration}$",
-    "pump_duration": "$\\text{Pump Duration}$",
-    "dump_duration": "$\\text{Dump Duration}$",
-    "pre_migration_vol": "$\\text{Pre-Migration Volatility}$",
-    "post_migration_vol": "$\\text{Post-Migration Volatility}$",
 }
 
 X_VAR_LIST = [
@@ -43,6 +36,36 @@ X_VAR_LIST = [
 pfm = pd.read_csv(Path(PROCESSED_DATA_PATH) / "pfm.csv")
 
 
+def compute_vif(df: pd.DataFrame, x_var_list: List[str]) -> pd.DataFrame:
+    """Compute VIF for each explanatory variable (excluding constant)."""
+    df_clean = df.dropna(subset=x_var_list).copy()
+    X = df_clean[x_var_list]  # exclude constant
+    vif = pd.DataFrame()
+    vif["Variable"] = x_var_list
+    vif["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+    vif["1/VIF"] = 1 / vif["VIF"]
+    return vif
+
+
+def render_vif_latex_table(vif_df: pd.DataFrame) -> str:
+    """Render VIF results into a LaTeX table with 1/VIF and Mean VIF."""
+    lines = []
+    lines.append("\\begin{tabular}{lcc}")
+    lines.append("\\hline")
+    lines.append("Variable & VIF & $1/\\text{VIF}$ \\\\")
+    lines.append("\\hline")
+    for _, row in vif_df.iterrows():
+        var_name = PROFIT_NAMING_DICT.get(row["Variable"], row["Variable"])
+        lines.append(f"{var_name} & {row['VIF']:.2f} & {row['1/VIF']:.2f} \\\\")
+    lines.append("\\hline")
+    lines.append(
+        f"\\textbf{{Mean VIF}} & {vif_df['VIF'].mean():.2f} & {vif_df['1/VIF'].mean():.2f} \\\\"
+    )
+    lines.append("\\hline")
+    lines.append("\\end{tabular}")
+    return "\n".join(lines)
+
+
 def reg_survive(
     df: pd.DataFrame,
     x_var_list: List[str],
@@ -50,10 +73,10 @@ def reg_survive(
     """Run regression analysis on return and survival data."""
     results = {}
 
-    for y_var in Y_NAMING_DICT:
-        df = df.dropna(subset=[y_var] + x_var_list).copy()
-        X = sm.add_constant(df[x_var_list])
-        y = df[y_var]
+    for y_var in PFM_NAMING_DICT:
+        df_reg = df.dropna(subset=[y_var]).copy()
+        X = sm.add_constant(df_reg[x_var_list])
+        y = df_reg[y_var]
         model = sm.OLS(y, X).fit()
 
         results[y_var] = {
@@ -77,7 +100,7 @@ def render_latex_table(
 
     lines.append("\\begin{tabular}{l" + "c" * len(keys) + "}")
     lines.append("\\hline")
-    lines.append(" & " + " & ".join([Y_NAMING_DICT[key] for key in keys]) + r" \\")
+    lines.append(" & " + " & ".join([PFM_NAMING_DICT[key] for key in keys]) + r" \\")
     lines.append(
         " & " + " & ".join([f"({i})" for i in range(1, len(keys) + 1)]) + r"\\"
     )
@@ -123,8 +146,14 @@ def render_latex_table(
 
 
 if __name__ == "__main__":
+    vif_df = compute_vif(pfm, X_VAR_LIST + ["wash_trading_volume_frac"])
+    vif_latex = render_vif_latex_table(vif_df)
+
+    with open(TABLE_PATH / "vif_pfm.tex", "w", encoding="utf-8") as f:
+        f.write(vif_latex)
+
     results = reg_survive(pfm, X_VAR_LIST)
     latex_table = render_latex_table(results, X_VAR_LIST)
 
-    with open(TABLE_PATH / "pfm.tex", "w", encoding="utf-8") as f:
+    with open(TABLE_PATH / "reg_pfm.tex", "w", encoding="utf-8") as f:
         f.write(latex_table)

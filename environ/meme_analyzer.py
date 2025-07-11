@@ -49,6 +49,7 @@ class Trader(Account):
         self.swaps: list[Swap] = []
         self.volume: float = 0.0
         self.non_swap_transfers: list[Transfer] = []
+        self.wash_trading_score: Optional[float] = None
 
     def swap(self, swap: Swap) -> None:
         """Method to handle swap transactions"""
@@ -84,7 +85,9 @@ class Trader(Account):
             & (self.swaps[i].base == self.swaps[i - 1].base)
         )
 
-        return flip_count / (np.abs(self.balance) + 1)
+        self.wash_trading_score = flip_count / (np.abs(self.balance) + 1)
+
+        return self.wash_trading_score
 
 
 class MemeAnalyzer(MemeBase):
@@ -105,7 +108,7 @@ class MemeAnalyzer(MemeBase):
         self._merge_traders()
         self.trader_number = len(self.traders)
         self.volume_bot = False
-        self.traders = self._wash_trade()
+        self.traders, self.bots = self._wash_trade()
 
     # Build-in Methods
     def _build_price_df(self) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -216,6 +219,10 @@ class MemeAnalyzer(MemeBase):
 
         # Calculate standard deviation of returns
         return np.log(post_ret["ret"] + 1).std()
+
+    def get_number_of_traders(self) -> int:
+        """Method to get the number of traders"""
+        return self.trader_number
 
     # Metrics for Bundle Bot
     def get_bundle_launch_transfer_dummy(self) -> int:
@@ -466,14 +473,16 @@ class MemeAnalyzer(MemeBase):
     def _wash_trade(self) -> float:
         """Method to get the wash trading volume of the meme token"""
         traders = {}
+        bots = {}
         for trader_add, trader in self.traders.items():
             self.trading_volume += trader.volume
             if trader.wash_trading() > 50:
                 self.volume_bot = True
                 self.wash_trading_volume += trader.volume
+                bots[trader_add] = trader
             else:
                 traders[trader_add] = trader
-        return traders
+        return traders, bots
 
     def search_trader(self, address: str) -> tuple[tuple[str, ...], Trader]:
         """Method to search for a trader by address"""
