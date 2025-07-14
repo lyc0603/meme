@@ -10,12 +10,10 @@ from environ.constants import (
 )
 
 # Define variable groups
-X_VAR_PANEL_A = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
-X_VAR_PANEL_B = list(PROFIT_NAMING_DICT.keys())
+X_VAR_PANEL = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
 
 # Load data
 pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
-pft = pd.read_csv(f"{PROCESSED_DATA_PATH}/profit.csv")
 
 
 # Compute summary statistics
@@ -37,8 +35,7 @@ def compute_summary(df, var_list):
     return summary
 
 
-summary_a = compute_summary(pfm, X_VAR_PANEL_A)
-summary_b = compute_summary(pft, X_VAR_PANEL_B)
+summary = compute_summary(pfm, X_VAR_PANEL)
 
 # Generate LaTeX code
 latex_lines = [
@@ -46,7 +43,6 @@ latex_lines = [
     "\\hline",
     "Variable & Num. Obs. & Mean & Std. Dev. & P10 & Median & P90 \\\\",
     "\\hline",
-    "\\textbf{Panel A. Project characteristics} \\\\",
 ]
 
 PANEL_A_NAMING_DICT = {
@@ -58,21 +54,11 @@ PABE_NAMING_DICT = {
     **PROFIT_NAMING_DICT,
 }
 
-for var in X_VAR_PANEL_A:
-    if var in summary_a:
-        s = summary_a[var]
+for var in X_VAR_PANEL:
+    if var in summary:
+        s = summary[var]
         latex_lines.append(
             f"{PANEL_A_NAMING_DICT[var]} & {s['num_obs']} & {s['mean']:.2f} & {s['std']:.2f} & {s['p10']:.2f} & {s['median']:.2f} & {s['p90']:.2f} \\\\"
-        )
-
-latex_lines.append("\\addlinespace")
-latex_lines.append("\\textbf{Panel B. Trader characteristics} \\\\")
-
-for var in X_VAR_PANEL_B:
-    if var in summary_b:
-        s = summary_b[var]
-        latex_lines.append(
-            f"{PABE_NAMING_DICT[var]} & {s['num_obs']} & {s['mean']:.2f} & {s['std']:.2f} & {s['p10']:.2f} & {s['median']:.2f} & {s['p90']:.2f} \\\\"
         )
 
 latex_lines.extend(["\\hline", "\\end{tabular}"])

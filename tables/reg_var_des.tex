@@ -1,21 +1,16 @@
 \begin{tabularx}{\textwidth}{lX}\hline
 Variable & Description \\
 \hline
-$\text{Launch Bundle Bot}_{i}$ & Dummy variable that equals 1 if the meme coin has launch bundle, 0 otherwise. \\
-$\text{Buy Bundle Bot}_{i}$ & Dummy variable that equals 1 if the buy bundle number is above the sample median, 0 otherwise. \\
-$\text{Sell Bundle Bot}_{i}$ & Dummy variable that equals 1 if the sell bundle number is above the sample median, 0 otherwise. \\
-$\text{Volume Bot}_{i}$ & Dummy variable that equals 1 if the number of volume bots is above the sample median, 0 otherwise. \\
-$\text{Wash Trading Volume \%}_{i}$ & Fraction of the meme coin's volume that is attributed to volume bots. \\
-$\text{Positive Comment Bot}_{i}$ & Dummy variable that equals 1 if the number of positive comments made by bots is above the sample median, 0 otherwise. \\
-$\text{Negative Comment Bot}_{i}$ & Dummy variable that equals 1 if the number of negative comments made by bots is above the sample median, 0 otherwise. \\
-$\text{Profit}_{i,j}$ & Each trader's profit from a given meme coin within 12 hours after its migration \\
+$\text{Rat Bot}_{i}$ & Dummy variable that equals 1 if the meme coin has launch bundle, 0 otherwise. \\
+$\text{Bundle Bot}_{i}$ & Dummy variable that equals 1 if the number of buy and sell bundles is above the sample median, 0 otherwise. \\
+$\text{Wash Trading Bot}_{i}$ & Dummy variable that equals 1 if there are volume bots in this project, 0 otherwise. \\
+$\text{Comment Bot}_{i}$ & Dummy variable that equals 1 if there are comment bots in this project, 0 otherwise. \\
+$\text{Profit}_{i,j}$ & Each trader's profit and loss from a given meme coin between the launch and 12 hours after its migration \\
 $\text{Creator}_{i,j}$ & Dummy variable that equals 1 if the trader is the meme coin's creator, 0 otherwise. \\
 $\text{Ln(Max Ret)}_{i}$ & Maximum log return of the meme coin within 12 hours after its migration. \\
-$\text{Ln(Pre-Migration Duration)}_{i}$ & Natural logarithm of the number of seconds between the meme coin's launch and its migration. \\
-$\text{Ln(Pump Duration)}_{i}$ & Natural logarithm of the number of seconds between the migration and the peak price of the meme coin. \\
-$\text{Ln(Dump Duration)}_{i}$ & Natural logarithm of the number of seconds between the migration and the 90\% price drop of the meme coin. \\
-$\text{Pre-Migration Volatility}_{i}$ & Volatility of the meme coin's log returns between its launch and the migration. \\
-$\text{Post-Migration Volatility}_{i}$ & Volatility of the meme coin's log returns between its migration and 12 hours after its migration. \\
-$\text{Ln(Number of Traders)}_{i}$ & Natural logarithm of the number of non-bot traders who traded the meme coin between the launch and 12 hours after its migration. \\
+$\text{Ln(Number of Traders)}_{i}$ & Natural logarithm of the number of non-bot traders who control one or multiple wallets and trade the meme coin between the launch and 12 hours after its migration. \\
+$\text{Ln(Pre-Migration Duration)}_{i}$ & Natural logarithm of seconds between the meme coin's launch and its migration. \\
+$\text{Ln(Pump Duration)}_{i}$ & Natural logarithm of seconds between the migration and the peak price of the meme coin. \\
+$\text{Ln(Dump Duration)}_{i}$ & Natural logarithm of seconds between the peak price and the 90\% price drop of the meme coin. \\
 \hline
 \end{tabularx}

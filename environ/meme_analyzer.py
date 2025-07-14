@@ -15,8 +15,6 @@ from environ.data_class import NewTokenPool, Swap, Transfer
 from environ.meme_base import MemeBase
 from environ.sol_fetcher import import_pool
 
-MIGATOR = "39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg"
-
 
 def compute_herfindahl(var_dict: list | dict) -> float:
     """Compute Herfindahl index given a  dictionary"""
@@ -47,7 +45,6 @@ class Trader(Account):
         self.balance: float = 0.0
         self.profit: float = 0.0
         self.swaps: list[Swap] = []
-        self.volume: float = 0.0
         self.non_swap_transfers: list[Transfer] = []
         self.wash_trading_score: Optional[float] = None
 
@@ -63,13 +60,11 @@ class Trader(Account):
         """Method to handle buy transactions"""
         self.balance += swap.base if swap.base else 0.0
         self.profit -= swap.usd if swap.usd else 0.0
-        self.volume += swap.usd if swap.usd else 0.0
 
     def sell(self, swap) -> None:
         """Method to handle sell transactions"""
         self.balance -= swap.base if swap.base else 0.0
         self.profit += swap.usd if swap.usd else 0.0
-        self.volume += swap.usd if swap.usd else 0.0
 
     def wash_trading(self) -> None:
         """Method to check the volume of the trader"""
@@ -102,15 +97,56 @@ class MemeAnalyzer(MemeBase):
         self.wash_trading_volume = 0
         self.prc_date_df, self.pre_prc_date_df = self._build_price_df()
         self.comment_list = self._build_comment_list()
+        self.bundle = self._build_bundle()
 
         # analyze traders
         self.traders = self._load_swaps()
+        self.non_bot_creator_transfer_traders = set(
+            [k[0] for k, v in self.traders.items()]
+        )
         self._merge_traders()
-        self.trader_number = len(self.traders)
         self.volume_bot = False
         self.traders, self.bots = self._wash_trade()
 
+    def check_migrate(self) -> str:
+        """Method to check if the meme token has migrated"""
+
+        migration = False
+
+        for _, acts in enumerate(self.get_acts(Swap)):
+            last_act = acts["acts"][list(acts["acts"].keys())[-1]]
+            if last_act.dex == "Raydium Liquidity Pool V4":
+                migration = True
+                return migration
+
+        return migration
+
+    def check_max_purchase_pct(self) -> float:
+        """Method to check the purchase percentage of the meme token"""
+        balance = 0
+        balance_list = []
+        for _, acts in enumerate(self.get_acts(Swap)):
+            last_act = acts["acts"][list(acts["acts"].keys())[-1]]
+            if last_act.dex == "pump.fun":
+                if last_act.typ == "Buy":
+                    balance += last_act.base
+                elif last_act.typ == "Sell":
+                    balance -= last_act.base
+                balance_list.append(balance)
+        return max(balance_list) / 793100000
+
     # Build-in Methods
+    def _build_bundle(self) -> dict[str, Any]:
+        """Method to build the bundle data"""
+
+        bundle = defaultdict(list)
+
+        for _, acts in enumerate(self.get_acts(Swap)):
+            if acts["block"] <= self.migrate_block:
+                bundle[acts["block"]].append(acts)
+
+        return {block: acts for block, acts in bundle.items() if len(acts) > 1}
+
     def _build_price_df(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Method to build the price DataFrame of the meme token"""
         prc_date_dict = {
@@ -186,61 +222,47 @@ class MemeAnalyzer(MemeBase):
 
     def get_dump_duration(self) -> int:
         """Method to get the dump duration in seconds"""
+        # max_price = self.prc_date_df["price"].max()
         pre_price = self.pre_prc_date_df["price"].iloc[-1]
+        first_price = self.prc_date_df.dropna()["price"].iloc[0]
+        max_price = self.prc_date_df["price"].max()
         min_price = 0.1 * pre_price
 
         # Get timestamps of transactions below 90% of pre-migration price
         dump_ts = self.prc_date_df.loc[self.prc_date_df["price"] < min_price].index
+
         if dump_ts.empty:
             return 12 * 3600  # Default to 12 hours if no dumps found
+
+        dump_ts = min(dump_ts)
+
+        # Get timestamps of transactions at peak and first price
+        first_price_ts = min(
+            self.prc_date_df.loc[self.prc_date_df["price"] == first_price].index
+        )
+
+        max_price_ts = min(
+            self.prc_date_df.loc[self.prc_date_df["price"] == max_price].index
+        )
+
         # Calculate dump duration
-        dump_duration = int((min(dump_ts) - self.migrate_time).total_seconds())
-
-        return dump_duration
-
-    def get_pre_migration_volatility(self) -> float:
-        """Method to get the pre-migration volatility of the meme token"""
-        pre_ret = self.get_ret(
-            df_prc=self.pre_prc_date_df,
-            ts=self.launch_time,
-            append=False,
-        )
-
-        # Calculate standard deviation of log returns
-        return np.log(pre_ret["ret"] + 1).std()
-
-    def get_post_migration_volatility(self) -> float:
-        """Method to get the post-migration volatility of the meme token"""
-        post_ret = self.get_ret(
-            df_prc=self.prc_date_df,
-            ts=self.migrate_time,
-            append=True,
-        )
-
-        # Calculate standard deviation of returns
-        return np.log(post_ret["ret"] + 1).std()
+        if dump_ts >= max_price_ts:
+            return int((dump_ts - max_price_ts).total_seconds())
+        else:
+            return int((dump_ts - first_price_ts).total_seconds())
 
     def get_number_of_traders(self) -> int:
         """Method to get the number of traders"""
-        return self.trader_number
+        # non-bot-transfer trader plus the creator
+        return len(self.non_bot_creator_transfer_traders) + 1
 
     # Metrics for Bundle Bot
-    def get_bundle_launch_transfer_dummy(self) -> int:
-        """Method to get the launch bundle dummy variable"""
-
-        return int(len(self.launch_bundle["bundle_launch"]) > 0)
-
-    def get_bundle_creator_buy_dummy(self) -> int:
-        """Method to get the bundle creator buy dummy variable"""
-        return int(len(self.launch_bundle["bundle_creator_buy"]) > 0)
-
-    def get_bundle_launch_buy_sell_num(self) -> tuple[int, int, int]:
+    def get_bundle_launch_buy_sell_num(self) -> tuple[int, int]:
         """Method to get the number of bundle buys"""
         bundle_launch = 0
-        bundle_buy = 0
-        bunle_sell = 0
+        bundle_bot = 0
 
-        for block, bundle_info in self.launch_bundle["bundle"].items():
+        for block, bundle_info in self.bundle.items():
             if block == self.launch_block:
                 if (
                     len(
@@ -265,7 +287,7 @@ class MemeAnalyzer(MemeBase):
                     )
                     == bundle_length
                 ):
-                    bundle_buy += 1
+                    bundle_bot += 1
 
                 elif (
                     len(
@@ -277,43 +299,19 @@ class MemeAnalyzer(MemeBase):
                     )
                     == bundle_length
                 ):
-                    bunle_sell += 1
+                    bundle_bot += 1
 
-        return bundle_launch, bundle_buy, bunle_sell
+        return bundle_launch, bundle_bot
 
     # Metrics for Comment Bot
-    def get_positive_comment_bot_num(self) -> int:
+    def get_comment_bot_num(self) -> int:
         """Method to get the number of positive comments"""
-        return len(
-            [
-                comment
-                for comment in self.comment_list
-                if comment["bot"] and comment["sentiment"] == "positive"
-            ]
-        )
-
-    def get_negative_comment_bot_num(self) -> int:
-        """Method to get the number of negative comments"""
-        return len(
-            [
-                comment
-                for comment in self.comment_list
-                if comment["bot"] and comment["sentiment"] == "negative"
-            ]
-        )
+        return len([comment for comment in self.comment_list if comment["bot"]])
 
     # Metrics for Volume Bot
     def get_volume_bot(self) -> bool:
         """Method to check if the meme token is a volume bot"""
         return int(self.volume_bot)
-
-    def get_wash_trading_volume_frac(self) -> float:
-        """Method to get the fraction of wash trading volume"""
-        return (
-            self.wash_trading_volume / self.trading_volume
-            if self.trading_volume
-            else 0.0
-        )
 
     def get_holdings_herf(self) -> float:
         """Method to get the Herfindahl index of the holdings of the meme token"""
@@ -401,10 +399,11 @@ class MemeAnalyzer(MemeBase):
 
     def _merge_traders(self) -> None:
         """Method to merge traders from another TraderAnalyzer"""
+
         # General launch bundle
         general_launch_transfers = []
-        if self.launch_block in self.launch_bundle["bundle"]:
-            for _ in self.launch_bundle["bundle"][self.launch_block]:
+        if self.launch_block in self.bundle:
+            for _ in self.bundle[self.launch_block]:
                 if _["maker"] != self.creator:
                     general_launch_transfers.append(
                         Transfer(
@@ -417,33 +416,12 @@ class MemeAnalyzer(MemeBase):
                             txn_hash=_["txn_hash"],
                         )
                     )
+                    # remove the bot trader
+                    self.non_bot_creator_transfer_traders.discard(_["maker"])
 
-        # Creator-funded launch bundle
-        sol_launch_transfers = (
-            [
-                transfer
-                for _, bundle_info in self.launch_bundle["bundle_launch"].items()
-                for transfer in bundle_info["transfer"]
-            ]
-            if self.launch_bundle
-            else []
-        )
-        # Creator-funded buy bundle
-        sol_bundle_creator_buy = (
-            [
-                transfer
-                for _, bundle_info in self.launch_bundle["bundle_creator_buy"].items()
-                for transfer in bundle_info["transfer"]
-            ]
-            if self.launch_bundle
-            else []
-        )
-        for non_swap_transfer in (
-            self.non_swap_transfers
-            + general_launch_transfers
-            + sol_launch_transfers
-            + sol_bundle_creator_buy
-        ):
+        for non_swap_transfer in self.non_swap_transfers + general_launch_transfers:
+            self.non_bot_creator_transfer_traders.discard(non_swap_transfer.from_)
+            self.non_bot_creator_transfer_traders.discard(non_swap_transfer.to)
             from_trader_address, from_trader = self.search_trader(
                 non_swap_transfer.from_
             )
@@ -475,11 +453,10 @@ class MemeAnalyzer(MemeBase):
         traders = {}
         bots = {}
         for trader_add, trader in self.traders.items():
-            self.trading_volume += trader.volume
             if trader.wash_trading() > 50:
                 self.volume_bot = True
-                self.wash_trading_volume += trader.volume
                 bots[trader_add] = trader
+                self.non_bot_creator_transfer_traders.discard(trader_add)
             else:
                 traders[trader_add] = trader
         return traders, bots
@@ -498,9 +475,11 @@ if __name__ == "__main__":
 
     lst = []
 
-    NUM_OF_OBSERVATIONS = 10
+    NUM_OF_OBSERVATIONS = 1
 
     for chain in [
+        # "pre_trump_pumpfun",
+        # "pre_trump_raydium",
         # "pumpfun",
         "raydium",
     ]:
@@ -509,6 +488,7 @@ if __name__ == "__main__":
             NUM_OF_OBSERVATIONS,
         ):
             token_add = pool["token_address"]
+            # token_add = "DB3M5ggNLurVeSezKKJb68wEZrnodcPN4jCCFoBdcKG7"
             meme = MemeAnalyzer(
                 NewTokenPool(
                     token0=SOL_TOKEN_ADDRESS,
@@ -526,14 +506,17 @@ if __name__ == "__main__":
             print(
                 f"meme coin: {meme.new_token_pool.pool_add}\n",
                 # f"pre_migration_duration: {meme.get_pre_migration_duration()} seconds\n",
-                f"max_return and pump duration: {meme.get_max_ret_and_pump_duration()}\n",
-                f"dump duration: {meme.get_dump_duration()} seconds\n",
+                # f"max_return and pump duration: {meme.get_max_ret_and_pump_duration()}\n",
+                # f"dump duration: {meme.get_dump_duration()} seconds\n",
                 # f"pre_migration_volatility: {meme.get_pre_migration_volatility()}\n",
                 # f"post_migration_volatility: {meme.get_post_migration_volatility()}\n",
-                f"wash_trading: {max([v.wash_trading() for k,v in meme.traders.items()])}\n",
+                # f"wash_trading: {max([v.wash_trading() for k,v in {**meme.bots, **meme.traders}.items()])}\n",
+                # f"bundle_bot: {meme.get_bundle_launch_buy_sell_num()}\n",
+                # f"dump_duration: {meme.get_dump_duration()} seconds\n",
+                # f"comment_bot_num: {meme.get_comment_bot_num()}\n",
+                # f"migrate: {meme.check_migrate()}\n",
+                # f"purchase_percentage: {meme.check_max_purchase_pct()}\n",
             )
-            (
-                meme.get_ret(meme.prc_date_df, meme.migrate_time, True) + 1
-            ).cumprod().plot()
-
-            break
+            # (
+            #     meme.get_ret(meme.prc_date_df, meme.migrate_time, True) + 1
+            # ).cumprod().plot()

@@ -4,7 +4,7 @@ Data Classes
 
 import datetime
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 # pool data class
@@ -85,6 +85,7 @@ class Swap(Action):
     price: float
     base: float
     quote: float
+    dex: Optional[str] = None
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)

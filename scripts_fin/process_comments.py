@@ -1,11 +1,8 @@
 """ChatGPT Batch Processing Script"""
 
-import time
 import glob
 import json
 import os
-from pydantic import BaseModel
-
 from openai import OpenAI
 from tqdm import tqdm
 from collections import defaultdict
@@ -16,32 +13,40 @@ from environ.prompt import (
     FEW_SHOT_EXAMPLES_COMMENT_BOT,
     JSON_SCHEMA_COMMENT_BOT,
 )
+from environ.agent import send_batch, retrieve_batch
 
 client = OpenAI(api_key=os.getenv("OPENAI_API"))
 
+BATCH_NAME = "pre_trump_pumpfun"
 
-# # Load comments from JSONL files
-# comments_path = glob.glob(f"{DATA_PATH}/solana/raydium/reply/*.jsonl")
+# Load comments from JSONL files
+comments_path = glob.glob(f"{DATA_PATH}/solana/{BATCH_NAME}/reply/*.jsonl")
 
-# comments = {}
-# counter = 0
-# for file_path in comments_path:
-#     with open(file_path, "r", encoding="utf-8") as file:
-#         for line in file:
-#             counter += 1
-#             comment = json.loads(line.strip())
-#             comments[counter] = {
-#                 "id": comment["id"],
-#                 "comment": comment,
-#                 "token_add": file_path.split("/")[-1].split(".")[0],
-#             }
+comments_batch = []
+comments_chunk = {}
+comments = {}
+counter = 0
+for file_path in comments_path:
+    with open(file_path, "r", encoding="utf-8") as file:
+        for line in file:
+            counter += 1
+            comment = json.loads(line.strip())
+            comments[str(counter)] = {
+                "id": comment["id"],
+                "comment": comment,
+                "token_add": file_path.split("/")[-1].split(".")[0],
+            }
+            comments_chunk[str(counter)] = {
+                "id": comment["id"],
+                "comment": comment,
+                "token_add": file_path.split("/")[-1].split(".")[0],
+            }
 
-# with open(PROCESSED_DATA_PATH / "comments.json", "w", encoding="utf-8") as f:
-#     json.dump(comments, f, indent=4)
+            if counter % 25_000 == 0:
+                comments_batch.append(comments_chunk)
+                comments_chunk = {}
 
-
-with open(PROCESSED_DATA_PATH / "comments.json", "r", encoding="utf-8") as f:
-    comments = json.load(f)
+comments_batch.append(comments_chunk)
 
 
 def batch_few_shot_learning(
@@ -75,62 +80,47 @@ def batch_few_shot_learning(
     return request_payload
 
 
-batch_input_file_path = f"{PROCESSED_DATA_PATH}/comments_sentiment_batch.jsonl"
+result_batch = []
 
-with open(batch_input_file_path, "w", encoding="utf-8") as out_f:
-    for idx, comment in tqdm(
-        comments.items(),
-        desc="Preparing batch inputs",
-        total=len(comments),
-        leave=False,
-    ):
-        req = batch_few_shot_learning(
-            custom_idx=idx,
-            user_msg=comment["comment"]["text"],
-            system_instruction=SYSTEM_INSTRUCTION_COMMENT_BOT,
-            few_shot_example=FEW_SHOT_EXAMPLES_COMMENT_BOT,
-            json_schema=JSON_SCHEMA_COMMENT_BOT,
-            model="gpt-4o-mini",
-        )
-        out_f.write(json.dumps(req, ensure_ascii=False) + "\n")
+for comments in comments_batch:
+    batch_input_file_path = (
+        f"{PROCESSED_DATA_PATH}/{BATCH_NAME}_comments_sentiment_batch.jsonl"
+    )
 
-batch_input_file = client.files.create(
-    file=open(batch_input_file_path, "rb"), purpose="batch"
-)
-batch_input_file_id = batch_input_file.id
+    with open(batch_input_file_path, "w", encoding="utf-8") as out_f:
+        for idx, comment in tqdm(
+            comments.items(),
+            desc="Preparing batch inputs",
+            total=len(comments),
+            leave=False,
+        ):
+            req = batch_few_shot_learning(
+                custom_idx=idx,
+                user_msg=comment["comment"]["text"],
+                system_instruction=SYSTEM_INSTRUCTION_COMMENT_BOT,
+                few_shot_example=FEW_SHOT_EXAMPLES_COMMENT_BOT,
+                json_schema=JSON_SCHEMA_COMMENT_BOT,
+                model="gpt-4o-mini",
+            )
+            out_f.write(json.dumps(req, ensure_ascii=False) + "\n")
 
-batch = client.batches.create(
-    input_file_id=batch_input_file_id,
-    endpoint="/v1/chat/completions",
-    completion_window="24h",
-    metadata={"description": "meme comment bot detection"},
-)
+    batch_id = send_batch(batch_input_file_path)
+    result = retrieve_batch(batch_id)
 
-batch_id = batch.id
-
-# Poll for batch completion
-print(f"Batch submitted. Batch ID: {batch_id}. Waiting for completion...")
-
-while True:
-    current_batch = client.batches.retrieve(batch_id)
-    status = current_batch.status
-    print(f"Batch status: {status}")
-    if status in ("completed", "failed", "cancelled", "expired"):
-        break
-    time.sleep(10)  # Wait before polling again
-
-if status != "completed":
-    raise RuntimeError(f"Batch ended with status: {status}")
-
-# Download output file
-output_file_id = current_batch.output_file_id
-output_file = client.files.retrieve(output_file_id)
-output_file.download(f"{PROCESSED_DATA_PATH}/comments_sentiment_batch_res.jsonl")
-print("Batch output file downloaded.")
-
+    result_batch.append(result)
 
 with open(
-    f"{PROCESSED_DATA_PATH}/comments_sentiment_batch_res.jsonl", "r", encoding="utf-8"
+    f"{PROCESSED_DATA_PATH}/{BATCH_NAME}_comments_sentiment_batch_res.jsonl",
+    "w",
+    encoding="utf-8",
+) as file:
+    for res in result_batch:
+        file.write(json.dumps(res, ensure_ascii=False) + "\n")
+
+with open(
+    f"{PROCESSED_DATA_PATH}/{BATCH_NAME}_comments_sentiment_batch_res.jsonl",
+    "r",
+    encoding="utf-8",
 ) as res_f:
     lines = res_f.readlines()
     for line in lines:
@@ -146,10 +136,12 @@ token_dict = defaultdict(list)
 for comment in comments.values():
     token_dict[comment["token_add"]].append(comment)
 
-os.makedirs(PROCESSED_DATA_PATH / "comment", exist_ok=True)
+os.makedirs(PROCESSED_DATA_PATH / "comment" / BATCH_NAME, exist_ok=True)
 for token, comment_list in token_dict.items():
     with open(
-        PROCESSED_DATA_PATH / "comment" / f"{token}.jsonl", "w", encoding="utf-8"
+        PROCESSED_DATA_PATH / "comment" / BATCH_NAME / f"{token}.jsonl",
+        "a",
+        encoding="utf-8",
     ) as f:
         for comment in comment_list:
             f.write(json.dumps(comment, ensure_ascii=False) + "\n")

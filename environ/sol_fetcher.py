@@ -34,6 +34,8 @@ os.makedirs(DATA_PATH / "solana", exist_ok=True)
 SOLANA_PATH_DICT = {
     "pumpfun": DATA_PATH / "solana" / "pumpfun.jsonl",
     "raydium": DATA_PATH / "solana" / "raydium.jsonl",
+    "pre_trump_raydium": DATA_PATH / "solana" / "pre_trump_raydium.jsonl",
+    "pre_trump_pumpfun": DATA_PATH / "solana" / "pre_trump_pumpfun.jsonl",
 }
 
 DEX_DICT = {
@@ -43,7 +45,8 @@ DEX_DICT = {
 
 
 def import_pool(
-    category: Literal["pumpfun", "raydium"], num: Optional[int] = None
+    category: Literal["pumpfun", "raydium", "pre_trump_raydium", "pre_trump_pumpfun"],
+    num: Optional[int] = None,
 ) -> list[tuple[str, str | int | Any]]:
     """Utility function to fetch the pool list."""
 
@@ -363,7 +366,7 @@ LEFT JOIN (
     program_id = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P'
     AND event_type = 'create'
 ) lau
-ON mig.token_address = lau.token_address;
+ON mig.token_address = lau.token_address
 ORDER BY block_timestamp"""
 
 

@@ -21,7 +21,6 @@ class MemeBase:
         self.txn = self._load_pickle("txn")
         self.transfer = self._load_pickle("transfer")
         self.comment = self._load_jsonl("comment")
-        self.launch_bundle = self._load_launch_bundle()
         (
             self.migrate_block,
             self.launch_block,
@@ -48,23 +47,16 @@ class MemeBase:
 
     def _load_jsonl(self, attr: str):
         """Method to load the jsonl file of the meme token"""
-        path = f"{PROCESSED_DATA_PATH}/{attr}/" f"{self.new_token_pool.pool_add}.jsonl"
+        path = (
+            f"{PROCESSED_DATA_PATH}/{attr}/"
+            f"{self.new_token_pool.chain}/{self.new_token_pool.pool_add}.jsonl"
+        )
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 file = f.readlines()
                 return [json.loads(line) for line in file]
         else:
             return []
-
-    def _load_launch_bundle(self) -> dict:
-        """Method to load the launch bundle of the meme token"""
-        path = (
-            f"{PROCESSED_DATA_PATH}/launch_bundle/"
-            f"{self.new_token_pool.pool_add}.pickle"
-        )
-        if os.path.exists(path):
-            with open(path, "rb") as f:
-                return pickle.load(f)
 
     def _load_creation(
         self,
@@ -78,10 +70,15 @@ class MemeBase:
             file = json.load(f)
 
         return (
-            file["migrate_block"],
+            file["migrate_block"] if file["migrate_block"] else 353213721,
             file["launch_block"],
-            datetime.datetime.fromtimestamp(file["migrate_time"], UTC),
-            datetime.datetime.fromtimestamp(file["launch_time"], UTC),
+            # if null, set to today
+            (
+                datetime.datetime.fromtimestamp(file["migrate_time"], UTC)
+                if file["migrate_time"]
+                else datetime.datetime.now(UTC)
+            ),
+            (datetime.datetime.fromtimestamp(file["launch_time"], UTC)),
             file["token_creator"],
             file["pumpfun_pool_address"],
             file["launch_tx_id"],

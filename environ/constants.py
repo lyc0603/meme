@@ -23,26 +23,21 @@ SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 # naming dictionary for independent variables in regression analysis
 NAMING_DICT = {
     # bundle bots
-    "launch_bundle": "$\\text{Launch Bundle Bot}_{i}$",
-    "bundle_buy": "$\\text{Buy Bundle Bot}_{i}$",
-    "bundle_sell": "$\\text{Sell Bundle Bot}_{i}$",
+    "launch_bundle": "$\\text{Rat Bot}_{i}$",
+    "bundle_bot": "$\\text{Bundle Bot}_{i}$",
     # volume bots
-    "volume_bot": "$\\text{Volume Bot}_{i}$",
-    "wash_trading_volume_frac": "$\\text{Wash Trading Volume \%}_{i}$",
+    "volume_bot": "$\\text{Wash Trading Bot}_{i}$",
     # comment bots
-    "positive_bot_comment_num": "$\\text{Positive Comment Bot}_{i}$",
-    "negative_bot_comment_num": "$\\text{Negative Comment Bot}_{i}$",
+    "bot_comment_num": "$\\text{Comment Bot}_{i}$",
 }
 
 # naming dictionary for project performance metrics
 PFM_NAMING_DICT = {
     "max_ret": "$\\text{Ln(Max Ret)}_{i}$",
+    "number_of_traders": "$\\text{Ln(Number of Traders)}_{i}$",
     "pre_migration_duration": "$\\text{Ln(Pre-Migration Duration)}_{i}$",
     "pump_duration": "$\\text{Ln(Pump Duration)}_{i}$",
     "dump_duration": "$\\text{Ln(Dump Duration)}_{i}$",
-    "pre_migration_vol": "$\\text{Pre-Migration Volatility}_{i}$",
-    "post_migration_vol": "$\\text{Post-Migration Volatility}_{i}$",
-    "number_of_traders": "$\\text{Ln(Number of Traders)}_{i}$",
 }
 
 PROFIT_NAMING_DICT = {

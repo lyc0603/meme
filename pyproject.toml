@@ -38,6 +38,7 @@ dependencies = [
     "nbformat==5.10.4",
     "kaleido==1.0.0",
     "scikit-learn==1.7.0",
+    "snowflake-connector-python==3.16.0",
 ]
 
 [project.optional-dependencies]

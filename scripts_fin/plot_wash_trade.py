@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     # draw a vericle line at x = np.log1p(50)
     plt.axvline(
-        np.log1p(50),
+        np.log1p(100),
         color="red",
         linestyle="--",
         label="Threshold When Wash Trading Score > 50",

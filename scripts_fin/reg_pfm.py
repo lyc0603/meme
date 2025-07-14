@@ -26,14 +26,10 @@ PROFIT_NAMING_DICT = {
 
 X_VAR_LIST = [
     "launch_bundle",
-    "bundle_buy",
-    "bundle_sell",
+    "bundle_bot",
     "volume_bot",
-    "positive_bot_comment_num",
-    "negative_bot_comment_num",
+    "bot_comment_num",
 ]
-
-pfm = pd.read_csv(Path(PROCESSED_DATA_PATH) / "pfm.csv")
 
 
 def compute_vif(df: pd.DataFrame, x_var_list: List[str]) -> pd.DataFrame:
@@ -146,14 +142,17 @@ def render_latex_table(
 
 
 if __name__ == "__main__":
-    vif_df = compute_vif(pfm, X_VAR_LIST + ["wash_trading_volume_frac"])
-    vif_latex = render_vif_latex_table(vif_df)
 
-    with open(TABLE_PATH / "vif_pfm.tex", "w", encoding="utf-8") as f:
-        f.write(vif_latex)
+    for chain in ["pre_trump_raydium"]:
+        pfm = pd.read_csv(Path(PROCESSED_DATA_PATH) / f"pfm_{chain}.csv")
+        vif_df = compute_vif(pfm, X_VAR_LIST)
+        vif_latex = render_vif_latex_table(vif_df)
 
-    results = reg_survive(pfm, X_VAR_LIST)
-    latex_table = render_latex_table(results, X_VAR_LIST)
+        with open(TABLE_PATH / f"vif_pfm_{chain}.tex", "w", encoding="utf-8") as f:
+            f.write(vif_latex)
 
-    with open(TABLE_PATH / "reg_pfm.tex", "w", encoding="utf-8") as f:
-        f.write(latex_table)
+        results = reg_survive(pfm, X_VAR_LIST)
+        latex_table = render_latex_table(results, X_VAR_LIST)
+
+        with open(TABLE_PATH / f"reg_pfm_{chain}.tex", "w", encoding="utf-8") as f:
+            f.write(latex_table)
