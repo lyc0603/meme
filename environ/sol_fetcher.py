@@ -17,7 +17,7 @@ from flipside import Flipside
 from tenacity import retry, stop_after_attempt, wait_exponential
 from tqdm import tqdm
 
-from environ.constants import DATA_PATH, HEADERS, PROCESSED_DATA_PATH
+from environ.constants import DATA_PATH, HEADERS, PROCESSED_DATA_PATH, SOLANA_PATH_DICT
 from environ.data_class import Swap, Transfer, Txn
 
 dotenv.load_dotenv()
@@ -31,12 +31,6 @@ default_retry = retry(
 
 os.makedirs(DATA_PATH / "solana", exist_ok=True)
 
-SOLANA_PATH_DICT = {
-    "pumpfun": DATA_PATH / "solana" / "pumpfun.jsonl",
-    "raydium": DATA_PATH / "solana" / "raydium.jsonl",
-    "pre_trump_raydium": DATA_PATH / "solana" / "pre_trump_raydium.jsonl",
-    "pre_trump_pumpfun": DATA_PATH / "solana" / "pre_trump_pumpfun.jsonl",
-}
 
 DEX_DICT = {
     "raydium": "Raydium Liquidity Pool V4",

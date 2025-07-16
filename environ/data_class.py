@@ -92,6 +92,16 @@ class Swap(Action):
 
 
 @dataclass
+class Multiswap(Swap):
+    """Class to store the multiswap transaction"""
+
+    meme: Optional[str] = None
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+
+@dataclass
 class Mint(Action):
     """Class to store the mint transaction"""
 

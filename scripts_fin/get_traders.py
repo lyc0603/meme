@@ -11,22 +11,24 @@ from environ.data_class import NewTokenPool
 from environ.meme_analyzer import MemeAnalyzer
 from environ.sol_fetcher import import_pool
 
-NUM_OF_OBSERVATIONS = 1000
 
 os.makedirs(f"{PROCESSED_DATA_PATH}/trader", exist_ok=True)
 
-for chain in [
-    # "pre_trump_pumpfun",
-    "pre_trump_raydium",
-    # "pumpfun",
-    "raydium",
+global_set = set()
+
+for chain, num in [
+    ("pre_trump_raydium", 1000),
+    ("raydium", 1000),
+    ("pre_trump_pumpfun", 3000),
+    ("pumpfun", 3000),
 ]:
     traders = {}
+    counter = 0
 
     for pool in tqdm(
         import_pool(
             chain,
-            NUM_OF_OBSERVATIONS,
+            num,
         )
     ):
         token_add = pool["token_address"]
@@ -43,12 +45,32 @@ for chain in [
                 txns={},
             ),
         )
-        sample_trader = random.choice(list(meme.non_bot_creator_transfer_traders))
 
-        while sample_trader in traders.values():
-            sample_trader = random.choice(list(meme.non_bot_creator_transfer_traders))
+        if chain in ["pre_trump_pumpfun", "pumpfun"]:
+            if meme.check_migrate() | (meme.check_max_purchase_pct() < 0.2):
+                continue
+
+        non_bot_creator_transfer_traders_list = list(
+            meme.non_bot_creator_transfer_traders
+        )
+
+        if len(non_bot_creator_transfer_traders_list) != 0:
+            sample_trader = random.choice(non_bot_creator_transfer_traders_list)
+        else:
+            sample_trader = meme.creator
+
+        while sample_trader in global_set:
+            if meme.non_bot_creator_transfer_traders.issubset(global_set):
+                sample_trader = meme.creator
+                break
+            else:
+                sample_trader = random.choice(non_bot_creator_transfer_traders_list)
 
         traders[meme.new_token_pool.pool_add] = sample_trader
+        global_set.add(sample_trader)
+        counter += 1
+        if counter >= 1_000:
+            break
 
     with open(
         f"{PROCESSED_DATA_PATH}/trader/{chain}.json",

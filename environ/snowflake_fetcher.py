@@ -131,16 +131,14 @@ class SolanaFetcher:
     def snowflake(self) -> Any:
         """Return the snowflake connection."""
         conn_params = {
-            "user": "YICHENLUO",
-            "password": "Luoyichen110110!!",
-            "account": "ZFWSHWS-MAC73129",
-            "warehouse": "COMPUTE_WH",
-            "database": "SOLANA",
-            # "database": "SOLANA_ONCHAIN_CORE_DATA",
-            "schema": "CORE",
-            "role": "ACCOUNTADMIN",
+            "user": os.getenv("SNOWFLAKE_USER"),
+            "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
+            "warehouse": os.getenv("SNOWFLAKE_WAREHOUSE"),
+            "database": os.getenv("SNOWFLAKE_DATABASE"),
+            "schema": os.getenv("SNOWFLAKE_SCHEMA"),
+            "role": os.getenv("SNOWFLAKE_ROLE"),
         }
-
         ctx = connect(**conn_params)
         return ctx.cursor(DictCursor)
 
@@ -213,6 +211,57 @@ class SolanaFetcher:
 
         self.cs.execute(query.format(**query_params))
         return self.cs.fetchall()
+
+    def fetch_trader_trading(self, query: str, save_path: Path) -> dict[str, Any]:
+        """Fetch trader trading data for a given token address."""
+        os.makedirs(PROCESSED_DATA_PATH / "trader" / self.category, exist_ok=True)
+
+        finished = [
+            _.split("/")[-1].split(".")[0] for _ in glob(str(save_path / "*.jsonl"))
+        ]
+
+        with open(
+            PROCESSED_DATA_PATH / "trader" / f"{self.category}.json",
+            "r",
+            encoding="utf-8",
+        ) as f:
+            traders = json.load(f)
+
+        for _, swapper in tqdm(traders.items(), desc="Fetching Trader Trading"):
+            if swapper in finished:
+                continue
+            rows = self.fetch_data(
+                query=query,
+                swapper=swapper,
+            )
+            with open(
+                save_path / f"{swapper}.jsonl",
+                "w",
+                encoding="utf-8",
+            ) as f:
+                if isinstance(rows, Iterable):
+                    for row in rows:
+                        row = lower_case_key(row)
+                        for k in [
+                            "block_timestamp",
+                            "inserted_timestamp",
+                            "modified_timestamp",
+                        ]:
+                            row[k] = (
+                                row[k]
+                                .astimezone(timezone.utc)
+                                .strftime("%Y-%m-%dT%H:%M:%S.000Z")
+                            )
+
+                        tsk_list = ["swapper", "swap_from_mint", "swap_to_mint"]
+
+                        for k in tsk_list:
+                            row[k] = row[k].strip('"')
+                        f.write(json.dumps(row) + "\n")
+                else:
+                    raise ValueError(
+                        f"Invalid response type: {type(rows)}. Expected Iterable."
+                    )
 
     @default_retry
     def fetch_reply(
@@ -315,6 +364,7 @@ class SolanaFetcher:
 
 def process_txn(
     category: Literal["pumpfun", "raydium", "pre_trump_raydium", "pre_trump_pumpfun"],
+    num: int = 1000,
 ) -> None:
     """Process the transactions data in the pool"""
 
@@ -324,7 +374,7 @@ def process_txn(
             exist_ok=True,
         )
 
-    for pool_info in tqdm(import_pool(category)):
+    for pool_info in tqdm(import_pool(category, num=num)):
         token_add = pool_info["token_address"]
         migrate_ts = (
             int(
@@ -512,13 +562,13 @@ def process_txn(
 
 if __name__ == "__main__":
 
-    # # pre-trump raydium fetcher
-    # solana_fetcher = SolanaFetcher(
-    #     category="pre_trump_raydium",
-    #     num=1000,
-    #     timestamp="2024-10-17 14:01:48",
-    #     task_query=MIGRATION_QUERY,
-    # )
+    # pre-trump raydium fetcher
+    solana_fetcher = SolanaFetcher(
+        category="pre_trump_raydium",
+        num=1000,
+        timestamp="2024-10-17 14:01:48",
+        task_query=MIGRATION_QUERY,
+    )
     # solana_fetcher.fetch_task(
     #     MIGRATION_QUERY,
     #     "2024-10-17 14:01:48",
@@ -532,14 +582,18 @@ if __name__ == "__main__":
     # solana_fetcher.fetch_replies(
     #     save_path=DATA_PATH / "solana" / "pre_trump_raydium" / "reply",
     # )
+    solana_fetcher.fetch_trader_trading(
+        query=SWAPPER_QUERY,
+        save_path=PROCESSED_DATA_PATH / "trader" / "pre_trump_raydium",
+    )
 
-    # # pre-trump pumpfun fetcher
-    # solana_fetcher = SolanaFetcher(
-    #     category="pre_trump_pumpfun",
-    #     num=3000,
-    #     timestamp="2024-10-17 14:01:48",
-    #     task_query=LAUNCH_QUERY,
-    # )
+    # pre-trump pumpfun fetcher
+    solana_fetcher = SolanaFetcher(
+        category="pre_trump_pumpfun",
+        num=3000,
+        timestamp="2024-10-17 14:01:48",
+        task_query=LAUNCH_QUERY,
+    )
     # solana_fetcher.fetch_task(
     #     LAUNCH_QUERY,
     #     "2024-10-17 14:01:48",
@@ -557,6 +611,10 @@ if __name__ == "__main__":
     # solana_fetcher.fetch_replies(
     #     save_path=DATA_PATH / "solana" / "pre_trump_pumpfun" / "reply",
     # )
+    solana_fetcher.fetch_trader_trading(
+        query=SWAPPER_QUERY,
+        save_path=PROCESSED_DATA_PATH / "trader" / "pre_trump_pumpfun",
+    )
 
     # post-trump pumpfun fetcher
     solana_fetcher = SolanaFetcher(
@@ -572,21 +630,25 @@ if __name__ == "__main__":
     #     DATA_PATH / "solana" / "pumpfun.jsonl",
     # )
     # solana_fetcher.fetch(UNCON_SWAP_QUERY, DATA_PATH / "solana" / "pumpfun" / "txn", typ="txn")
-    solana_fetcher.fetch(
-        UNCON_TRANSFER_QUERY,
-        DATA_PATH / "solana" / "pumpfun" / "transfer",
-        typ="transfer",
-    )
+    # solana_fetcher.fetch(
+    #     UNCON_TRANSFER_QUERY,
+    #     DATA_PATH / "solana" / "pumpfun" / "transfer",
+    #     typ="transfer",
+    # )
     # solana_fetcher.fetch_replies(
     #     save_path=DATA_PATH / "solana" / "pumpfun" / "reply",
     # )
+    solana_fetcher.fetch_trader_trading(
+        query=SWAPPER_QUERY,
+        save_path=PROCESSED_DATA_PATH / "trader" / "pumpfun",
+    )
 
-    # solana_fetcher = SolanaFetcher(
-    #     category="raydium",
-    #     num=1000,
-    #     timestamp="2025-01-17 14:01:48",
-    #     task_query=MIGRATION_QUERY,
-    # )
+    solana_fetcher = SolanaFetcher(
+        category="raydium",
+        num=1000,
+        timestamp="2025-01-17 14:01:48",
+        task_query=MIGRATION_QUERY,
+    )
     # solana_fetcher.fetch_task(
     #     MIGRATION_QUERY,
     #     "2025-01-17 14:01:48",
@@ -598,5 +660,10 @@ if __name__ == "__main__":
     # solana_fetcher.fetch_replies(
     #     save_path=DATA_PATH / "solana" / "raydium" / "reply",
     # )
-    # for category in ["pre_trump_pumpfun", "pumpfun"]:
-    #     process_txn(category)
+    solana_fetcher.fetch_trader_trading(
+        query=SWAPPER_QUERY,
+        save_path=PROCESSED_DATA_PATH / "trader" / "raydium",
+    )
+
+    # for cate, n in [("pumpfun", 3000)]:
+    #     process_txn(cate, n)

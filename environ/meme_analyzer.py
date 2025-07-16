@@ -5,7 +5,7 @@ from collections import defaultdict
 from datetime import timezone
 from typing import Optional, Any
 from collections import Counter
-
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd

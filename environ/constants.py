@@ -20,6 +20,13 @@ HEADERS = {
 
 SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
 
+SOLANA_PATH_DICT = {
+    "pumpfun": DATA_PATH / "solana" / "pumpfun.jsonl",
+    "raydium": DATA_PATH / "solana" / "raydium.jsonl",
+    "pre_trump_raydium": DATA_PATH / "solana" / "pre_trump_raydium.jsonl",
+    "pre_trump_pumpfun": DATA_PATH / "solana" / "pre_trump_pumpfun.jsonl",
+}
+
 # naming dictionary for independent variables in regression analysis
 NAMING_DICT = {
     # bundle bots
@@ -38,6 +45,10 @@ PFM_NAMING_DICT = {
     "pre_migration_duration": "$\\text{Ln(Pre-Migration Duration)}_{i}$",
     "pump_duration": "$\\text{Ln(Pump Duration)}_{i}$",
     "dump_duration": "$\\text{Ln(Dump Duration)}_{i}$",
+}
+
+MIGRATION_NAMING_DICT = {
+    f"migration_{_}": "$\\text{Migration}_{i}$" for _ in ["all", "pre", "post"]
 }
 
 PROFIT_NAMING_DICT = {
