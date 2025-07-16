@@ -4,9 +4,8 @@ import json
 from collections import defaultdict
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
-from datetime import datetime
 import pandas as pd
-from pathlib import Path
+import numpy as np
 
 from scipy import stats
 from environ.data_class import Multiswap
@@ -29,7 +28,8 @@ class Trader(Account):
         self.swaps: defaultdict[str, list[Multiswap]] = defaultdict(list)
         self.balances: defaultdict[str, float] = defaultdict(float)
         self.profits: defaultdict[str, float] = defaultdict(float)
-        self.meme_profits: list[float] = []
+        self.costs: defaultdict[str, float] = defaultdict(float)
+        self.meme_rets: list[float] = []
 
     def swap(self, swap: Multiswap) -> None:
         """Process a swap transaction and update balances and profits."""
@@ -42,26 +42,31 @@ class Trader(Account):
         """Process a buy transaction."""
         self.balances[swap.meme] += swap.base if swap.base else 0.0
         self.profits[swap.meme] -= swap.usd if swap.usd else 0.0
+        self.costs[swap.meme] += swap.usd if swap.usd else 0.0
 
     def sell(self, swap) -> None:
         """Process a sell transaction."""
         self.balances[swap.meme] -= swap.base if swap.base else 0.0
         self.profits[swap.meme] += swap.usd if swap.usd else 0.0
 
-    def _build_meme_profits(self) -> dict[str, float]:
+    def build_meme_profits(self) -> dict[str, float]:
         """Return profits for meme tokens."""
 
-        meme_profit_dict = {k: v for k, v in self.profits.items() if k.endswith("pump")}
-        self.meme_profits = [
-            v for k, v in meme_profit_dict.items() if self.balances[k] >= 0
-        ]
+        for k, v in self.profits.items():
+            if k.endswith("pump"):
+                cost = self.costs[k]
+                if (self.balances[k] >= 0) & (cost > 0):
+                    self.meme_rets.append(v / cost)
 
     def profit_t_stats(self) -> float:
         """Calculate t-statistic for profits."""
-        if len(self.meme_profits) < 2:
+        if len(self.meme_rets) < 2:
             return float("nan")
-        t_stat, _ = stats.ttest_1samp(self.meme_profits, popmean=0)
-        return t_stat
+
+        if np.std(self.meme_rets) <= 1e-8:
+            return float("nan")
+
+        return stats.ttest_1samp(self.meme_rets, popmean=0)[0]
 
 
 def process_trader_task(args):
@@ -113,7 +118,8 @@ def process_trader_task(args):
                         ),
                     )
                 )
-            trader._build_meme_profits()
+            trader.build_meme_profits()
+
     except FileNotFoundError:
         return None  # skip missing file
 
@@ -121,7 +127,7 @@ def process_trader_task(args):
         "category": cate,
         "trader_address": trader.address,
         "token_address": token_add,
-        "meme_num": len(trader.meme_profits),
+        "meme_num": len(trader.meme_rets),
         "t_stat": trader.profit_t_stats(),
     }
 
@@ -137,7 +143,7 @@ if __name__ == "__main__":
             tasks.append((cate, token_add, trader_add))
 
     results = []
-    with Pool(cpu_count() - 10) as pool:
+    with Pool(cpu_count() - 5) as pool:
         for result in tqdm(
             pool.imap_unordered(process_trader_task, tasks), total=len(tasks)
         ):

@@ -11,8 +11,9 @@ CRITICAL_VAL = 2.576
 FONT_SIZE = 18
 
 # Load and clean the data
-df = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats copy.csv")
-data = df["t_stat"].dropna()
+df = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats.csv")
+data = df.loc[df["meme_num"] < 1000, "t_stat"].dropna()
+
 
 # Trim outliers (1st to 99th percentile)
 lower, upper = np.percentile(data, [1, 99])
