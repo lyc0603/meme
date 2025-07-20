@@ -10,6 +10,7 @@ import numpy as np
 from scipy import stats
 from environ.data_class import Multiswap
 from environ.constants import PROCESSED_DATA_PATH
+from datetime import datetime, timezone
 
 
 class Account:
@@ -25,14 +26,21 @@ class Trader(Account):
     def __init__(self, address: str, category: str):
         super().__init__(address)
         self.category: str = category
+        self.meme_projects: dict[str, datetime] = {}
         self.swaps: defaultdict[str, list[Multiswap]] = defaultdict(list)
         self.balances: defaultdict[str, float] = defaultdict(float)
         self.profits: defaultdict[str, float] = defaultdict(float)
         self.costs: defaultdict[str, float] = defaultdict(float)
-        self.meme_rets: list[float] = []
+        # self.meme_rets: list[float] = []
+        self.meme_rets: dict[str, float] = {}
+        self.t_stats: float = float("nan")
 
     def swap(self, swap: Multiswap) -> None:
         """Process a swap transaction and update balances and profits."""
+        self.meme_projects[swap.meme] = min(
+            self.meme_projects.get(swap.meme, swap.date), swap.date
+        )
+
         if swap.typ == "Buy":
             self.buy(swap)
         elif swap.typ == "Sell":
@@ -56,17 +64,30 @@ class Trader(Account):
             if k.endswith("pump"):
                 cost = self.costs[k]
                 if (self.balances[k] >= 0) & (cost > 0):
-                    self.meme_rets.append(v / cost)
+                    # self.meme_rets.append(v / cost)
+                    self.meme_rets[k] = v / cost
+
+    def build_project_profits(self) -> dict[str, float]:
+        """Return profits for meme projects."""
+        project_profits = {"meme": [], "date": [], "ret": []}
+
+        for k, v in self.meme_rets.items():
+            project_profits["meme"].append(k)
+            project_profits["date"].append(self.meme_projects[k])
+            project_profits["ret"].append(v)
+
+        return project_profits
 
     def profit_t_stats(self) -> float:
         """Calculate t-statistic for profits."""
-        if len(self.meme_rets) < 2:
+        if len(list(self.meme_rets.values())) < 2:
             return float("nan")
 
-        if np.std(self.meme_rets) <= 1e-8:
+        if np.std(list(self.meme_rets.values())) <= 1e-8:
             return float("nan")
 
-        return stats.ttest_1samp(self.meme_rets, popmean=0)[0]
+        self.t_stats = stats.ttest_1samp(list(self.meme_rets.values()), popmean=0)[0]
+        return self.t_stats
 
 
 def process_trader_task(args):
@@ -88,6 +109,11 @@ def process_trader_task(args):
                 ):
                     continue
 
+                meme_add = (
+                    txn["swap_to_mint"]
+                    if txn["swap_from_symbol"] == "SOL"
+                    else txn["swap_from_mint"]
+                )
                 trader.swap(
                     Multiswap(
                         block=txn["block_id"],
@@ -111,10 +137,9 @@ def process_trader_task(args):
                             else txn["swap_to_amount_usd"] / txn["swap_from_amount"]
                         ),
                         dex=txn["swap_program"],
-                        meme=(
-                            txn["swap_to_mint"]
-                            if txn["swap_from_symbol"] == "SOL"
-                            else txn["swap_from_mint"]
+                        meme=meme_add,
+                        date=datetime.strptime(
+                            txn["block_timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"
                         ),
                     )
                 )
@@ -128,7 +153,9 @@ def process_trader_task(args):
         "trader_address": trader.address,
         "token_address": token_add,
         "meme_num": len(trader.meme_rets),
+        "total_profit": sum(trader.profits.values()),
         "t_stat": trader.profit_t_stats(),
+        "project_profits": trader.build_project_profits(),
     }
 
 
@@ -143,12 +170,42 @@ if __name__ == "__main__":
             tasks.append((cate, token_add, trader_add))
 
     results = []
-    with Pool(cpu_count() - 5) as pool:
+    with Pool(cpu_count() - 6) as pool:
         for result in tqdm(
             pool.imap_unordered(process_trader_task, tasks), total=len(tasks)
         ):
             if result is not None:
                 results.append(result)
 
-    t_stats_df = pd.DataFrame(results)
+    t_stats_dict = {
+        "category": [],
+        "trader_address": [],
+        "token_address": [],
+        "meme_num": [],
+        "total_profit": [],
+        "t_stat": [],
+    }
+    for res in results:
+        t_stats_dict["category"].append(res["category"])
+        t_stats_dict["trader_address"].append(res["trader_address"])
+        t_stats_dict["token_address"].append(res["token_address"])
+        t_stats_dict["meme_num"].append(res["meme_num"])
+        t_stats_dict["total_profit"].append(res["total_profit"])
+        t_stats_dict["t_stat"].append(res["t_stat"])
+
+    t_stats_df = pd.DataFrame(t_stats_dict)
     t_stats_df.to_csv(PROCESSED_DATA_PATH / "trader_t_stats.csv", index=False)
+
+    project_profits_df = []
+    for res in results:
+        _ = res.copy()
+        _["project_profits"]["trader_address"] = res["trader_address"]
+        _["project_profits"]["t_stat"] = res["t_stat"]
+        _["project_profits"]["meme_num"] = res["meme_num"]
+        _["project_profits"]["total_profit"] = res["total_profit"]
+        project_profits_df.append(pd.DataFrame(_["project_profits"]))
+
+    project_profits_df = pd.concat(project_profits_df, ignore_index=True)
+    project_profits_df.to_csv(
+        PROCESSED_DATA_PATH / "trader_project_profits.csv", index=False
+    )

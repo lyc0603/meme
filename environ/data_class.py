@@ -96,6 +96,7 @@ class Multiswap(Swap):
     """Class to store the multiswap transaction"""
 
     meme: Optional[str] = None
+    date: Optional[datetime.datetime] = None
 
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)

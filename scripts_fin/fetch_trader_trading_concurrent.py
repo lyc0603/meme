@@ -1,24 +1,22 @@
 """Fetch trading data for traders concurrently using Snowflake."""
 
-import os
-from dotenv import load_dotenv
 import json
-from pathlib import Path
+import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Iterable
-from tqdm import tqdm
 from datetime import timezone
-from snowflake.connector import connect, DictCursor
+from pathlib import Path
+from typing import Iterable
+
+from dotenv import load_dotenv
+from snowflake.connector import DictCursor, connect
+from tqdm import tqdm
+
 from environ.constants import PROCESSED_DATA_PATH
+from environ.query import SWAPPER_QUERY
 
 # -----------------------------------------
 # CONFIGURATION
 # -----------------------------------------
-
-SWAPPER_QUERY = """SELECT *
-FROM defi.ez_dex_swaps
-WHERE swapper = '{swapper}'
-ORDER BY block_timestamp ASC;"""
 
 load_dotenv()
 

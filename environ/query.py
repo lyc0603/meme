@@ -101,3 +101,19 @@ LEFT JOIN (
 ) lau
 ON mig.token_address = lau.token_address
 ORDER BY block_timestamp;"""
+
+LAUNCH_QUERY_TEMPLATE = """
+SELECT
+  block_id AS launch_block_id,
+  block_timestamp AS launch_time,
+  tx_id AS launch_tx_id,
+  decoded_instruction:accounts[0]:pubkey::string AS token_address,
+  signers[0] AS token_creator,
+  decoded_instruction:accounts[2]:pubkey::string AS pumpfun_pool_address
+FROM
+  core.ez_events_decoded
+WHERE
+  program_id = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P'
+  AND event_type = 'create'
+  AND decoded_instruction:accounts[0]:pubkey::string IN ({address_list})
+"""

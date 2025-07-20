@@ -6,14 +6,34 @@ from environ.constants import (
     PROCESSED_DATA_PATH,
     NAMING_DICT,
     PFM_NAMING_DICT,
-    PROFIT_NAMING_DICT,
+    KOL_NAMING_DICT,
 )
 
 # Define variable groups
-X_VAR_PANEL = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
+X_VAR_PANEL = (
+    list(NAMING_DICT.keys())
+    + list(PFM_NAMING_DICT.keys())
+    + list(KOL_NAMING_DICT.keys())
+)
 
-# Load data
-pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
+# Load performance data
+pfm = []
+for chain in ["raydium", "pre_trump_raydium", "pumpfun", "pre_trump_pumpfun"]:
+    pfm.append(pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm_{chain}.csv"))
+pfm = pd.concat(pfm, ignore_index=True)
+for var in ["winner", "loser"]:
+    pfm[var] = pfm[var].apply(lambda x: 1 if x else 0)
+
+# winsorize the max return
+pfm["max_ret"] = pfm["max_ret"].clip(upper=pfm["max_ret"].quantile(0.99))
+pfm.to_csv(f"{PROCESSED_DATA_PATH}/pfm.csv", index=False)
+
+# Load profit data
+pft = []
+for chain in ["raydium", "pre_trump_raydium", "pumpfun", "pre_trump_pumpfun"]:
+    pft.append(pd.read_csv(f"{PROCESSED_DATA_PATH}/pft_{chain}.csv"))
+pft = pd.concat(pft, ignore_index=True)
+pft.to_csv(f"{PROCESSED_DATA_PATH}/pft.csv", index=False)
 
 
 # Compute summary statistics
@@ -48,10 +68,7 @@ latex_lines = [
 PANEL_A_NAMING_DICT = {
     **NAMING_DICT,
     **PFM_NAMING_DICT,
-}
-
-PABE_NAMING_DICT = {
-    **PROFIT_NAMING_DICT,
+    **KOL_NAMING_DICT,
 }
 
 for var in X_VAR_PANEL:

@@ -4,28 +4,21 @@ import datetime
 from collections import defaultdict
 from datetime import timezone
 from typing import Optional, Any
-from collections import Counter
-from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
 
-from environ.constants import SOL_TOKEN_ADDRESS
+from environ.constants import SOL_TOKEN_ADDRESS, PROCESSED_DATA_PATH
 from environ.data_class import NewTokenPool, Swap, Transfer
 from environ.meme_base import MemeBase
 from environ.sol_fetcher import import_pool
 
+INITIAL_PRICE = 2.8e-8
 
-def compute_herfindahl(var_dict: list | dict) -> float:
-    """Compute Herfindahl index given a  dictionary"""
-    if isinstance(var_dict, list):
-        values = np.array(var_dict)
-    else:
-        values = np.array(list(var_dict.values()))
-    if values.sum() == 0:
-        return 0.0
-    normalized = values / values.sum()
-    return np.sum(normalized**2)
+trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats_dep.csv")
+trader_t = trader_t.loc[trader_t["meme_num"] <= 1000].dropna(subset=["t_stat"])
+winner = set(trader_t.loc[trader_t["t_stat"] > 2.576, "trader_address"].unique())
+loser = set(trader_t.loc[trader_t["t_stat"] < -2.576, "trader_address"].unique())
 
 
 class Account:
@@ -42,6 +35,8 @@ class Trader(Account):
         super().__init__(address)
         self.token = pool_add
         self.creator: bool = False
+        self.winner: bool = False
+        self.loser: bool = False
         self.balance: float = 0.0
         self.profit: float = 0.0
         self.swaps: list[Swap] = []
@@ -95,7 +90,7 @@ class MemeAnalyzer(MemeBase):
         super().__init__(new_token_pool)
         self.trading_volume = 0
         self.wash_trading_volume = 0
-        self.prc_date_df, self.pre_prc_date_df = self._build_price_df()
+        self.prc_date_df = self._build_price_df()
         self.comment_list = self._build_comment_list()
         self.bundle = self._build_bundle()
 
@@ -142,12 +137,15 @@ class MemeAnalyzer(MemeBase):
         bundle = defaultdict(list)
 
         for _, acts in enumerate(self.get_acts(Swap)):
-            if acts["block"] <= self.migrate_block:
+            if self.migrate_block:
+                if acts["block"] <= self.migrate_block:
+                    bundle[acts["block"]].append(acts)
+            else:
                 bundle[acts["block"]].append(acts)
 
         return {block: acts for block, acts in bundle.items() if len(acts) > 1}
 
-    def _build_price_df(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _build_price_df(self) -> pd.DataFrame:
         """Method to build the price DataFrame of the meme token"""
         prc_date_dict = {
             "block": [],
@@ -174,10 +172,7 @@ class MemeAnalyzer(MemeBase):
         prc_date_df = prc_date_df.set_index("date").sort_index()
         prc_date_df["price"] = prc_date_df["price"].replace(0, np.nan)
 
-        pre_prc_date_df = prc_date_df.loc[prc_date_df.index < self.migrate_time].copy()
-        prc_date_df = prc_date_df.loc[prc_date_df.index >= self.migrate_time].copy()
-
-        return prc_date_df, pre_prc_date_df
+        return prc_date_df
 
     def _build_comment_list(self) -> list[dict[str, Any]]:
         """Method to build the comment dictionary of the meme token"""
@@ -186,7 +181,17 @@ class MemeAnalyzer(MemeBase):
             time = datetime.datetime.fromtimestamp(
                 reply["comment"]["timestamp"] / 1000, tz=timezone.utc
             )
-            if time <= self.migrate_time:
+            if self.migrate_time:
+                if time <= self.migrate_time:
+                    reply_list.append(
+                        {
+                            "replier": reply["comment"]["user"],
+                            "time": time,
+                            "bot": reply["bot"],
+                            "sentiment": reply["sentiment"],
+                        }
+                    )
+            else:
                 reply_list.append(
                     {
                         "replier": reply["comment"]["user"],
@@ -197,64 +202,88 @@ class MemeAnalyzer(MemeBase):
                 )
         return sorted(reply_list, key=lambda x: x["time"])
 
+    # KOL
+    def get_winner(self) -> int:
+        """Method to check if the meme token has a KOL"""
+        return len(set(self.swappers.keys()) & winner) > 0
+
+    def get_loser(self) -> int:
+        """Method to check if the meme token has a KOL"""
+        return len(set(self.swappers.keys()) & loser) > 0
+
     # Dependent Variables
     def get_pre_migration_duration(self) -> int:
         """Method to get the pre-migration duration in seconds"""
-        return int(self.migrate_time.timestamp() - self.launch_time.timestamp())
+
+        if self.migrate_time:
+            return int(self.migrate_time.timestamp() - self.launch_time.timestamp())
+        else:
+            return np.nan
 
     def get_max_ret_and_pump_duration(self) -> tuple[float, int]:
         """Method to get the maximum return and pump duration in seconds"""
-        pre_price = self.pre_prc_date_df["price"].iloc[-1]
+        pre_price = self.prc_date_df["price"].iloc[0]
         max_price = self.prc_date_df["price"].max()
 
         # Calculate max return
-        max_return = (max_price - pre_price) / pre_price if pre_price else 0.0
+        max_return = (max_price - pre_price) / pre_price
 
         # Get timestamps of transactions at peak price
+        pre_price_ts = self.prc_date_df.index[0]
         max_price_ts = self.prc_date_df.loc[
             self.prc_date_df["price"] == max_price
         ].index
 
         # Calculate pump duration
-        pump_duration = int((min(max_price_ts) - self.migrate_time).total_seconds())
+        pump_duration = int((min(max_price_ts) - pre_price_ts).total_seconds())
 
         return np.log(1 + max_return), pump_duration
 
     def get_dump_duration(self) -> int:
         """Method to get the dump duration in seconds"""
-        # max_price = self.prc_date_df["price"].max()
-        pre_price = self.pre_prc_date_df["price"].iloc[-1]
-        first_price = self.prc_date_df.dropna()["price"].iloc[0]
+
         max_price = self.prc_date_df["price"].max()
-        min_price = 0.1 * pre_price
+        min_price = max(0.1 * max_price, 5e-8)
 
-        # Get timestamps of transactions below 90% of pre-migration price
-        dump_ts = self.prc_date_df.loc[self.prc_date_df["price"] < min_price].index
-
-        if dump_ts.empty:
-            return 12 * 3600  # Default to 12 hours if no dumps found
-
-        dump_ts = min(dump_ts)
-
-        # Get timestamps of transactions at peak and first price
-        first_price_ts = min(
-            self.prc_date_df.loc[self.prc_date_df["price"] == first_price].index
-        )
-
+        # Get timestamps of transactions at peak price
         max_price_ts = min(
             self.prc_date_df.loc[self.prc_date_df["price"] == max_price].index
         )
 
+        post_max_df = self.prc_date_df.loc[self.prc_date_df.index > max_price_ts].copy()
+        dump_ts = post_max_df.loc[post_max_df["price"] < min_price].index
+
+        # Get last trade timestamp
+        last_trade_ts = self.prc_date_df.index[-1]
+
+        if dump_ts.empty:
+            return int((last_trade_ts - self.launch_time).total_seconds())
+
+        dump_ts = min(dump_ts)
+
         # Calculate dump duration
-        if dump_ts >= max_price_ts:
-            return int((dump_ts - max_price_ts).total_seconds())
-        else:
-            return int((dump_ts - first_price_ts).total_seconds())
+        return int((dump_ts - max_price_ts).total_seconds())
 
     def get_number_of_traders(self) -> int:
         """Method to get the number of traders"""
         # non-bot-transfer trader plus the creator
         return len(self.non_bot_creator_transfer_traders) + 1
+
+    # Metrics for Sniper Bot
+    def get_sniper_bot(self) -> int:
+        """Method to check if the meme token is a sniper bot"""
+        return int(
+            len(
+                [
+                    _
+                    for _ in self.get_acts(Swap)
+                    if (_["block"] - self.launch_block < 5)
+                    & (_["block"] != self.launch_block)
+                    & (_["acts"][0]["typ"] == "Buy")
+                ]
+            )
+            > 0
+        )
 
     # Metrics for Bundle Bot
     def get_bundle_launch_buy_sell_num(self) -> tuple[int, int]:
@@ -301,7 +330,9 @@ class MemeAnalyzer(MemeBase):
                 ):
                     bundle_bot += 1
 
-        return bundle_launch, bundle_bot
+        total_blocks = len([_.block for _ in self.txn])
+
+        return bundle_launch, bundle_bot / total_blocks
 
     # Metrics for Comment Bot
     def get_comment_bot_num(self) -> int:
@@ -313,77 +344,6 @@ class MemeAnalyzer(MemeBase):
         """Method to check if the meme token is a volume bot"""
         return int(self.volume_bot)
 
-    def get_holdings_herf(self) -> float:
-        """Method to get the Herfindahl index of the holdings of the meme token"""
-        holdings = defaultdict(float)
-
-        for swap in [
-            s
-            for s in self.get_acts(Swap)
-            if s["date"].replace(tzinfo=timezone.utc) < self.migrate_time
-        ]:
-            last_act = swap["acts"][list(swap["acts"].keys())[-1]]
-            if last_act.typ == "Buy":
-                holdings[swap["maker"]] += last_act.base
-            elif last_act.typ == "Sell":
-                holdings[swap["maker"]] -= last_act.base
-
-        return compute_herfindahl(holdings)
-
-    # Price & Return Processing Methods
-    def resample_price(
-        self, df_prc: pd.DataFrame, ts: datetime.datetime
-    ) -> pd.DataFrame:
-        """Method to resample the price data to the specified frequency"""
-        # convert the index to how many seconds since the timestamp
-        prc_resampled = df_prc.loc[df_prc.index >= ts].copy()
-        prc_resampled.index = (prc_resampled.index - ts).total_seconds()
-
-        # drop the duplicate index values
-        prc_resampled = prc_resampled[~prc_resampled.index.duplicated(keep="last")]
-
-        # prc_resampled = prc_resampled.reindex(
-        #     range(0, int(prc_resampled.index.max()) + 1)
-        # ).ffill()
-
-        return prc_resampled
-
-    def append_pre_prc_date_df(self, prc_resampled: pd.DataFrame) -> pd.DataFrame:
-        """Method to append the pre price data to the resampled price data"""
-        if not self.pre_prc_date_df.empty:
-            last_pre_price = self.pre_prc_date_df["price"].iloc[-1]
-            prc_resampled = pd.concat(
-                [
-                    pd.Series(
-                        [last_pre_price],
-                        index=[-1],
-                        name="price",
-                    ),
-                    prc_resampled,
-                ]
-            )
-        return prc_resampled
-
-    def get_ret(
-        self,
-        df_prc: pd.DataFrame,
-        ts: datetime.datetime,
-        append: bool,
-    ) -> pd.DataFrame:
-        """Method to get the return of the meme token"""
-
-        df_prc.dropna(subset=["price"], inplace=True)
-        prc_resampled = self.resample_price(df_prc.loc[df_prc.index >= ts], ts)
-        if append:
-            prc_resampled = self.append_pre_prc_date_df(prc_resampled)
-
-        return (
-            prc_resampled.copy()
-            .pct_change()
-            .dropna()
-            .rename(columns={"price": "ret"})[["ret"]]
-        )
-
     # trader methods
     def _load_swaps(self):
         """Method to load the profit of the traders"""
@@ -391,6 +351,8 @@ class MemeAnalyzer(MemeBase):
         for swapper, swaps_list in self.swappers.items():
             trader = Trader((swapper,), self.pool_add)
             trader.creator = swapper == self.creator
+            trader.winner = swapper in winner
+            trader.loser = swapper in loser
             sorted_swaps = sorted(swaps_list, key=lambda x: x["block"])
             for swap in sorted_swaps:
                 trader.swap(swap["acts"][0])
@@ -475,20 +437,19 @@ if __name__ == "__main__":
 
     lst = []
 
-    NUM_OF_OBSERVATIONS = 1
+    NUM_OF_OBSERVATIONS = 5
 
     for chain in [
         # "pre_trump_pumpfun",
         # "pre_trump_raydium",
-        # "pumpfun",
-        "raydium",
+        "pumpfun",
+        # "raydium",
     ]:
         for pool in import_pool(
             chain,
             NUM_OF_OBSERVATIONS,
         ):
             token_add = pool["token_address"]
-            # token_add = "DB3M5ggNLurVeSezKKJb68wEZrnodcPN4jCCFoBdcKG7"
             meme = MemeAnalyzer(
                 NewTokenPool(
                     token0=SOL_TOKEN_ADDRESS,
@@ -505,14 +466,11 @@ if __name__ == "__main__":
 
             print(
                 f"meme coin: {meme.new_token_pool.pool_add}\n",
-                # f"pre_migration_duration: {meme.get_pre_migration_duration()} seconds\n",
-                # f"max_return and pump duration: {meme.get_max_ret_and_pump_duration()}\n",
-                # f"dump duration: {meme.get_dump_duration()} seconds\n",
-                # f"pre_migration_volatility: {meme.get_pre_migration_volatility()}\n",
-                # f"post_migration_volatility: {meme.get_post_migration_volatility()}\n",
+                f"pre_migration_duration: {meme.get_pre_migration_duration()} seconds\n",
+                f"max_return and pump duration: {meme.get_max_ret_and_pump_duration()}\n",
+                f"dump duration: {meme.get_dump_duration()} seconds\n",
                 # f"wash_trading: {max([v.wash_trading() for k,v in {**meme.bots, **meme.traders}.items()])}\n",
                 # f"bundle_bot: {meme.get_bundle_launch_buy_sell_num()}\n",
-                # f"dump_duration: {meme.get_dump_duration()} seconds\n",
                 # f"comment_bot_num: {meme.get_comment_bot_num()}\n",
                 # f"migrate: {meme.check_migrate()}\n",
                 # f"purchase_percentage: {meme.check_max_purchase_pct()}\n",

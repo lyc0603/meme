@@ -10,15 +10,20 @@ from tqdm import tqdm
 
 from environ.constants import PROCESSED_DATA_PATH
 
-SAMPLE_SIZE = 100
 TRADER_PATH = PROCESSED_DATA_PATH / "trader"
 
 
 def load_kol_traders() -> pd.DataFrame:
-    """Load KOL traders with t-statistics greater than 2.576."""
+    """Load and shuffle KOL and non-KOL traders with balanced sampling."""
+
     trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats.csv")
-    kol = trader_t[trader_t["t_stat"] > 2.576].sample(SAMPLE_SIZE)
-    return kol
+    trader_t = trader_t.loc[trader_t["meme_num"] <= 1000].dropna(subset=["t_stat"])
+
+    kol = trader_t.loc[trader_t["t_stat"] > 2.576].sample(50)
+    non_kol = trader_t.loc[trader_t["t_stat"] <= 2.576].sample(50)
+
+    combined = pd.concat([kol, non_kol], ignore_index=True)
+    return combined.sample(frac=1, random_state=42).reset_index(drop=True)
 
 
 def process_trader(row_dict: dict) -> tuple[str, list[str]]:
@@ -65,4 +70,9 @@ def main():
 
 
 if __name__ == "__main__":
+    # trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats.csv")
     kol_meme = main()
+    with open(
+        PROCESSED_DATA_PATH / "kol_non_kol_traded_tokens.json", "w", encoding="utf-8"
+    ) as f:
+        json.dump(kol_meme, f, indent=4)

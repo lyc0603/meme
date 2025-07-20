@@ -30,10 +30,6 @@ class MemeBase:
             self.pool_add,
             self.launch_txn_id,
         ) = self._load_creation()
-        self.dev_buy = 0
-        self.dev_sell = 0
-        self.dev_transfer = 0
-        self.dev_transfer_amount = 0
         self.non_swap_transfers, self.swappers = self._build_transfer_swap()
 
     def _load_pickle(self, attr: str):
@@ -70,13 +66,12 @@ class MemeBase:
             file = json.load(f)
 
         return (
-            file["migrate_block"] if file["migrate_block"] else 353213721,
+            file["migrate_block"] if file["migrate_block"] else None,
             file["launch_block"],
-            # if null, set to today
             (
                 datetime.datetime.fromtimestamp(file["migrate_time"], UTC)
                 if file["migrate_time"]
-                else datetime.datetime.now(UTC)
+                else None
             ),
             (datetime.datetime.fromtimestamp(file["launch_time"], UTC)),
             file["token_creator"],
@@ -88,35 +83,24 @@ class MemeBase:
         """Method to get the unique non-swap transfers of the meme token"""
         non_swap_transfers_hash = set()
         for transfer in self.transfer:
-            if (transfer.date.replace(tzinfo=timezone.utc) < self.migrate_time) & (
-                MIGATOR not in [transfer.from_, transfer.to]
-            ):
-                non_swap_transfers_hash.add(transfer.txn_hash)
+            if self.migrate_time:
+                if (transfer.date.replace(tzinfo=timezone.utc) < self.migrate_time) & (
+                    MIGATOR not in [transfer.from_, transfer.to]
+                ):
+                    non_swap_transfers_hash.add(transfer.txn_hash)
+            else:
+                if MIGATOR not in [transfer.from_, transfer.to]:
+                    non_swap_transfers_hash.add(transfer.txn_hash)
 
         swappers = defaultdict(list)
         for swap in self.get_acts(Swap):
             swappers[swap["maker"]].append(swap)
             non_swap_transfers_hash.discard(swap["txn_hash"])
 
-            if self.creator == swap["maker"]:
-                match swap["acts"][0].typ:
-                    case "Buy":
-                        self.dev_buy = 1
-                    case "Sell":
-                        self.dev_sell = 1
-
         non_swap_transfers = []
         for transfer in self.transfer:
             if transfer.txn_hash in non_swap_transfers_hash:
                 non_swap_transfers.append(transfer)
-                if self.creator in [
-                    transfer.from_,
-                    transfer.to,
-                ]:
-                    self.dev_transfer = 1
-
-                    if transfer.to == self.creator:
-                        self.dev_transfer_amount += transfer.value
 
         return non_swap_transfers, swappers
 

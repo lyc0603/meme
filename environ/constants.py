@@ -31,7 +31,9 @@ SOLANA_PATH_DICT = {
 NAMING_DICT = {
     # bundle bots
     "launch_bundle": "$\\text{Rat Bot}_{i}$",
-    "bundle_bot": "$\\text{Bundle Bot}_{i}$",
+    # "bundle_bot": "$\\text{Bundle Bot}_{i}$",
+    # sniper bots
+    "sniper_bot": "$\\text{Sniper Bot}_{i}$",
     # volume bots
     "volume_bot": "$\\text{Wash Trading Bot}_{i}$",
     # comment bots
@@ -45,6 +47,11 @@ PFM_NAMING_DICT = {
     "pre_migration_duration": "$\\text{Ln(Pre-Migration Duration)}_{i}$",
     "pump_duration": "$\\text{Ln(Pump Duration)}_{i}$",
     "dump_duration": "$\\text{Ln(Dump Duration)}_{i}$",
+}
+
+KOL_NAMING_DICT = {
+    "winner": "$\\text{Winner}_{i}$",
+    "loser": "$\\text{Loser}_{i}$",
 }
 
 MIGRATION_NAMING_DICT = {

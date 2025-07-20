@@ -12,7 +12,6 @@ from environ.constants import (
     TABLE_PATH,
 )
 from environ.utils import asterisk
-from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 # Regression column name
 Y_VAR = "migration"
@@ -32,42 +31,7 @@ PROFIT_NAMING_DICT = {
     "r2": "$R^2$",
 }
 
-X_VAR_LIST = [
-    "launch_bundle",
-    "bundle_bot",
-    "volume_bot",
-    "bot_comment_num",
-]
-
-
-def compute_vif(df: pd.DataFrame, x_var_list: List[str]) -> pd.DataFrame:
-    """Compute VIF for each explanatory variable (excluding constant)."""
-    df_clean = df.dropna(subset=x_var_list).copy()
-    X = df_clean[x_var_list]  # exclude constant
-    vif = pd.DataFrame()
-    vif["Variable"] = x_var_list
-    vif["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
-    vif["1/VIF"] = 1 / vif["VIF"]
-    return vif
-
-
-def render_vif_latex_table(vif_df: pd.DataFrame) -> str:
-    """Render VIF results into a LaTeX table with 1/VIF and Mean VIF."""
-    lines = []
-    lines.append("\\begin{tabular}{lcc}")
-    lines.append("\\hline")
-    lines.append("Variable & VIF & $1/\\text{VIF}$ \\\\")
-    lines.append("\\hline")
-    for _, row in vif_df.iterrows():
-        var_name = PROFIT_NAMING_DICT.get(row["Variable"], row["Variable"])
-        lines.append(f"{var_name} & {row['VIF']:.2f} & {row['1/VIF']:.2f} \\\\")
-    lines.append("\\hline")
-    lines.append(
-        f"\\textbf{{Mean VIF}} & {vif_df['VIF'].mean():.2f} & {vif_df['1/VIF'].mean():.2f} \\\\"
-    )
-    lines.append("\\hline")
-    lines.append("\\end{tabular}")
-    return "\n".join(lines)
+X_VAR_LIST = list(NAMING_DICT.keys())
 
 
 def logit_regression(
@@ -108,9 +72,7 @@ def render_latex_table(
         + r" \\"
     )
     lines.append("\cline{2-" + str(len(keys) + 1) + "}")
-    lines.append(
-        " & " + " & $".join([MIGRATION_NAMING_DICT[k] for k in keys]) + r"$ \\"
-    )
+    lines.append(" & " + " & ".join([MIGRATION_NAMING_DICT[k] for k in keys]) + r"\\")
     lines.append(
         " & " + " & ".join([f"({i})" for i in range(1, len(keys) + 1)]) + r"\\"
     )
@@ -158,25 +120,15 @@ def render_latex_table(
 if __name__ == "__main__":
 
     # Load and combine datasets
-    pfm = []
-    for chain in ["pre_trump_raydium", "pumpfun", "raydium", "pre_trump_pumpfun"]:
-        df = pd.read_csv(Path(PROCESSED_DATA_PATH) / f"pfm_{chain}.csv")
-        df["chain"] = chain
-        df["period"] = "Pre-Trump" if chain.startswith("pre_trump") else "Post-Trump"
-        pfm.append(df)
-
-    pfm = pd.concat(pfm, ignore_index=True)
+    pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
 
     # Define migration variable
     pfm["migration"] = pfm["chain"].apply(
         lambda x: 1 if x in ["raydium", "pre_trump_raydium"] else 0
     )
-
-    # Compute VIF
-    vif_df = compute_vif(pfm, X_VAR_LIST)
-    vif_latex = render_vif_latex_table(vif_df)
-    with open(TABLE_PATH / "vif_migration.tex", "w", encoding="utf-8") as f:
-        f.write(vif_latex)
+    pfm["period"] = pfm["chain"].apply(
+        lambda x: "Pre-Trump" if "pre_trump" in x else "Post-Trump"
+    )
 
     # Run regressions for all, pre-trump, and post-trump
     results = {

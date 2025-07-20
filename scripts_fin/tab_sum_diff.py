@@ -24,10 +24,7 @@ def significance_stars(p):
 # Define variable groups
 X_VAR_PANEL = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
 
-chains = ["raydium", "pre_trump_raydium"]
-pfm_data = {
-    chain: pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm_{chain}.csv") for chain in chains
-}
+pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
 
 
 def compare_groups(df1, df2, var_list):
@@ -51,8 +48,14 @@ def compare_groups(df1, df2, var_list):
     return results
 
 
+pfm["period"] = pfm["chain"].apply(
+    lambda x: "Pre-Trump" if "pre_trump" in x else "Post-Trump"
+)
+
 summary = compare_groups(
-    pfm_data["pre_trump_raydium"], pfm_data["raydium"], X_VAR_PANEL
+    pfm.loc[pfm["period"] == "Pre-Trump"],
+    pfm.loc[pfm["period"] == "Post-Trump"],
+    X_VAR_PANEL,
 )
 
 # Prepare LaTeX table lines
