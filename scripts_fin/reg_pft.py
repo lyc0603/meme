@@ -83,6 +83,10 @@ def render_latex_table(
         + r"}"
         + r" \\"
     )
+    lines.append(
+        r" & \multicolumn{4}{c}{All} & \multicolumn{4}{c}{Unmigrated} & \multicolumn{4}{c}{Migrated} \\"
+    )
+    lines.append(r"\cmidrule(lr){2-5} \cmidrule(lr){6-9} \cmidrule(lr){10-13}")
     lines.append(r" $\text{Bot}:$ & " + " & ".join(var_names) + r" \\")
     lines.append(" & " + " & ".join([f"({i})" for i in range(1, col_len + 1)]) + r"\\")
     lines.append(r"\hline")
@@ -109,13 +113,16 @@ def render_latex_table(
     return "\n".join(lines)
 
 
-def main():
-    """Main function to run the regression analysis and generate LaTeX table."""
+if __name__ == "__main__":
     pft = pd.read_csv(f"{PROCESSED_DATA_PATH}/pft.csv")
+    # Ensure all group indicators exist
+    unmigrated = pft.loc[pft["category"].isin(["pumpfun", "pre_trump_pumpfun"])].copy()
+    migrated = pft.loc[pft["category"].isin(["raydium", "pre_trump_raydium"])].copy()
 
     res_dict: Dict[str, List[Any]] = {
         k: []
         for k in [
+            "sample",
             "creator_coef",
             "creator_stderr",
             "creator_x_var_coef",
@@ -132,34 +139,36 @@ def main():
     }
     var_names = []
 
-    for x_var in X_VAR_CREATOR_INTERACTION:
-        model = run_regression(pft, x_var, Y_VAR)
-        print(model.summary())  # Optional: remove if you don't want console output
-        var_names.append(PROFIT_NAMING_DICT.get(x_var, x_var))
+    for sample, df in [
+        ("All", pft),
+        ("Unmigrated", unmigrated),
+        ("Migrated", migrated),
+    ]:
+        for x_var in X_VAR_CREATOR_INTERACTION:
+            model = run_regression(df, x_var, Y_VAR)
+            print(model.summary())  # Optional: remove if you don't want console output
+            var_names.append(PROFIT_NAMING_DICT.get(x_var, x_var))
 
-        # Main effects
-        for var, dict_name in [
-            ("creator", "creator"),
-            (f"creator_x_{x_var}", "creator_x_var"),
-            ("non_creator", "non_creator"),
-            (f"non_creator_x_{x_var}", "non_creator_x_var"),
-        ]:
-            res_dict[f"{dict_name}_coef"].append(
-                f"{model.params[var]:.2f}{asterisk(model.pvalues[var])}"
-                if var in model.params
-                else ""
-            )
-            res_dict[f"{dict_name}_stderr"].append(
-                f"({model.bse[var]:.2f})" if var in model.bse else ""
-            )
-        res_dict["obs"].append(f"{int(model.nobs)}")
-        res_dict["r2"].append(f"{model.rsquared:.2f}")
+            # Main effects
+            for var, dict_name in [
+                ("creator", "creator"),
+                (f"creator_x_{x_var}", "creator_x_var"),
+                ("non_creator", "non_creator"),
+                (f"non_creator_x_{x_var}", "non_creator_x_var"),
+            ]:
+                res_dict["sample"].append(sample)
+                res_dict[f"{dict_name}_coef"].append(
+                    f"{model.params[var]:.2f}{asterisk(model.pvalues[var])}"
+                    if var in model.params
+                    else ""
+                )
+                res_dict[f"{dict_name}_stderr"].append(
+                    f"({model.bse[var]:.2f})" if var in model.bse else ""
+                )
+            res_dict["obs"].append(f"{int(model.nobs)}")
+            res_dict["r2"].append(f"{model.rsquared:.2f}")
 
     latex_str = render_latex_table(var_names, res_dict)
 
     with open(TABLE_PATH / "reg_pft.tex", "w", encoding="utf-8") as f:
         f.write(latex_str)
-
-
-if __name__ == "__main__":
-    main()

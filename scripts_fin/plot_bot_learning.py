@@ -31,7 +31,7 @@ bot_token_df.rename(columns={"index": "token_address"}, inplace=True)
 # Load all trader profits
 pj_pft = pd.read_csv(PROCESSED_DATA_PATH / "trader_project_profits.csv")
 pj_pft.drop_duplicates(subset=["trader_address", "meme"], keep="last", inplace=True)
-pj_pft = pj_pft.loc[pj_pft["meme_num"] < 1000]
+pj_pft = pj_pft.loc[(pj_pft["meme_num"] < 1000) & (pj_pft["meme_num"] >= 100)]
 pj_pft = pj_pft.loc[pj_pft["trader_address"].isin(token_list)]
 
 pj_pft.rename(columns={"meme": "token_address"}, inplace=True)

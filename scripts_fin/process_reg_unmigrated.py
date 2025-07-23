@@ -93,10 +93,6 @@ def worker(tq: Queue, rq: Queue):
             # Sniper Bot
             "sniper_bot": meme.get_sniper_bot(),
         }
-        kol_dict = {
-            "winner": meme.get_winner(),
-            "loser": meme.get_loser(),
-        }
 
         rows = []
         for trader_add, trader in meme.traders.items():
@@ -106,6 +102,8 @@ def worker(tq: Queue, rq: Queue):
                 "creator": 1 if trader.creator else 0,
                 "winner": 1 if trader.winner else 0,
                 "loser": 1 if trader.loser else 0,
+                "neutral": 1 if trader.neutral else 0,
+                "sniper": 1 if trader.sniper else 0,
                 "profit": trader.profit,
                 "wash_trading_score": trader.wash_trading_score,
             }
@@ -119,7 +117,6 @@ def worker(tq: Queue, rq: Queue):
                 "token_address": meme.new_token_pool.pool_add,
                 **pfm_dict,
                 **bot_dict,
-                **kol_dict,
             },
             index=[0],
         )
@@ -136,7 +133,7 @@ if __name__ == "__main__":
         task_queue = Queue()
         result_queue = Queue()
 
-        num_workers = min(cpu_count(), len(all_pools)) - 10
+        num_workers = min(cpu_count(), len(all_pools)) - 5
 
         # Start worker processes
         workers = []

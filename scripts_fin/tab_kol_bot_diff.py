@@ -7,7 +7,9 @@ from environ.constants import (
     PROCESSED_DATA_PATH,
     NAMING_DICT,
     PFM_NAMING_DICT,
+    ID_DICT,
 )
+from ast import literal_eval
 
 
 def significance_stars(p):
@@ -22,16 +24,42 @@ def significance_stars(p):
 
 
 # Define variable list and naming
-X_VAR_PANEL = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
-PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT}
+X_VAR_PANEL = (
+    list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys()) + list(ID_DICT.keys())
+)
+PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT, **ID_DICT}
+
 
 # Load project performance data
-pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
+# trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats.csv")
+# trader_t = trader_t.loc[trader_t["meme_num"] <= 1000].dropna(subset=["t_stat"])
+# trader_t["winner"] = trader_t["t_stat"] > 2.576
+# trader_t["loser"] = trader_t["t_stat"] < -2.576
+# trader_t["neutral"] = trader_t["t_stat"].abs() <= 2.576
 
-# Define groups
-neutral = pfm[(pfm["winner"] == 0) & (pfm["loser"] == 0)]
-winner = pfm[pfm["winner"] == 1]
-loser = pfm[pfm["loser"] == 1]
+pft = pd.read_csv(PROCESSED_DATA_PATH / "pft.csv")
+pft = pft.loc[(pft["winner"] == 1) | (pft["loser"] == 1) | (pft["neutral"] == 1)]
+pft.drop_duplicates(subset=["token_address", "trader_address"], inplace=True)
+
+pft = pft[
+    [
+        "token_address",
+        "trader_address",
+        "winner",
+        "loser",
+        "neutral",
+        "creator",
+        "sniper",
+    ]
+]
+
+pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
+# pfm = trader_t.merge(pfm, how="left", on="token_address")
+pfm = pft.merge(pfm, how="left", on="token_address")
+
+winner = pfm.loc[pfm["winner"] == 1]
+loser = pfm.loc[pfm["loser"] == 1]
+neutral = pfm.loc[pfm["neutral"] == 1]
 
 
 def ttest_wrapper(df1, df2, var):

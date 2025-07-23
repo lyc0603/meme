@@ -52,7 +52,14 @@ PFM_NAMING_DICT = {
 KOL_NAMING_DICT = {
     "winner": "$\\text{Winner}_{i}$",
     "loser": "$\\text{Loser}_{i}$",
+    "neutral": "$\\text{Neutral}_{i}$",
 }
+
+ID_DICT = {
+    "creator": "$\\text{Creator}_{i}$",
+    "sniper": "$\\text{Sniper}_{i}$",
+}
+
 
 MIGRATION_NAMING_DICT = {
     f"migration_{_}": "$\\text{Migration}_{i}$" for _ in ["all", "pre", "post"]

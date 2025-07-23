@@ -61,10 +61,6 @@ def worker(tq: Queue, rq: Queue, chain: str):
             # Sniper Bot
             "sniper_bot": meme.get_sniper_bot(),
         }
-        kol_dict = {
-            "winner": meme.get_winner(),
-            "loser": meme.get_loser(),
-        }
 
         rows = []
         for trader_add, trader in meme.traders.items():
@@ -74,6 +70,8 @@ def worker(tq: Queue, rq: Queue, chain: str):
                 "creator": 1 if trader.creator else 0,
                 "winner": 1 if trader.winner else 0,
                 "loser": 1 if trader.loser else 0,
+                "neutral": 1 if trader.neutral else 0,
+                "sniper": 1 if trader.sniper else 0,
                 "profit": trader.profit,
                 "wash_trading_score": trader.wash_trading_score,
             }
@@ -87,7 +85,6 @@ def worker(tq: Queue, rq: Queue, chain: str):
                 "token_address": meme.new_token_pool.pool_add,
                 **pfm_dict,
                 **bot_dict,
-                **kol_dict,
             },
             index=[0],
         )

@@ -58,10 +58,11 @@ def run_regression_three_groups(
             f"winner_x_{x_var}": df["winner"] * df[x_var],
             "loser": df["loser"],
             f"loser_x_{x_var}": df["loser"] * df[x_var],
-            "neutral": (1 - df["winner"] - df["loser"]),
-            f"neutral_x_{x_var}": (1 - df["winner"] - df["loser"]) * df[x_var],
+            "neutral": df["neutral"],
+            f"neutral_x_{x_var}": df["neutral"] * df[x_var],
         }
     )
+    # add constant for intercept
     y = df[y_var]
     return sm.OLS(y, X).fit()
 
@@ -83,6 +84,10 @@ def render_latex_table(
         + r"}"
         + r" \\"
     )
+    lines.append(
+        r" & \multicolumn{4}{c}{All} & \multicolumn{4}{c}{Unmigrated} & \multicolumn{4}{c}{Migrated} \\"
+    )
+    lines.append(r"\cmidrule(lr){2-5} \cmidrule(lr){6-9} \cmidrule(lr){10-13}")
     lines.append(r" $\text{Bot}:$ & " + " & ".join(var_names) + r" \\")
     lines.append(" & " + " & ".join([f"({i})" for i in range(1, col_len + 1)]) + r"\\")
     lines.append(r"\hline")
@@ -113,16 +118,17 @@ def render_latex_table(
     return "\n".join(lines)
 
 
-def main():
-    """Main function to run the regression analysis and generate LaTeX table."""
+if __name__ == "__main__":
     pft = pd.read_csv(f"{PROCESSED_DATA_PATH}/pft.csv")
-
     # Ensure all group indicators exist
-    pft["neutral"] = ((pft["winner"] == 0) & (pft["loser"] == 0)).astype(int)
+    pft = pft.loc[(pft["winner"] == 1) | (pft["neutral"] == 1) | (pft["loser"] == 1)]
+    unmigrated = pft.loc[pft["category"].isin(["pumpfun", "pre_trump_pumpfun"])].copy()
+    migrated = pft.loc[pft["category"].isin(["raydium", "pre_trump_raydium"])].copy()
 
     res_dict: Dict[str, List[Any]] = {
         k: []
         for k in [
+            "sample",
             "winner_coef",
             "winner_stderr",
             "winner_x_var_coef",
@@ -142,36 +148,38 @@ def main():
 
     var_names = []
 
-    for x_var in X_VAR_KOL_INTERACTION:
-        model = run_regression_three_groups(pft, x_var, Y_VAR)
-        print(model.summary())  # Optional for inspection
-        var_names.append(PROFIT_NAMING_DICT.get(x_var, x_var))
+    for sample, df in [
+        ("All", pft),
+        ("Unmigrated", unmigrated),
+        ("Migrated", migrated),
+    ]:
+        for x_var in X_VAR_KOL_INTERACTION:
+            model = run_regression_three_groups(df, x_var, Y_VAR)
+            print(model.summary())  # Optional for inspection
+            var_names.append(PROFIT_NAMING_DICT.get(x_var, x_var))
 
-        for var, dict_prefix in [
-            ("winner", "winner"),
-            (f"winner_x_{x_var}", "winner_x_var"),
-            ("loser", "loser"),
-            (f"loser_x_{x_var}", "loser_x_var"),
-            ("neutral", "neutral"),
-            (f"neutral_x_{x_var}", "neutral_x_var"),
-        ]:
-            res_dict[f"{dict_prefix}_coef"].append(
-                f"{model.params[var]:.2f}{asterisk(model.pvalues[var])}"
-                if var in model.params
-                else ""
-            )
-            res_dict[f"{dict_prefix}_stderr"].append(
-                f"({model.bse[var]:.2f})" if var in model.bse else ""
-            )
+            for var, dict_prefix in [
+                ("winner", "winner"),
+                (f"winner_x_{x_var}", "winner_x_var"),
+                ("loser", "loser"),
+                (f"loser_x_{x_var}", "loser_x_var"),
+                ("neutral", "neutral"),
+                (f"neutral_x_{x_var}", "neutral_x_var"),
+            ]:
+                res_dict["sample"].append(sample)
+                res_dict[f"{dict_prefix}_coef"].append(
+                    f"{model.params[var]:.2f}{asterisk(model.pvalues[var])}"
+                    if var in model.params
+                    else ""
+                )
+                res_dict[f"{dict_prefix}_stderr"].append(
+                    f"({model.bse[var]:.2f})" if var in model.bse else ""
+                )
 
-        res_dict["obs"].append(f"{int(model.nobs)}")
-        res_dict["r2"].append(f"{model.rsquared:.2f}")
+            res_dict["obs"].append(f"{int(model.nobs)}")
+            res_dict["r2"].append(f"{model.rsquared:.2f}")
 
     latex_str = render_latex_table(var_names, res_dict)
 
     with open(TABLE_PATH / "reg_wln_pft.tex", "w", encoding="utf-8") as f:
         f.write(latex_str)
-
-
-if __name__ == "__main__":
-    main()

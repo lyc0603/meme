@@ -19,6 +19,12 @@ trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats_dep.csv")
 trader_t = trader_t.loc[trader_t["meme_num"] <= 1000].dropna(subset=["t_stat"])
 winner = set(trader_t.loc[trader_t["t_stat"] > 2.576, "trader_address"].unique())
 loser = set(trader_t.loc[trader_t["t_stat"] < -2.576, "trader_address"].unique())
+neutral = set(
+    trader_t.loc[
+        trader_t["t_stat"].abs() <= 2.576,
+        "trader_address",
+    ].unique()
+)
 
 
 class Account:
@@ -37,6 +43,8 @@ class Trader(Account):
         self.creator: bool = False
         self.winner: bool = False
         self.loser: bool = False
+        self.neutral: bool = False
+        self.sniper: bool = False
         self.balance: float = 0.0
         self.profit: float = 0.0
         self.swaps: list[Swap] = []
@@ -93,6 +101,7 @@ class MemeAnalyzer(MemeBase):
         self.prc_date_df = self._build_price_df()
         self.comment_list = self._build_comment_list()
         self.bundle = self._build_bundle()
+        self.sniper = self._build_sniper()
 
         # analyze traders
         self.traders = self._load_swaps()
@@ -154,6 +163,7 @@ class MemeAnalyzer(MemeBase):
             "base": [],
             "quote": [],
             "usd": [],
+            "typ": [],
         }
         for _, acts in enumerate(self.get_acts(Swap)):
             last_act = acts["acts"][list(acts["acts"].keys())[-1]]
@@ -165,12 +175,14 @@ class MemeAnalyzer(MemeBase):
                 "base": last_act.base,
                 "quote": last_act.quote,
                 "usd": last_act.usd,
+                "typ": last_act.typ,
             }.items():
                 prc_date_dict[key].append(value)
 
         prc_date_df = pd.DataFrame(prc_date_dict)
         prc_date_df = prc_date_df.set_index("date").sort_index()
         prc_date_df["price"] = prc_date_df["price"].replace(0, np.nan)
+        prc_date_df.dropna(subset=["price"], inplace=True)
 
         return prc_date_df
 
@@ -202,14 +214,18 @@ class MemeAnalyzer(MemeBase):
                 )
         return sorted(reply_list, key=lambda x: x["time"])
 
-    # KOL
-    def get_winner(self) -> int:
-        """Method to check if the meme token has a KOL"""
-        return len(set(self.swappers.keys()) & winner) > 0
+    def _build_sniper(self) -> int:
+        """Method to build the sniper bot"""
 
-    def get_loser(self) -> int:
-        """Method to check if the meme token has a KOL"""
-        return len(set(self.swappers.keys()) & loser) > 0
+        sniper_txn = [
+            _
+            for _ in self.get_acts(Swap)
+            if (_["block"] - self.launch_block < 5)
+            & (_["block"] != self.launch_block)
+            & (_["acts"][0]["typ"] == "Buy")
+        ]
+
+        return set([_["maker"] for _ in sniper_txn])
 
     # Dependent Variables
     def get_pre_migration_duration(self) -> int:
@@ -242,16 +258,26 @@ class MemeAnalyzer(MemeBase):
     def get_dump_duration(self) -> int:
         """Method to get the dump duration in seconds"""
 
-        max_price = self.prc_date_df["price"].max()
-        min_price = max(0.1 * max_price, 5e-8)
+        # calculate the cumulative balance
+        balance_df = self.prc_date_df.copy()
+        balance_df["balance"] = balance_df.apply(
+            lambda row: row["base"] if row["typ"] == "Buy" else -row["base"], axis=1
+        )
+        balance_df["cum_balance"] = balance_df["balance"].cumsum()
 
-        # Get timestamps of transactions at peak price
+        # Get the maximum price and its timestamp
+        max_price = self.prc_date_df["price"].max()
         max_price_ts = min(
             self.prc_date_df.loc[self.prc_date_df["price"] == max_price].index
         )
+        max_price_cum_balance = balance_df.loc[
+            balance_df.index == max_price_ts, "cum_balance"
+        ].values[0]
+        post_max_df = balance_df.loc[balance_df.index >= max_price_ts].copy()
 
-        post_max_df = self.prc_date_df.loc[self.prc_date_df.index > max_price_ts].copy()
-        dump_ts = post_max_df.loc[post_max_df["price"] < min_price].index
+        # Calculate the dump threshold as 10% of the maximum cumulative balance
+        dump_balance = 0.1 * max_price_cum_balance
+        dump_ts = post_max_df.loc[(post_max_df["cum_balance"] < dump_balance)].index
 
         # Get last trade timestamp
         last_trade_ts = self.prc_date_df.index[-1]
@@ -264,6 +290,29 @@ class MemeAnalyzer(MemeBase):
         # Calculate dump duration
         return int((dump_ts - max_price_ts).total_seconds())
 
+        # max_price = self.prc_date_df["price"].max()
+        # min_price = max(0.1 * max_price, 1e-7)
+        # print(f"max_price: {max_price}, min_price: {min_price}")
+
+        # # Get timestamps of transactions at peak price
+        # max_price_ts = min(
+        #     self.prc_date_df.loc[self.prc_date_df["price"] == max_price].index
+        # )
+
+        # post_max_df = self.prc_date_df.loc[self.prc_date_df.index > max_price_ts].copy()
+        # dump_ts = post_max_df.loc[post_max_df["price"] < min_price].index
+
+        # # Get last trade timestamp
+        # last_trade_ts = self.prc_date_df.index[-1]
+
+        # if dump_ts.empty:
+        #     return int((last_trade_ts - self.launch_time).total_seconds())
+
+        # dump_ts = min(dump_ts)
+
+        # # Calculate dump duration
+        # return int((dump_ts - max_price_ts).total_seconds())
+
     def get_number_of_traders(self) -> int:
         """Method to get the number of traders"""
         # non-bot-transfer trader plus the creator
@@ -271,19 +320,8 @@ class MemeAnalyzer(MemeBase):
 
     # Metrics for Sniper Bot
     def get_sniper_bot(self) -> int:
-        """Method to check if the meme token is a sniper bot"""
-        return int(
-            len(
-                [
-                    _
-                    for _ in self.get_acts(Swap)
-                    if (_["block"] - self.launch_block < 5)
-                    & (_["block"] != self.launch_block)
-                    & (_["acts"][0]["typ"] == "Buy")
-                ]
-            )
-            > 0
-        )
+        """Method to get the number of sniper bots"""
+        return int(len(self.sniper) > 0)
 
     # Metrics for Bundle Bot
     def get_bundle_launch_buy_sell_num(self) -> tuple[int, int]:
@@ -353,6 +391,8 @@ class MemeAnalyzer(MemeBase):
             trader.creator = swapper == self.creator
             trader.winner = swapper in winner
             trader.loser = swapper in loser
+            trader.neutral = swapper in neutral
+            trader.sniper = swapper in self.sniper
             sorted_swaps = sorted(swaps_list, key=lambda x: x["block"])
             for swap in sorted_swaps:
                 trader.swap(swap["acts"][0])
@@ -437,19 +477,20 @@ if __name__ == "__main__":
 
     lst = []
 
-    NUM_OF_OBSERVATIONS = 5
+    NUM_OF_OBSERVATIONS = 1
 
     for chain in [
         # "pre_trump_pumpfun",
         # "pre_trump_raydium",
-        "pumpfun",
-        # "raydium",
+        # "pumpfun",
+        "raydium",
     ]:
         for pool in import_pool(
             chain,
             NUM_OF_OBSERVATIONS,
         ):
             token_add = pool["token_address"]
+            token_add = "WVdXTu5EUsNke22WuRAEH1t81hPAnRRQURQE3R3pump"
             meme = MemeAnalyzer(
                 NewTokenPool(
                     token0=SOL_TOKEN_ADDRESS,
