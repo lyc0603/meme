@@ -1,0 +1,74 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.0.6 Chrome/138.0.7204.100 Electron/37.2.3 Safari/537.36" version="28.0.6">
+  <diagram name="Page-1" id="TUYloGP3IxvWaJOQYz36">
+    <mxGraphModel dx="2946" dy="1272" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="1" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="xsM1BEv939oAehP6_Vt--3" value="" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#FF0000;shadow=0;dashed=0;shape=mxgraph.ios7.icons.wallet;" parent="1" vertex="1">
+          <mxGeometry x="330" y="420" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--4" value="" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="440" y="370" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--5" value="&lt;b&gt;Same Block&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="500" y="350" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--6" value="Creator Wallet" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="300" y="400" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--7" value="" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#000000;shadow=0;dashed=0;shape=mxgraph.ios7.icons.wallet;" parent="1" vertex="1">
+          <mxGeometry x="460" y="420" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--10" value="" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#007FFF;shadow=0;dashed=0;shape=mxgraph.ios7.icons.wallet;" parent="1" vertex="1">
+          <mxGeometry x="460" y="460" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--11" value="Wallet A Buys \(b_2\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;Meme&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="500" y="420" width="135" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--15" value="Wallet B Buys \(c_2\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;Meme&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="500" y="460" width="135" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--17" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classicThin;endFill=1;curved=0;" parent="1" source="xsM1BEv939oAehP6_Vt--3" target="xsM1BEv939oAehP6_Vt--7" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="440" y="430" />
+              <mxPoint x="440" y="430" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xsM1BEv939oAehP6_Vt--19" value="\(a_1\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;SOL&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="393" y="370" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Fb3_g8i6-2pTsYW1MxMN-9" value="" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#008A00;shadow=0;dashed=0;shape=mxgraph.ios7.icons.wallet;" vertex="1" parent="1">
+          <mxGeometry x="460" y="380" width="30" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Fb3_g8i6-2pTsYW1MxMN-10" value="Wallet A Buys \(a_2\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;Meme&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="500" y="380" width="135" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Fb3_g8i6-2pTsYW1MxMN-11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.033;entryY=0.6;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=classicThin;endFill=1;curved=0;" edge="1" parent="1" source="xsM1BEv939oAehP6_Vt--3" target="Fb3_g8i6-2pTsYW1MxMN-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="400" y="430" />
+              <mxPoint x="400" y="392" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Fb3_g8i6-2pTsYW1MxMN-12" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=classicThin;endFill=1;curved=0;" edge="1" parent="1" source="xsM1BEv939oAehP6_Vt--3">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="460" y="471" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="400" y="430" />
+              <mxPoint x="400" y="471" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Fb3_g8i6-2pTsYW1MxMN-13" value="\(b_1\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;SOL&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="393" y="413" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="Fb3_g8i6-2pTsYW1MxMN-15" value="\(c_1\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;SOL&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="393" y="453" width="60" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

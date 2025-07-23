@@ -1,0 +1,67 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/27.0.9 Chrome/134.0.6998.205 Electron/35.4.0 Safari/537.36" version="27.0.9">
+  <diagram name="Page-1" id="Z--_ejFTgG8A-TA4O3CM">
+    <mxGraphModel dx="1426" dy="912" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1654" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-47" value="" style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.bendArrow;dy=22.88;dx=0;notch=0;arrowHead=45.76;rounded=1;rotation=90;fillColor=#008A00;opacity=40;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="535.95" y="248.07" width="115.5" height="90.88" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-48" value="" style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.bendArrow;dy=6.21;dx=0;notch=0;arrowHead=12.42;rounded=1;rotation=90;fillColor=#CC99FF;opacity=40;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="678.5" y="92.5" width="128" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-49" value="1B meme coins are minted by smart contract of Pumpfun" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="308" y="300" width="122" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-50" value="" style="html=1;shadow=0;dashed=0;align=center;verticalAlign=middle;shape=mxgraph.arrows2.bendArrow;dy=28.97;dx=0;notch=0;arrowHead=57.94;rounded=1;rotation=90;fillColor=#008A00;opacity=40;strokeColor=none;direction=east;flipV=1;" parent="1" vertex="1">
+          <mxGeometry x="430" y="231.88" width="126.55" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-51" value="200M meme coins are locked&lt;div&gt;until 800M meme coins are purchased&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="563" y="188" width="202.32" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-54" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="773" y="210" width="10" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-55" value="" style="endArrow=none;startArrow=none;html=1;rounded=0;startFill=0;endFill=1;fillColor=#008a00;strokeColor=#005700;strokeWidth=2;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="778.5" y="250" as="sourcePoint" />
+            <mxPoint x="778.5" y="210" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-57" value="During migration,&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(237, 237, 237));&quot;&gt;200M meme coins are unlocked and transferred to DEX for the liquidity&amp;nbsp;&lt;/span&gt;provision" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="795.29" y="189" width="217" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-58" value="To migrate, 800M meme coins should be purchased" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="645.32" y="300" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="iwdgBdPEgddh05-VgEwu-1" value="" style="triangle;whiteSpace=wrap;html=1;rotation=90;fillColor=#008A00;strokeColor=none;opacity=40;" parent="1" vertex="1">
+          <mxGeometry x="611.75" y="333" width="10" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="iwdgBdPEgddh05-VgEwu-2" value="" style="triangle;whiteSpace=wrap;html=1;rotation=90;fillColor=#CC99FF;strokeColor=none;opacity=40;" parent="1" vertex="1">
+          <mxGeometry x="926.79" y="349.5" width="10" height="13" as="geometry" />
+        </mxCell>
+        <mxCell id="uXHvShbDBSo3MUZlru2W-1" value="Meme Coin Migration" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="717" y="250" width="122" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="uXHvShbDBSo3MUZlru2W-2" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/png,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAaVBMVEVHcEwWQTwUQTsbQz0eQkIRPTkTPTgWQDsZQj0YSkBS0o7///9V1JEUPTkljWYCNS8iW0sAJiLE19ZKzIm60c4vlmxX2ZQreVrQ4dyZq6lqgX1GZmKQ3LRRiXJ+k4/t8vCmurdHu4Lc4+Idx+7hAAAACnRSTlMAf9I/IZ7ovGH+HQMUCgAAAUxJREFUOI1tk9u6RDAMRhnjlDYSqs4fM/v9H3K3DIrmwoW1+kubCoJnRWEcx5kHbJVRycMwlhT7eUrzImz1lPj4izrxq47Rx//EURWmj/yyO7lYeoruvBKuUPE1Ii5rcal6JpeH5UfchN4VMurFXfjQ++AR0j1gcRMiZC5vEV119vDGXEJ+NZa6Gl8nBynhmlFXH9pHZngjTXE5n+dYV7xPI0FlsQTHMHzc9/DaOdiM4eS/gw7pa9ZuBjTtanSWHw3oBjbBeJth+HDwjMzrGmSzJqwZo+XhMUJuQE6wN2ENGmfnwiVtA5MCS2H9lCoYyZlzUjSqU7Bx81RFUeArCNyETXD45bqmZgrTLkh48CBDLdXPWHl+v8zIGqZJyY3rHN83IcNWf9dtfr3cdIGtIVqbeM0ebg0uVtz61tsKEXNmxuevdDYSp2kcepb/A1HzIPFoLHaXAAAAAElFTkSuQmCC;" vertex="1" parent="1">
+          <mxGeometry x="601.75" y="362.5" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="uXHvShbDBSo3MUZlru2W-3" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://docs.raydium.io/raydium/~gitbook/image?url=https%3A%2F%2F4071094211-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252F-MT-qzD26DX_h6l_vXaA-887967055%252Fuploads%252FHPcvejBNveWwU0l3agvY%252FRaydium%2520icon.png%3Falt%3Dmedia%26token%3D689dd256-63ba-42a8-8a94-93aff9f95f47&amp;width=768&amp;dpr=4&amp;quality=100&amp;sign=fb5ff13&amp;sv=2;" vertex="1" parent="1">
+          <mxGeometry x="916.64" y="362.5" width="30.29" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="uXHvShbDBSo3MUZlru2W-4" value="" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;size=8;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="453" y="359" width="27" height="27.5" as="geometry" />
+        </mxCell>
+        <mxCell id="uXHvShbDBSo3MUZlru2W-5" value="Pumpfun&lt;div&gt;Market Place&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="574.63" y="397.5" width="84.25" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="uXHvShbDBSo3MUZlru2W-6" value="Pumpfun&lt;div&gt;Smart Contract&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="418.69" y="397.5" width="95.62" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="uXHvShbDBSo3MUZlru2W-7" value="DEX" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#000000;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="889.6600000000001" y="400" width="84.25" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

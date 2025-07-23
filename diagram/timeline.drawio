@@ -1,0 +1,106 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/27.0.9 Chrome/134.0.6998.205 Electron/35.4.0 Safari/537.36" version="27.0.9">
+  <diagram name="Page-1" id="Z--_ejFTgG8A-TA4O3CM">
+    <mxGraphModel dx="976" dy="751" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1654" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-4" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;width=7;endSize=8.83;endWidth=6;fillColor=#008a00;strokeColor=none;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="170" y="450" as="sourcePoint" />
+            <mxPoint x="1080" y="450" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="769" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-5" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/png,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAaVBMVEVHcEwWQTwUQTsbQz0eQkIRPTkTPTgWQDsZQj0YSkBS0o7///9V1JEUPTkljWYCNS8iW0sAJiLE19ZKzIm60c4vlmxX2ZQreVrQ4dyZq6lqgX1GZmKQ3LRRiXJ+k4/t8vCmurdHu4Lc4+Idx+7hAAAACnRSTlMAf9I/IZ7ovGH+HQMUCgAAAUxJREFUOI1tk9u6RDAMRhnjlDYSqs4fM/v9H3K3DIrmwoW1+kubCoJnRWEcx5kHbJVRycMwlhT7eUrzImz1lPj4izrxq47Rx//EURWmj/yyO7lYeoruvBKuUPE1Ii5rcal6JpeH5UfchN4VMurFXfjQ++AR0j1gcRMiZC5vEV119vDGXEJ+NZa6Gl8nBynhmlFXH9pHZngjTXE5n+dYV7xPI0FlsQTHMHzc9/DaOdiM4eS/gw7pa9ZuBjTtanSWHw3oBjbBeJth+HDwjMzrGmSzJqwZo+XhMUJuQE6wN2ENGmfnwiVtA5MCS2H9lCoYyZlzUjSqU7Bx81RFUeArCNyETXD45bqmZgrTLkh48CBDLdXPWHl+v8zIGqZJyY3rHN83IcNWf9dtfr3cdIGtIVqbeM0ebg0uVtz61tsKEXNmxuevdDYSp2kcepb/A1HzIPFoLHaXAAAAAElFTkSuQmCC;" parent="1" vertex="1">
+          <mxGeometry x="130" y="435" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-6" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="465" y="430" width="10" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-7" value="&lt;b&gt;Launching Meme Coins on Pumpfun&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="31" y="392.5" width="130" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-8" value="&lt;b&gt;Traditional&amp;nbsp;&lt;/b&gt;&lt;b style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Finance&lt;/b&gt;&lt;div&gt;&lt;b&gt;Analogy&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+          <mxGeometry x="32" y="480" width="128" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-9" value="2. Meme Coin Launch" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="430" y="390" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-10" value="&lt;font style=&quot;color: rgb(0, 0, 0);&quot;&gt;IPO Application&lt;/font&gt;&lt;div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="272" y="480" width="76" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-11" value="3. Completing&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 138, 0), rgb(67, 186, 67));&quot;&gt;Purchasing (Bonding Curve)&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="543.28" y="387.5" width="153.45" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-15" value="4. Meme Coin&lt;div&gt;Migration&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="727" y="390" width="102" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-16" value="&lt;font color=&quot;#000000&quot;&gt;IPO Listing&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="745.5" y="480" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-17" value="" style="endArrow=none;startArrow=none;html=1;rounded=0;startFill=0;endFill=1;fillColor=#008a00;strokeColor=#005700;strokeWidth=2;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="470.5" y="470" as="sourcePoint" />
+            <mxPoint x="470.5" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-18" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=none;" parent="1" vertex="1">
+          <mxGeometry x="773" y="430" width="10" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-19" value="" style="endArrow=none;startArrow=none;html=1;rounded=0;startFill=0;endFill=1;fillColor=#008a00;strokeColor=#005700;strokeWidth=2;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="778.5" y="470" as="sourcePoint" />
+            <mxPoint x="778.5" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-20" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;rotation=90;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="610" y="330" width="20" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-21" value="&lt;font style=&quot;color: rgb(0, 0, 0);&quot;&gt;Primary Market Offerings&lt;/font&gt;&lt;div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="563" y="480" width="114" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-23" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=default;verticalAlign=top;aspect=fixed;imageAspect=0;image=https://docs.raydium.io/raydium/~gitbook/image?url=https%3A%2F%2F4071094211-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252F-MT-qzD26DX_h6l_vXaA-887967055%252Fuploads%252FHPcvejBNveWwU0l3agvY%252FRaydium%2520icon.png%3Falt%3Dmedia%26token%3D689dd256-63ba-42a8-8a94-93aff9f95f47&amp;width=768&amp;dpr=4&amp;quality=100&amp;sign=fb5ff13&amp;sv=2;" parent="1" vertex="1">
+          <mxGeometry x="982" y="387.5" width="30.29" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-26" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;rotation=90;strokeWidth=2;" parent="1" vertex="1">
+          <mxGeometry x="921" y="330" width="20" height="205" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-28" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;width=7;endSize=8.83;endWidth=6;fillColor=#CC99FF;strokeColor=none;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="783" y="450" as="sourcePoint" />
+            <mxPoint x="1080" y="450" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1163" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-31" value="&lt;font style=&quot;color: rgb(204, 153, 255);&quot;&gt;5. DEX Trading&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="880" y="390" width="102" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-32" value="&lt;div&gt;&lt;font color=&quot;#000000&quot;&gt;Secondary Market&amp;nbsp;&lt;/font&gt;&lt;span style=&quot;color: rgb(0, 0, 0); background-color: transparent;&quot;&gt;Trading&lt;/span&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="877.81" y="480" width="106.37" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-33" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="158" y="410" as="sourcePoint" />
+            <mxPoint x="158" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-35" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" parent="1" edge="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="495" as="sourcePoint" />
+            <mxPoint x="160" y="485" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-37" value="1. Creator Uploads an Image, Name, and Ticker" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="230" y="387.5" width="145" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="fTN6Oq_kjsbe7A4qiZ2b-2" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;labelPosition=left;verticalLabelPosition=middle;align=right;verticalAlign=middle;rotation=90;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="300" y="330" width="20" height="205" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
