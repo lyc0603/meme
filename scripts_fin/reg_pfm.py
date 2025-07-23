@@ -1,20 +1,18 @@
 """Script to regress factors against returns and survival."""
 
-from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
 import statsmodels.api as sm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 from environ.constants import (
     NAMING_DICT,
+    PFM_NAMING_DICT,
     PROCESSED_DATA_PATH,
     TABLE_PATH,
-    PFM_NAMING_DICT,
 )
 from environ.utils import asterisk
-from statsmodels.stats.outliers_influence import variance_inflation_factor
-
 
 PROFIT_NAMING_DICT = {
     **NAMING_DICT,
@@ -42,17 +40,17 @@ def render_vif_latex_table(vif_df: pd.DataFrame) -> str:
     """Render VIF results into a LaTeX table with 1/VIF and Mean VIF."""
     lines = []
     lines.append("\\begin{tabular}{lcc}")
-    lines.append("\\hline")
+    lines.append("\\toprule")
     lines.append("Variable & VIF & $1/\\text{VIF}$ \\\\")
-    lines.append("\\hline")
+    lines.append("\\midrule")
     for _, row in vif_df.iterrows():
         var_name = PROFIT_NAMING_DICT.get(row["Variable"], row["Variable"])
         lines.append(f"{var_name} & {row['VIF']:.2f} & {row['1/VIF']:.2f} \\\\")
-    lines.append("\\hline")
+    lines.append("\\midrule")
     lines.append(
-        f"\\textbf{{Mean VIF}} & {vif_df['VIF'].mean():.2f} & {vif_df['1/VIF'].mean():.2f} \\\\"
+        f"\\textbf{{Mean}} & {vif_df['VIF'].mean():.2f} & {vif_df['1/VIF'].mean():.2f} \\\\"
     )
-    lines.append("\\hline")
+    lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
     return "\n".join(lines)
 
@@ -90,16 +88,16 @@ def render_latex_table(
     lines = []
 
     lines.append("\\begin{tabular}{l" + "c" * len(keys) + "}")
-    lines.append("\\hline")
+    lines.append("\\toprule")
     lines.append(" & " + " & ".join([PFM_NAMING_DICT[key] for key in keys]) + r" \\")
     lines.append(
         " & " + " & ".join([f"({i})" for i in range(1, len(keys) + 1)]) + r"\\"
     )
-    lines.append("\\hline")
+    lines.append("\\midrule")
 
     for var in x_var_list + ["const"]:
         row_coef = PROFIT_NAMING_DICT.get(var, var)
-        row_stderr = ""
+        row_t = ""
         for key in keys:
             model_res = results[key]
             if var in model_res["params"]:
@@ -107,13 +105,13 @@ def render_latex_table(
                 stderr = model_res["bse"][var]
                 pval = model_res["pvalues"][var]
                 row_coef += f" & {coef:.2f}{asterisk(pval)}"
-                row_stderr += f" & ({stderr:.2f})"
+                row_t += f" & ({coef / stderr:.2f})"
             else:
                 row_coef += " & "
-                row_stderr += " & "
+                row_t += " & "
         lines.append(row_coef + r" \\")
-        lines.append(row_stderr + r" \\")
-
+        lines.append(row_t + r" \\")
+    lines.append(r"\midrule")
     # Add Obs and R²
     obs_row = (
         PROFIT_NAMING_DICT["obs"]
@@ -130,7 +128,7 @@ def render_latex_table(
 
     lines.append(obs_row)
     lines.append(r2_row)
-    lines.append("\\hline")
+    lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
 
     return "\n".join(lines)

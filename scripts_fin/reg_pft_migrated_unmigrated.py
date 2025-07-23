@@ -1,7 +1,5 @@
 """Script to regress profit data using regression analysis."""
 
-from typing import List, Dict, Any
-
 import pandas as pd
 import statsmodels.api as sm
 
@@ -10,6 +8,8 @@ from environ.constants import (
     TABLE_PATH,
     PROFIT_NAMING_DICT,
 )
+
+from typing import List, Dict, Any
 
 X_VAR_LIST = ["creator"]
 
@@ -75,13 +75,15 @@ def run_regression(
     return sm.OLS(y, X).fit()
 
 
-def render_latex_table(
-    var_names: List[str], res_dict: Dict[str, List[str]], y_var: str = "profit"
+def render_latex_two_panel_table(
+    var_names: List[str],
+    res_dicts: Dict[str, Dict[str, List[str]]],
+    y_var: str = "profit",
 ) -> str:
-    """Render the regression results as a LaTeX table."""
-    col_len = len(res_dict["obs"])
-
+    """Render the regression results for migrated and unmigrated as two panels in one LaTeX table."""
+    panels = ["Unmigrated", "Migrated"]
     lines = []
+    col_len = len(res_dicts["unmigrated"]["obs"])
     lines.append("\\begin{tabular}{l" + "c" * col_len + "}")
     lines.append(r"\toprule")
     lines.append(
@@ -95,40 +97,64 @@ def render_latex_table(
     )
     lines.append(r"\cline{2-" + str(col_len + 1) + "}")
     lines.append(r" $\text{Bot}:$ & " + " & ".join(var_names) + r" \\")
-    lines.append(" & " + " & ".join([f"({i})" for i in range(1, col_len + 1)]) + r"\\")
-    lines.append(r"\midrule")
-    for key in [
-        "creator_coef",
-        "creator_stderr",
-        "creator_x_var_coef",
-        "creator_x_var_stderr",
-        "non_creator_coef",
-        "non_creator_stderr",
-        "non_creator_x_var_coef",
-        "non_creator_x_var_stderr",
-        "obs",
-        "r2",
-    ]:
-        if key in res_dict:
-            display_name = PROFIT_NAMING_DICT.get(key, key)
-            row = (
-                display_name + " " + " ".join(f"& {v}" for v in res_dict[key]) + r" \\"
-            )
-            if key == "obs":
-                lines.append(r"\midrule")
-            lines.append(row)
+    lines.append(" & " + " & ".join([f"({i+1})" for i in range(col_len)]) + r"\\")
+
+    for i, panel in enumerate(panels):
+        res_dict = res_dicts[panel.lower()]
+        if i == 0:
+            lines.append(r"\midrule")
+            lines.append(r"\textbf{Panel A. Unmigrated Meme Coins}\\")
+            lines.append(r"\midrule")
+        else:
+            lines.append(r"\midrule")
+            lines.append(r"\textbf{Panel B. Migrated Meme Coins}\\")
+            lines.append(r"\midrule")
+        col_len = len(res_dict["obs"])
+        for key in [
+            "creator_coef",
+            "creator_stderr",
+            "creator_x_var_coef",
+            "creator_x_var_stderr",
+            "non_creator_coef",
+            "non_creator_stderr",
+            "non_creator_x_var_coef",
+            "non_creator_x_var_stderr",
+            "obs",
+            "r2",
+        ]:
+            if key in res_dict:
+                display_name = PROFIT_NAMING_DICT.get(key, key)
+                row = (
+                    display_name
+                    + " "
+                    + " ".join(f"& {v}" for v in res_dict[key])
+                    + r" \\"
+                )
+                if key == "obs":
+                    lines.append(r"\midrule")
+                lines.append(row)
     lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}")
+    lines.append("")
     return "\n".join(lines)
 
 
 if __name__ == "__main__":
     pft = pd.read_csv(f"{PROCESSED_DATA_PATH}/pft.csv")
     samples = {
-        "all": pft,
+        "unmigrated": pft.loc[
+            pft["category"].isin(["pumpfun", "pre_trump_pumpfun"])
+        ].copy(),
+        "migrated": pft.loc[
+            pft["category"].isin(["raydium", "pre_trump_raydium"])
+        ].copy(),
     }
 
-    for sample_name, df in samples.items():
+    res_dicts = {}
+    var_names = []
+
+    for sample_name in ["unmigrated", "migrated"]:
+        df = samples[sample_name]
         res_dict: Dict[str, List[Any]] = {
             k: []
             for k in [
@@ -144,13 +170,10 @@ if __name__ == "__main__":
                 "r2",
             ]
         }
-        var_names = []
-
         for x_var in X_VAR_CREATOR_INTERACTION:
             model = run_regression(df, x_var, Y_VAR)
-            var_names.append(PROFIT_NAMING_DICT.get(x_var, x_var))
-
-            # Fill results
+            if sample_name == "unmigrated":  # populate var_names only once
+                var_names.append(PROFIT_NAMING_DICT.get(x_var, x_var))
             for var, dict_name in [
                 ("creator", "creator"),
                 (f"creator_x_{x_var}", "creator_x_var"),
@@ -169,10 +192,11 @@ if __name__ == "__main__":
                 )
             res_dict["obs"].append(f"{int(model.nobs)}")
             res_dict["r2"].append(f"{model.rsquared:.2f}")
+        res_dicts[sample_name] = res_dict
 
-        # Generate and save table
-        latex_str = render_latex_table(var_names, res_dict, y_var=Y_VAR)
-        with open(
-            TABLE_PATH / f"reg_pft_{sample_name}.tex", "w", encoding="utf-8"
-        ) as f:
-            f.write(latex_str)
+    # Generate combined panel table
+    latex_str = render_latex_two_panel_table(var_names, res_dicts, y_var=Y_VAR)
+    with open(
+        TABLE_PATH / "reg_pft_migrated_unmigrated.tex", "w", encoding="utf-8"
+    ) as f:
+        f.write(latex_str)

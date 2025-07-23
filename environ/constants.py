@@ -58,6 +58,9 @@ KOL_NAMING_DICT = {
 ID_DICT = {
     "creator": "$\\text{Creator}_{i}$",
     "sniper": "$\\text{Sniper}_{i}$",
+    "winner": "$\\text{Winner}_{i}$",
+    "loser": "$\\text{Loser}_{i}$",
+    "neutral": "$\\text{Neutral}_{i}$",
 }
 
 
@@ -67,7 +70,6 @@ MIGRATION_NAMING_DICT = {
 
 PROFIT_NAMING_DICT = {
     "profit": "$\\text{Profit}_{i,j}$",
-    "creator": "$\\text{Creator}_{i,j}$",
 }
 
 # before block for the TRUMP block 2025-01-17 14:01:48

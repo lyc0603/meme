@@ -3,9 +3,7 @@
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
 from environ.constants import PROCESSED_DATA_PATH, FIGURE_PATH
-from tqdm import tqdm
 from environ.constants import NAMING_DICT
 
 # Constants
@@ -31,14 +29,15 @@ bot_token_df.rename(columns={"index": "token_address"}, inplace=True)
 # Load all trader profits
 pj_pft = pd.read_csv(PROCESSED_DATA_PATH / "trader_project_profits.csv")
 pj_pft.drop_duplicates(subset=["trader_address", "meme"], keep="last", inplace=True)
-pj_pft = pj_pft.loc[(pj_pft["meme_num"] < 1000) & (pj_pft["meme_num"] >= 100)]
+pj_pft = pj_pft.loc[(pj_pft["meme_num"] < 1000) & (pj_pft["meme_num"] >= 50)]
 pj_pft = pj_pft.loc[pj_pft["trader_address"].isin(token_list)]
 
 pj_pft.rename(columns={"meme": "token_address"}, inplace=True)
 pj_pft = pj_pft.merge(bot_token_df, how="left", on="token_address").dropna()
 
-winner = pj_pft.loc[(pj_pft["t_stat"] > CRITICAL_VAL)].dropna(subset=["ret", "t_stat"])
-non_winner = pj_pft.loc[pj_pft["t_stat"] <= CRITICAL_VAL]
+winner = pj_pft.loc[(pj_pft["t_stat"] > CRITICAL_VAL)].copy()
+neutral = pj_pft.loc[(pj_pft["t_stat"].abs() <= CRITICAL_VAL)].copy()
+loser = pj_pft.loc[(pj_pft["t_stat"] < -CRITICAL_VAL)].copy()
 
 
 def compute_learning_curve(df: pd.DataFrame) -> pd.DataFrame:
@@ -47,7 +46,7 @@ def compute_learning_curve(df: pd.DataFrame) -> pd.DataFrame:
     df["txn_idx"] = df.groupby("trader_address").cumcount()
     df["txn_group"] = df["txn_idx"] // 1
     # keep first 100 meme coins
-    df = df.loc[df["txn_group"] < 100]
+    df = df.loc[df["txn_group"] <= 50]
 
     grouped = (
         df.groupby("txn_group")[["launch_bundle", "volume_bot", "sniper_bot"]]
@@ -59,29 +58,13 @@ def compute_learning_curve(df: pd.DataFrame) -> pd.DataFrame:
 
 # Compute learning curves
 winner_curve = compute_learning_curve(winner)
-non_winner_curve = compute_learning_curve(non_winner)
+neutral_curve = compute_learning_curve(neutral)
+loser_curve = compute_learning_curve(loser)
+
 WINDOW = 10
 
 for bot in BOT_LIST:
     fig, ax = plt.subplots(figsize=(10, 7))
-
-    # Plot raw curves (transparent)
-    ax.plot(
-        winner_curve["txn_group"],
-        winner_curve[bot],
-        color="green",
-        linewidth=2,
-        alpha=0.1,
-        label="Winner",
-    )
-    ax.plot(
-        non_winner_curve["txn_group"],
-        non_winner_curve[bot],
-        color="red",
-        linewidth=2,
-        alpha=0.1,
-        label="Non-Winner",
-    )
 
     # Plot smoothed curves
     ax.plot(
@@ -89,19 +72,26 @@ for bot in BOT_LIST:
         winner_curve[bot].rolling(window=WINDOW, min_periods=1).mean(),
         color="green",
         linewidth=2,
-        label="Winner 10 Projects Moving Average",
+        label="Winner",
     )
     ax.plot(
-        non_winner_curve["txn_group"],
-        non_winner_curve[bot].rolling(window=WINDOW, min_periods=1).mean(),
+        neutral_curve["txn_group"],
+        neutral_curve[bot].rolling(window=WINDOW, min_periods=1).mean(),
+        color="gray",
+        linewidth=2,
+        label="Neutral",
+    )
+    ax.plot(
+        loser_curve["txn_group"],
+        loser_curve[bot].rolling(window=WINDOW, min_periods=1).mean(),
         color="red",
         linewidth=2,
-        label="Non-Winner 10 Projects Moving Average",
+        label="Loser",
     )
 
     # Axis formatting
-    ax.set_xlabel("Meme Coin Projects", fontsize=FONT_SIZE)
-    ax.set_ylabel(f"Average {NAMING_DICT[bot]} Probability", fontsize=FONT_SIZE)
+    ax.set_xlabel("Number of Meme Coin Projects", fontsize=FONT_SIZE)
+    ax.set_ylabel(f"Average {NAMING_DICT[bot]}\nProbability", fontsize=FONT_SIZE)
     ax.tick_params(axis="both", labelsize=FONT_SIZE)
 
     # formatter = ScalarFormatter(useMathText=True)
@@ -114,9 +104,11 @@ for bot in BOT_LIST:
     legend = ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.5, -0.18),
-        ncol=2,
+        title="10-Project Rolling Average",
+        ncol=3,
         frameon=True,
         fontsize=FONT_SIZE,
+        title_fontsize=FONT_SIZE,
     )
     legend.get_frame().set_edgecolor("black")
 

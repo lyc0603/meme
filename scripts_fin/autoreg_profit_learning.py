@@ -158,7 +158,7 @@ latex_output = render_multicolumn_latex_table(
         "ret_lag_10_15": r"$\overline{\text{r}}_{i,t-15,t-10}$",
         "ret_lag_5_10": r"$\overline{\text{r}}_{i,t-10,t-5}$",
         "ret_lag_1_5": r"$\overline{\text{r}}_{i,t-5,t-1}$",
-        "const": r"$Constant$",
+        "const": r"Constant",
     },
 )
 

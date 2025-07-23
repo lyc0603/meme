@@ -61,13 +61,13 @@ def render_latex_table(
     lines = []
 
     lines.append("\\begin{tabular}{l" + "c" * len(keys) + "}")
-    lines.append("\\hline")
+    lines.append("\\toprule")
     lines.append(
         r" & "
         + r"\multicolumn{"
         + str(col_len)
         + r"}{c}{"
-        + r"\text{Migration}_{i}"
+        + r"$\text{Migration}_{i}$"
         + r"}"
         + r" \\"
     )
@@ -76,25 +76,26 @@ def render_latex_table(
     lines.append(
         " & " + " & ".join([f"({i})" for i in range(1, len(keys) + 1)]) + r"\\"
     )
-    lines.append("\\hline")
+    lines.append("\\midrule")
 
     for var in x_var_list + ["const"]:
         row_coef = PROFIT_NAMING_DICT.get(var, var)
-        row_stderr = ""
+        row_t = ""
         for key in keys:
             model_res = results[key]
             if var in model_res["params"]:
                 coef = model_res["params"][var]
                 stderr = model_res["bse"][var]
                 pval = model_res["pvalues"][var]
+                t = coef / stderr
                 row_coef += f" & {coef:.2f}{asterisk(pval)}"
-                row_stderr += f" & ({stderr:.2f})"
+                row_t += f" & ({t:.2f})"
             else:
                 row_coef += " & "
-                row_stderr += " & "
+                row_t += " & "
         lines.append(row_coef + r" \\")
-        lines.append(row_stderr + r" \\")
-
+        lines.append(row_t + r" \\")
+    lines.append(r"\midrule")
     # Add Obs and R²
     obs_row = (
         PROFIT_NAMING_DICT["obs"]
@@ -111,7 +112,7 @@ def render_latex_table(
 
     lines.append(obs_row)
     lines.append(r2_row)
-    lines.append("\\hline")
+    lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
 
     return "\n".join(lines)

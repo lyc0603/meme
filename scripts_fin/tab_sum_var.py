@@ -62,9 +62,9 @@ summary = compute_summary(pfm, X_VAR_PANEL)
 # Generate LaTeX code
 latex_lines = [
     "\\begin{tabular}{lcccccc}",
-    "\\hline",
+    "\\toprule",
     "Variable & Num. Obs. & Mean & Std. Dev. & P10 & Median & P90 \\\\",
-    "\\hline",
+    "\\midrule",
 ]
 
 PANEL_A_NAMING_DICT = {
@@ -80,7 +80,7 @@ for var in X_VAR_PANEL:
             f"{PANEL_A_NAMING_DICT[var]} & {s['num_obs']} & {s['mean']:.2f} & {s['std']:.2f} & {s['p10']:.2f} & {s['median']:.2f} & {s['p90']:.2f} \\\\"
         )
 
-latex_lines.extend(["\\hline", "\\end{tabular}"])
+latex_lines.extend(["\\bottomrule", "\\end{tabular}"])
 
 # Save to file
 with open(TABLE_PATH / "reg_var_summary.tex", "w", encoding="utf-8") as f:

@@ -57,6 +57,17 @@ pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
 # pfm = trader_t.merge(pfm, how="left", on="token_address")
 pfm = pft.merge(pfm, how="left", on="token_address")
 
+# aggreagete by trader
+pfm = (
+    pfm.groupby(["trader_address"])[["winner", "loser", "neutral", *X_VAR_PANEL]]
+    .mean()
+    .reset_index()
+)
+
+# If the creator and sniper greater than 0, set to 1, else 0
+pfm["creator"] = pfm["creator"].apply(lambda x: int(x > 0))
+pfm["sniper"] = pfm["sniper"].apply(lambda x: int(x > 0))
+
 winner = pfm.loc[pfm["winner"] == 1]
 loser = pfm.loc[pfm["loser"] == 1]
 neutral = pfm.loc[pfm["neutral"] == 1]

@@ -61,9 +61,9 @@ summary = compare_groups(
 # Prepare LaTeX table lines
 latex_lines = [
     "\\begin{tabular}{lcccr}",
-    "\\hline",
+    "\\toprule",
     "Variable & Pre-Trump & Post-Trump & Diff & t \\\\",
-    "\\hline",
+    "\\midrule",
 ]
 
 PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT}
@@ -77,7 +77,7 @@ for var in X_VAR_PANEL:
             f"{s['t_stat']:.2f}{s['stars']} \\\\"
         )
 
-latex_lines.extend(["\\hline", "\\end{tabular}"])
+latex_lines.extend(["\\bottomrule", "\\end{tabular}"])
 
 # Write to .tex file
 with open(TABLE_PATH / "reg_var_diff.tex", "w", encoding="utf-8") as f:

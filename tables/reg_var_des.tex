@@ -1,16 +1,20 @@
 \begin{tabularx}{\textwidth}{lX}\hline
 Variable & Description \\
 \hline
-$\text{Rat Bot}_{i}$ & Dummy variable that equals 1 if the meme coin has launch bundle, 0 otherwise. \\
-$\text{Bundle Bot}_{i}$ & Dummy variable that equals 1 if the number of buy and sell bundles is above the sample median, 0 otherwise. \\
-$\text{Wash Trading Bot}_{i}$ & Dummy variable that equals 1 if there are volume bots in this project, 0 otherwise. \\
-$\text{Comment Bot}_{i}$ & Dummy variable that equals 1 if there are comment bots in this project, 0 otherwise. \\
-$\text{Profit}_{i,j}$ & Each trader's profit and loss from a given meme coin between the launch and 12 hours after its migration \\
-$\text{Creator}_{i,j}$ & Dummy variable that equals 1 if the trader is the meme coin's creator, 0 otherwise. \\
-$\text{Ln(Max Ret)}_{i}$ & Maximum log return of the meme coin within 12 hours after its migration. \\
-$\text{Ln(Number of Traders)}_{i}$ & Natural logarithm of the number of non-bot traders who control one or multiple wallets and trade the meme coin between the launch and 12 hours after its migration. \\
+$\text{Rat Bot}_{i}$ & Dummy variable equal to 1 if the meme coin has rat bot, 0 otherwise. \\
+$\text{Sniper Bot}_{i}$ & Dummy variable equal to 1 if the meme coin has sniper bot, 0 otherwise. \\
+$\text{Wash Trading Bot}_{i}$ & Dummy variable equal to 1 if the meme coin has wash trading bot, 0 otherwise. \\
+$\text{Comment Bot}_{i}$ & Dummy variable equal to 1 if the meme coin has comment bot, 0 otherwise. \\
+$\text{Ln(Max Ret)}_{i}$ & Maximum log return of the meme coin. \\
 $\text{Ln(Pre-Migration Duration)}_{i}$ & Natural logarithm of seconds between the meme coin's launch and its migration. \\
-$\text{Ln(Pump Duration)}_{i}$ & Natural logarithm of seconds between the migration and the peak price of the meme coin. \\
-$\text{Ln(Dump Duration)}_{i}$ & Natural logarithm of seconds between the peak price and the 90\% price drop of the meme coin. \\
+$\text{Ln(Pump Duration)}_{i}$ & Natural logarithm of seconds between the launch and the peak price of the meme coin. \\
+$\text{Ln(Dump Duration)}_{i}$ & Natural logarithm of seconds between the peak price and the 90\% drop of the circulating supply. \\
+$\text{Ln(Number of Traders)}_{i}$ & Natural logarithm of the number of non-bot traders who control one or multiple wallets and trade the meme coin. \\
+$\text{Profit}_{i,j}$ & Each trader's profit and loss from a given meme coin \\
+$\text{Creator}_{i}$ & Dummy variable equal to 1 if the trader is the meme coin's creator, 0 otherwise. \\
+$\text{Sniper}_{i}$ & Dummy variable equal to 1 if the trader is a sniper bot, 0 otherwise. \\
+$\text{Winner}_{i}$ & Dummy variable equal to 1 if the t-statistic of the trader's profit is greater than 2.576, 0 otherwise. \\
+$\text{Loser}_{i}$ & Dummy variable equal to 1 if the t-statistic of the trader's profit is less than -2.576, 0 otherwise. \\
+$\text{Neutral}_{i}$ & Dummy variable equal to 1 if the t-statistic of the trader's profit is between -2.576 and 2.576, 0 otherwise. \\
 \hline
 \end{tabularx}

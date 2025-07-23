@@ -7,9 +7,19 @@ from typing import List, Dict, Any
 from environ.constants import (
     PROCESSED_DATA_PATH,
     TABLE_PATH,
-    NAMING_DICT,
     PROFIT_NAMING_DICT,
 )
+
+NAMING_DICT = {
+    # bundle bots
+    "launch_bundle": "$\\text{Rat Bot}$",
+    # sniper bots
+    "sniper_bot": "$\\text{Sniper Bot}$",
+    # volume bots
+    "volume_bot": "$\\text{Wash Trading Bot}$",
+    # comment bots
+    "bot_comment_num": "$\\text{Comment Bot}$",
+}
 
 # Define the interaction variables
 X_VAR_KOL_INTERACTION = list(NAMING_DICT.keys())
@@ -18,18 +28,18 @@ Y_VAR = "profit"
 # Update the naming dictionary for rendering
 PROFIT_NAMING_DICT = {
     **NAMING_DICT,
-    "profit": "$\\text{Profit}$",
-    "winner_coef": "$\\text{Winner}$",
+    "profit": "$\\text{Profit}_{i,j}$",
+    "winner_coef": "$\\text{Winner}_{i,j}$",
     "winner_stderr": "",
-    "winner_x_var_coef": "$\\text{Winner} \\times \\text{Bot}$",
+    "winner_x_var_coef": "$\\text{Winner}_{i,j} \\times \\text{Bot}_i$",
     "winner_x_var_stderr": "",
-    "loser_coef": "$\\text{Loser}$",
+    "loser_coef": "$\\text{Loser}_{i,j}$",
     "loser_stderr": "",
-    "loser_x_var_coef": "$\\text{Loser} \\times \\text{Bot}$",
+    "loser_x_var_coef": "$\\text{Loser}_{i,j} \\times \\text{Bot}_i$",
     "loser_x_var_stderr": "",
-    "neutral_coef": "$\\text{Neutral}$",
+    "neutral_coef": "$\\text{Neutral}_{i,j}$",
     "neutral_stderr": "",
-    "neutral_x_var_coef": "$\\text{Neutral} \\times \\text{Bot}$",
+    "neutral_x_var_coef": "$\\text{Neutral}_{i,j} \\times \\text{Bot}_i$",
     "neutral_x_var_stderr": "",
     "obs": "$\\text{Observations}$",
     "r2": "$R^2$",
@@ -64,7 +74,10 @@ def run_regression_three_groups(
     )
     # add constant for intercept
     y = df[y_var]
-    return sm.OLS(y, X).fit()
+    return sm.OLS(y, X).fit(
+        cov_type="cluster",
+        cov_kwds={"groups": df["trader_address"]},
+    )
 
 
 def render_latex_table(
@@ -74,7 +87,7 @@ def render_latex_table(
     col_len = len(res_dict["obs"])
     lines = []
     lines.append("\\begin{tabular}{l" + "c" * col_len + "}")
-    lines.append(r"\hline")
+    lines.append(r"\toprule")
     lines.append(
         r" & "
         + r"\multicolumn{"
@@ -84,13 +97,10 @@ def render_latex_table(
         + r"}"
         + r" \\"
     )
-    lines.append(
-        r" & \multicolumn{4}{c}{All} & \multicolumn{4}{c}{Unmigrated} & \multicolumn{4}{c}{Migrated} \\"
-    )
-    lines.append(r"\cmidrule(lr){2-5} \cmidrule(lr){6-9} \cmidrule(lr){10-13}")
+    lines.append("\cline{2-" + str(col_len + 1) + "}")
     lines.append(r" $\text{Bot}:$ & " + " & ".join(var_names) + r" \\")
     lines.append(" & " + " & ".join([f"({i})" for i in range(1, col_len + 1)]) + r"\\")
-    lines.append(r"\hline")
+    lines.append(r"\midrule")
     for key in [
         "winner_coef",
         "winner_stderr",
@@ -113,7 +123,7 @@ def render_latex_table(
                 display_name + " " + " ".join(f"& {v}" for v in res_dict[key]) + r" \\"
             )
             lines.append(row)
-    lines.append(r"\hline")
+    lines.append(r"\bottomrule")
     lines.append(r"\end{tabular}")
     return "\n".join(lines)
 
@@ -122,8 +132,6 @@ if __name__ == "__main__":
     pft = pd.read_csv(f"{PROCESSED_DATA_PATH}/pft.csv")
     # Ensure all group indicators exist
     pft = pft.loc[(pft["winner"] == 1) | (pft["neutral"] == 1) | (pft["loser"] == 1)]
-    unmigrated = pft.loc[pft["category"].isin(["pumpfun", "pre_trump_pumpfun"])].copy()
-    migrated = pft.loc[pft["category"].isin(["raydium", "pre_trump_raydium"])].copy()
 
     res_dict: Dict[str, List[Any]] = {
         k: []
@@ -150,8 +158,6 @@ if __name__ == "__main__":
 
     for sample, df in [
         ("All", pft),
-        ("Unmigrated", unmigrated),
-        ("Migrated", migrated),
     ]:
         for x_var in X_VAR_KOL_INTERACTION:
             model = run_regression_three_groups(df, x_var, Y_VAR)
@@ -173,7 +179,9 @@ if __name__ == "__main__":
                     else ""
                 )
                 res_dict[f"{dict_prefix}_stderr"].append(
-                    f"({model.bse[var]:.2f})" if var in model.bse else ""
+                    f"({model.params[var] / model.bse[var]:.2f})"
+                    if var in model.params
+                    else ""
                 )
 
             res_dict["obs"].append(f"{int(model.nobs)}")

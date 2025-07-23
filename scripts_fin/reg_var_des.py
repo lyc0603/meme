@@ -5,28 +5,30 @@ from environ.constants import (
     NAMING_DICT,
     PROFIT_NAMING_DICT,
     PFM_NAMING_DICT,
+    ID_DICT,
 )
 
 DES_DICT = {
     # Bundle Bot
-    "launch_bundle": "Dummy variable that equals 1 if the meme coin has launch bundle, 0 otherwise.",
-    # "launch_bundle_transfer": "Dummy variable that equals 1 if the meme coin has creator wallet funded launch bundle, 0 otherwise.",
-    # "bundle_creator_buy": "Dummy variable that equals 1 if the meme coin has any creator wallet funded bundle buy, 0 otherwise.",
-    # "bundle_launch": "Dummy variable that equals 1 if the meme coin has any launch bundle, 0 otherwise.",
-    "bundle_bot": "Dummy variable that equals 1 if the number of buy and sell bundles is above the sample median, 0 otherwise.",
+    "launch_bundle": "Dummy variable equal to 1 if the meme coin has rat bot, 0 otherwise.",
+    "sniper_bot": "Dummy variable equal to 1 if the meme coin has sniper bot, 0 otherwise.",
     # Volume Bot / Wash Trading Bot
-    "volume_bot": "Dummy variable that equals 1 if there are volume bots in this project, 0 otherwise.",
+    "volume_bot": "Dummy variable equal to 1 if the meme coin has wash trading bot, 0 otherwise.",
     # Comments Bot
-    "bot_comment_num": "Dummy variable that equals 1 if there are comment bots in this project, 0 otherwise.",
+    "bot_comment_num": "Dummy variable equal to 1 if the meme coin has comment bot, 0 otherwise.",
     # Performance Metrics
-    "max_ret": "Maximum log return of the meme coin within 12 hours after its migration.",
+    "max_ret": "Maximum log return of the meme coin.",
     "pre_migration_duration": "Natural logarithm of seconds between the meme coin's launch and its migration.",
-    "pump_duration": "Natural logarithm of seconds between the migration and the peak price of the meme coin.",
-    "dump_duration": "Natural logarithm of seconds between the peak price and the 90\% price drop of the meme coin.",
-    "number_of_traders": "Natural logarithm of the number of non-bot traders who control one or multiple wallets and trade the meme coin between the launch and 12 hours after its migration.",
+    "pump_duration": "Natural logarithm of seconds between the launch and the peak price of the meme coin.",
+    "dump_duration": "Natural logarithm of seconds between the peak price and the 90\% drop of the circulating supply.",
+    "number_of_traders": "Natural logarithm of the number of non-bot traders who control one or multiple wallets and trade the meme coin.",
     # Profit
-    "profit": "Each trader's profit and loss from a given meme coin between the launch and 12 hours after its migration",
-    "creator": "Dummy variable that equals 1 if the trader is the meme coin's creator, 0 otherwise.",
+    "profit": "Each trader's profit and loss from a given meme coin",
+    "creator": "Dummy variable equal to 1 if the trader is the meme coin's creator, 0 otherwise.",
+    "sniper": "Dummy variable equal to 1 if the trader is a sniper bot, 0 otherwise.",
+    "winner": "Dummy variable equal to 1 if the t-statistic of the trader's profit is greater than 2.576, 0 otherwise.",
+    "loser": "Dummy variable equal to 1 if the t-statistic of the trader's profit is less than -2.576, 0 otherwise.",
+    "neutral": "Dummy variable equal to 1 if the t-statistic of the trader's profit is between -2.576 and 2.576, 0 otherwise.",
 }
 
 
@@ -34,13 +36,14 @@ naming_dict = {
     **NAMING_DICT,
     **PROFIT_NAMING_DICT,
     **PFM_NAMING_DICT,
+    **ID_DICT,
 }
 
 latex_str = "\\begin{tabularx}{\\textwidth}{lX}\\hline\n"
 latex_str += "Variable & Description \\\\\n\\hline\n"
 
-for var, var_name in naming_dict.items():
-    latex_str += f"{var_name} & {DES_DICT[var]} \\\\\n"
+for var, var_des in DES_DICT.items():
+    latex_str += f"{naming_dict[var]} & {var_des} \\\\\n"
 
 latex_str += "\\hline\n\\end{tabularx}\n"
 
