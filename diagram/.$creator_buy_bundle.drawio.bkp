@@ -37,7 +37,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="xsM1BEv939oAehP6_Vt--19" value="\(a_1\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;SOL&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
-          <mxGeometry x="393" y="370" width="60" height="20" as="geometry" />
+          <mxGeometry x="393" y="375" width="60" height="20" as="geometry" />
         </mxCell>
         <mxCell id="Fb3_g8i6-2pTsYW1MxMN-9" value="" style="html=1;verticalLabelPosition=bottom;align=center;labelBackgroundColor=#ffffff;verticalAlign=top;strokeWidth=2;strokeColor=#008A00;shadow=0;dashed=0;shape=mxgraph.ios7.icons.wallet;" parent="1" vertex="1">
           <mxGeometry x="460" y="380" width="30" height="20" as="geometry" />
@@ -63,10 +63,10 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="Fb3_g8i6-2pTsYW1MxMN-13" value="\(b_1\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;SOL&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
-          <mxGeometry x="393" y="409" width="60" height="20" as="geometry" />
+          <mxGeometry x="393" y="414" width="60" height="20" as="geometry" />
         </mxCell>
         <mxCell id="Fb3_g8i6-2pTsYW1MxMN-15" value="\(c_1\)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp;SOL&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
-          <mxGeometry x="393" y="451" width="60" height="20" as="geometry" />
+          <mxGeometry x="393" y="454" width="60" height="20" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

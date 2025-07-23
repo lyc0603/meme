@@ -48,8 +48,8 @@
         <mxCell id="Fb3_g8i6-2pTsYW1MxMN-11" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.033;entryY=0.6;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=classicThin;endFill=1;curved=0;" parent="1" source="xsM1BEv939oAehP6_Vt--3" target="Fb3_g8i6-2pTsYW1MxMN-9" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="400" y="430" />
-              <mxPoint x="400" y="392" />
+              <mxPoint x="380" y="430" />
+              <mxPoint x="380" y="392" />
             </Array>
           </mxGeometry>
         </mxCell>
@@ -57,8 +57,8 @@
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="460" y="471" as="targetPoint" />
             <Array as="points">
-              <mxPoint x="400" y="430" />
-              <mxPoint x="400" y="471" />
+              <mxPoint x="380" y="430" />
+              <mxPoint x="380" y="471" />
             </Array>
           </mxGeometry>
         </mxCell>
