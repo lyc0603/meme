@@ -2,6 +2,9 @@
 
 from multiprocessing import Process, Queue, cpu_count
 
+import json
+import pickle
+import os
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -10,9 +13,19 @@ from environ.constants import PROCESSED_DATA_PATH, SOL_TOKEN_ADDRESS
 from environ.data_class import NewTokenPool
 from environ.meme_analyzer import MemeAnalyzer
 from environ.sol_fetcher import import_pool
+from environ.utils import handle_first_wash_bot, handle_first_comment_bot
 
 NUM_OF_OBSERVATIONS = 1000
 SOL_TOKEN_ADDRESS = "So11111111111111111111111111111111111111112"
+
+
+wt_set = set()
+
+for task in ["wt", "cm"]:
+    if os.path.exists(PROCESSED_DATA_PATH / "wt_cm" / f"delta_set_{task}.pkl"):
+        with open(PROCESSED_DATA_PATH / "wt_cm" / f"delta_set_{task}.pkl", "rb") as f:
+            wt_set_task = pickle.load(f)
+        wt_set.update(wt_set_task)
 
 
 def worker(tq: Queue, rq: Queue, chain: str):
@@ -50,6 +63,8 @@ def worker(tq: Queue, rq: Queue, chain: str):
             "number_of_traders": meme.get_number_of_traders(),
         }
 
+        time_trader_dict = meme.get_time_traders(wt_set) if wt_set else {}
+
         bot_dict = {
             # Launch Bundle Bot
             "launch_bundle": launch_bundle,
@@ -62,7 +77,7 @@ def worker(tq: Queue, rq: Queue, chain: str):
             "sniper_bot": meme.get_sniper_bot(),
         }
 
-        rows = []
+        trader_rows = []
         for trader_add, trader in meme.traders.items():
             row = {
                 "token_address": token_add,
@@ -77,7 +92,13 @@ def worker(tq: Queue, rq: Queue, chain: str):
             }
             for x_var, x_var_value in bot_dict.items():
                 row[x_var] = x_var_value
-            rows.append(row)
+            trader_rows.append(row)
+
+        # Handle first wash-trading bot
+        wash_trading_bot_rows = handle_first_wash_bot(meme, token_add, meme.launch_time)
+
+        # Handle first comment of the first bot
+        comment_bot_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
 
         pfm_df = pd.DataFrame(
             {
@@ -89,7 +110,15 @@ def worker(tq: Queue, rq: Queue, chain: str):
             index=[0],
         )
 
-        rq.put((pfm_df, rows))
+        rq.put(
+            (
+                pfm_df,
+                trader_rows,
+                wash_trading_bot_rows,
+                comment_bot_rows,
+                time_trader_dict,
+            )
+        )
 
 
 if __name__ == "__main__":
@@ -115,14 +144,22 @@ if __name__ == "__main__":
         for _ in range(num_workers):
             task_queue.put(None)
 
-        profit_rows = []
         pfm_rows = []
+        profit_rows = []
+        wash_rows = []
+        comment_rows = []
+        time_trader_rows = {}
 
         with tqdm(total=len(all_pools)) as pbar:
             for _ in range(len(all_pools)):
-                pfm_row, profit_row = result_queue.get()
-                profit_rows.extend(profit_row)
+                pfm_row, profit_row, wash_row, comment_row, time_trader_row = (
+                    result_queue.get()
+                )
                 pfm_rows.append(pfm_row)
+                profit_rows.extend(profit_row)
+                wash_rows.extend(wash_row)
+                comment_rows.extend(comment_row)
+                time_trader_rows[pfm_row["token_address"].values[0]] = time_trader_row
                 pbar.update(1)
 
         # Join all processes
@@ -148,3 +185,24 @@ if __name__ == "__main__":
 
         pft = pd.DataFrame(profit_rows)
         pft.to_csv(f"{PROCESSED_DATA_PATH}/pft_{chain}.csv", index=False)
+
+        # Save wash trading bots
+        os.makedirs(PROCESSED_DATA_PATH / "wt_cm", exist_ok=True)
+        bot_df = pd.DataFrame(wash_rows)
+        bot_df.to_csv(
+            f"{PROCESSED_DATA_PATH}/wt_cm/wash_trading_{chain}.csv", index=False
+        )
+
+        # Save comment bot data (only first comment of first bot)
+        comment_df = pd.DataFrame(comment_rows)
+        comment_df.to_csv(
+            f"{PROCESSED_DATA_PATH}/wt_cm/comment_bots_{chain}.csv", index=False
+        )
+
+        # Save time traders data
+        with open(
+            PROCESSED_DATA_PATH / "wt_cm" / f"time_traders_{chain}.json",
+            "w",
+            encoding="utf-8",
+        ) as f:
+            json.dump(time_trader_rows, f)

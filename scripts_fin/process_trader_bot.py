@@ -1,10 +1,12 @@
 """Class for Meme Environment."""
 
+import os
 import datetime
 import json
 import pickle
 from collections import defaultdict
 from datetime import UTC
+from datetime import timezone
 from pathlib import Path
 from typing import Any, Optional
 from multiprocessing import Pool, cpu_count, Manager
@@ -27,6 +29,7 @@ class MemeBase:
     def __init__(self, new_token_pool: NewTokenPool):
         self.new_token_pool = new_token_pool
         self.txn = self._load_pickle("txn")
+        self.comment = self._load_jsonl("comment")
         (
             self.migrate_block,
             self.launch_block,
@@ -71,6 +74,19 @@ class MemeBase:
         )
         with open(path, "rb") as f:
             return pickle.load(f)
+
+    def _load_jsonl(self, attr: str):
+        """Method to load the jsonl file of the meme token"""
+        path = (
+            f"{PROCESSED_DATA_PATH}/{attr}/kol_non_kol/"
+            f"{self.new_token_pool.pool_add}.jsonl"
+        )
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                file = f.readlines()
+                return [json.loads(line) for line in file]
+        else:
+            return []
 
     def _build_transfer_swap(self) -> tuple[list[str], dict[str, list]]:
         """Method to get the unique non-swap transfers of the meme token"""
@@ -229,6 +245,15 @@ class MemeAnalyzer(MemeBase):
 
         return bundle_launch
 
+    # Metrics for Comment Bot
+    def get_comment_bot(self) -> int:
+        """Method to get the number of positive comments"""
+
+        for reply in self.comment:
+            if reply["bot"]:
+                return 1
+        return 0
+
     # Metrics for Volume Bot
     def get_volume_bot(self) -> bool:
         """Method to check if the meme token is a volume bot"""
@@ -290,6 +315,7 @@ def analyze_token(token_add: str) -> Optional[tuple[str, dict]]:
             "launch_bundle": int(bool(meme.get_bundle_launch_buy_sell_num())),
             "volume_bot": meme.get_volume_bot(),
             "sniper_bot": meme.get_sniper_bot(),
+            "comment_bot": meme.get_comment_bot(),
         }
 
         return token_add, bot_dict

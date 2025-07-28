@@ -74,7 +74,7 @@ def run_regression_three_groups(
     )
     # add constant for intercept
     y = df[y_var]
-    return sm.OLS(y, X).fit(
+    return sm.WLS(y, X, weights=df["weight"]).fit(
         cov_type="cluster",
         cov_kwds={"groups": df["trader_address"]},
     )

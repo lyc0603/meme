@@ -55,9 +55,14 @@ KOL_NAMING_DICT = {
     "neutral": "$\\text{Neutral}_{i}$",
 }
 
-ID_DICT = {
+ROLE_DICT = {
     "creator": "$\\text{Creator}_{i}$",
     "sniper": "$\\text{Sniper}_{i}$",
+}
+
+
+ID_DICT = {
+    **ROLE_DICT,
     "winner": "$\\text{Winner}_{i}$",
     "loser": "$\\text{Loser}_{i}$",
     "neutral": "$\\text{Neutral}_{i}$",

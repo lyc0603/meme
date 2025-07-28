@@ -14,6 +14,7 @@ from web3._utils.events import get_event_data
 from web3._utils.filters import construct_event_filter_params
 from web3.datastructures import AttributeDict
 from web3.providers import HTTPProvider
+from environ.meme_analyzer import MemeAnalyzer
 
 from environ.constants import (
     DATA_PATH,
@@ -111,3 +112,44 @@ def _fetch_events_for_all_contracts(
         all_events.append(evt)
 
     return all_events
+
+
+def handle_first_comment_bot(
+    meme: MemeAnalyzer, token_add: str, launch_time: Any
+) -> list[dict]:
+    """Extract only the first comment of the earliest comment bot."""
+    bot_comments = [c for c in meme.comment_list if c["bot"]]
+    if not bot_comments:
+        return []
+    earliest = min(bot_comments, key=lambda c: c["time"])
+    return [
+        {
+            "token_address": token_add,
+            "bot_address": earliest["replier"],
+            "first_comment_time": earliest["time"],
+            "launch_time": launch_time,
+        }
+    ]
+
+
+def handle_first_wash_bot(
+    meme: MemeAnalyzer, token_add: str, launch_time: Any
+) -> list[dict]:
+    """Extract the first wash-trading bot based on earliest first_trade_time."""
+    valid_bots = [
+        (addr, bot)
+        for addr, bot in meme.bots.items()
+        if bot.first_trade_time is not None
+    ]
+    if not valid_bots:
+        return []
+    bot_add, bot = min(valid_bots, key=lambda pair: pair[1].first_trade_time)
+    return [
+        {
+            "token_address": token_add,
+            "bot_address": bot_add,
+            "wash_trading_score": bot.wash_trading_score,
+            "first_trade_time": bot.first_trade_time,
+            "launch_time": launch_time,
+        }
+    ]

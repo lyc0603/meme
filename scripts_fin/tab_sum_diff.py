@@ -33,15 +33,24 @@ def compare_groups(df1, df2, var_list):
     for var in var_list:
         if var not in df1 or var not in df2:
             continue
+
         x = df1[var].dropna()
         y = df2[var].dropna()
+        if var == "pre_migration_duration":
+            x = x / len(df1)
+            y = y / len(df2)
+        else:
+            w1 = df1["weight"].dropna()
+            w2 = df2["weight"].dropna()
+            x = x * w1 / w1.sum()
+            y = y * w2 / w2.sum()
         if len(x) < 2 or len(y) < 2:
             continue
         t_stat, p_val = ttest_ind(y, x, equal_var=False)
         results[var] = {
-            "mean_1": x.mean(),
-            "mean_2": y.mean(),
-            "diff": y.mean() - x.mean(),
+            "mean_1": x.sum(),
+            "mean_2": y.sum(),
+            "diff": y.sum() - x.sum(),
             "t_stat": t_stat,
             "stars": significance_stars(p_val),
         }

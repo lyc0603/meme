@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Any, Dict, List
+from xml.parsers.expat import model
 
 import pandas as pd
 import statsmodels.api as sm
@@ -41,13 +42,15 @@ def logit_regression(
     df_reg = df.dropna(subset=x_var_list + [y_var]).copy()
     X = sm.add_constant(df_reg[x_var_list])
     y = df_reg[y_var]
-    model = sm.Logit(y, X).fit()
+    model = sm.GLM(
+        y, X, family=sm.families.Binomial(), var_weights=df_reg["weight"]
+    ).fit()
     return {
         "model": model,
         "params": model.params,
         "pvalues": model.pvalues,
         "bse": model.bse,
-        "r2": model.prsquared,
+        "r2": 1 - model.deviance / model.null_deviance,
         "nobs": int(model.nobs),
     }
 
@@ -132,6 +135,12 @@ if __name__ == "__main__":
     )
 
     # Run regressions for all, pre-trump, and post-trump
+
+    pre_trump_pfm = pfm[pfm["period"] == "Pre-Trump"]
+    post_trump_pfm = pfm[pfm["period"] == "Post-Trump"]
+    pre_trump_pfm["weight"] = pre_trump_pfm["weight"]
+    post_trump_pfm["weight"] = post_trump_pfm["weight"]
+
     results = {
         "all": logit_regression(pfm, X_VAR_LIST),
         "pre": logit_regression(pfm[pfm["period"] == "Pre-Trump"], X_VAR_LIST),

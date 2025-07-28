@@ -66,7 +66,7 @@ def reg_survive(
         df_reg = df.dropna(subset=[y_var]).copy()
         X = sm.add_constant(df_reg[x_var_list])
         y = df_reg[y_var]
-        model = sm.OLS(y, X).fit()
+        model = sm.WLS(y, X, weights=df_reg["weight"]).fit()
 
         results[y_var] = {
             "model": model,

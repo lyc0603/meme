@@ -72,7 +72,9 @@ def run_regression(
         }
     )
     y = df[y_var]
-    return sm.OLS(y, X).fit()
+    return sm.WLS(y, X, weights=df["weight"]).fit(
+        cov_type="cluster", cov_kwds={"groups": df["token_address"]}
+    )
 
 
 def render_latex_table(
@@ -148,6 +150,7 @@ if __name__ == "__main__":
 
         for x_var in X_VAR_CREATOR_INTERACTION:
             model = run_regression(df, x_var, Y_VAR)
+            print(model.summary())
             var_names.append(PROFIT_NAMING_DICT.get(x_var, x_var))
 
             # Fill results

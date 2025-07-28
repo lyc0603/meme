@@ -16,7 +16,7 @@ from environ.prompt import (
 from environ.agent import send_batch, retrieve_batch
 from tqdm import tqdm
 
-client = OpenAI(api_key=os.getenv("OPENAI_API"))
+# client = OpenAI(api_key=os.getenv("OPENAI_API"))
 
 BATCH_NAME = "kol_non_kol"
 
@@ -51,73 +51,73 @@ for file_path in tqdm(comments_path):
 comments_batch.append(comments_chunk)
 
 
-def batch_few_shot_learning(
-    custom_idx: str,
-    user_msg: str,
-    system_instruction: str,
-    few_shot_example: str,
-    json_schema: str,
-    model: str = "gpt-4o-mini",
-) -> dict:
-    """Function to implement the few-shot learning"""
-    request_payload = {
-        "custom_id": custom_idx,
-        "method": "POST",
-        "url": "/v1/chat/completions",
-        "body": {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system_instruction},
-                *few_shot_example,
-                {"role": "user", "content": user_msg},
-            ],
-            "max_tokens": 1000,
-            "response_format": {
-                "type": "json_schema",
-                "json_schema": json_schema,
-            },
-            "temperature": 0,
-        },
-    }
-    return request_payload
+# def batch_few_shot_learning(
+#     custom_idx: str,
+#     user_msg: str,
+#     system_instruction: str,
+#     few_shot_example: str,
+#     json_schema: str,
+#     model: str = "gpt-4o-mini",
+# ) -> dict:
+#     """Function to implement the few-shot learning"""
+#     request_payload = {
+#         "custom_id": custom_idx,
+#         "method": "POST",
+#         "url": "/v1/chat/completions",
+#         "body": {
+#             "model": model,
+#             "messages": [
+#                 {"role": "system", "content": system_instruction},
+#                 *few_shot_example,
+#                 {"role": "user", "content": user_msg},
+#             ],
+#             "max_tokens": 1000,
+#             "response_format": {
+#                 "type": "json_schema",
+#                 "json_schema": json_schema,
+#             },
+#             "temperature": 0,
+#         },
+#     }
+#     return request_payload
 
 
-result_batch = []
+# result_batch = []
 
-for comments in comments_batch:
-    batch_input_file_path = (
-        f"{PROCESSED_DATA_PATH}/{BATCH_NAME}_comments_sentiment_batch.jsonl"
-    )
+# for comments in comments_batch:
+#     batch_input_file_path = (
+#         f"{PROCESSED_DATA_PATH}/{BATCH_NAME}_comments_sentiment_batch.jsonl"
+#     )
 
-    with open(batch_input_file_path, "w", encoding="utf-8") as out_f:
-        for idx, comment in tqdm(
-            comments.items(),
-            desc="Preparing batch inputs",
-            total=len(comments),
-            leave=False,
-        ):
-            req = batch_few_shot_learning(
-                custom_idx=idx,
-                user_msg=comment["comment"]["text"],
-                system_instruction=SYSTEM_INSTRUCTION_COMMENT_BOT,
-                few_shot_example=FEW_SHOT_EXAMPLES_COMMENT_BOT,
-                json_schema=JSON_SCHEMA_COMMENT_BOT,
-                model="gpt-4o-mini",
-            )
-            out_f.write(json.dumps(req, ensure_ascii=False) + "\n")
+#     with open(batch_input_file_path, "w", encoding="utf-8") as out_f:
+#         for idx, comment in tqdm(
+#             comments.items(),
+#             desc="Preparing batch inputs",
+#             total=len(comments),
+#             leave=False,
+#         ):
+#             req = batch_few_shot_learning(
+#                 custom_idx=idx,
+#                 user_msg=comment["comment"]["text"],
+#                 system_instruction=SYSTEM_INSTRUCTION_COMMENT_BOT,
+#                 few_shot_example=FEW_SHOT_EXAMPLES_COMMENT_BOT,
+#                 json_schema=JSON_SCHEMA_COMMENT_BOT,
+#                 model="gpt-4o-mini",
+#             )
+#             out_f.write(json.dumps(req, ensure_ascii=False) + "\n")
 
-    batch_id = send_batch(batch_input_file_path)
-    result = retrieve_batch(batch_id)
+#     batch_id = send_batch(batch_input_file_path)
+#     result = retrieve_batch(batch_id)
 
-    result_batch.append(result)
+#     result_batch.append(result)
 
-with open(
-    f"{PROCESSED_DATA_PATH}/{BATCH_NAME}_comments_sentiment_batch_res.jsonl",
-    "w",
-    encoding="utf-8",
-) as file:
-    for res in result_batch:
-        file.write(json.dumps(res, ensure_ascii=False) + "\n")
+# with open(
+#     f"{PROCESSED_DATA_PATH}/{BATCH_NAME}_comments_sentiment_batch_res.jsonl",
+#     "w",
+#     encoding="utf-8",
+# ) as file:
+#     for res in result_batch:
+#         file.write(json.dumps(res, ensure_ascii=False) + "\n")
 
 with open(
     f"{PROCESSED_DATA_PATH}/{BATCH_NAME}_comments_sentiment_batch_res.jsonl",
@@ -139,7 +139,7 @@ for comment in comments.values():
     token_dict[comment["token_add"]].append(comment)
 
 os.makedirs(PROCESSED_DATA_PATH / "comment" / BATCH_NAME, exist_ok=True)
-for token, comment_list in token_dict.items():
+for token, comment_list in tqdm(token_dict.items(), desc="Saving comments"):
     with open(
         PROCESSED_DATA_PATH / "comment" / BATCH_NAME / f"{token}.jsonl",
         "a",

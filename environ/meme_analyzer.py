@@ -50,14 +50,21 @@ class Trader(Account):
         self.swaps: list[Swap] = []
         self.non_swap_transfers: list[Transfer] = []
         self.wash_trading_score: Optional[float] = None
+        self.first_trade_time: Optional[datetime.datetime] = None
 
-    def swap(self, swap: Swap) -> None:
+    def swap(self, swap: Swap, date: datetime.datetime) -> None:
         """Method to handle swap transactions"""
         if swap.typ == "Buy":
             self.buy(swap)
         elif swap.typ == "Sell":
             self.sell(swap)
         self.swaps.append(swap)
+        if not self.first_trade_time:
+            self.first_trade_time = date.replace(tzinfo=timezone.utc)
+        else:
+            self.first_trade_time = min(
+                self.first_trade_time, date.replace(tzinfo=timezone.utc)
+            )
 
     def buy(self, swap) -> None:
         """Method to handle buy transactions"""
@@ -96,8 +103,6 @@ class MemeAnalyzer(MemeBase):
         new_token_pool: NewTokenPool,
     ):
         super().__init__(new_token_pool)
-        self.trading_volume = 0
-        self.wash_trading_volume = 0
         self.prc_date_df = self._build_price_df()
         self.comment_list = self._build_comment_list()
         self.bundle = self._build_bundle()
@@ -290,29 +295,6 @@ class MemeAnalyzer(MemeBase):
         # Calculate dump duration
         return int((dump_ts - max_price_ts).total_seconds())
 
-        # max_price = self.prc_date_df["price"].max()
-        # min_price = max(0.1 * max_price, 1e-7)
-        # print(f"max_price: {max_price}, min_price: {min_price}")
-
-        # # Get timestamps of transactions at peak price
-        # max_price_ts = min(
-        #     self.prc_date_df.loc[self.prc_date_df["price"] == max_price].index
-        # )
-
-        # post_max_df = self.prc_date_df.loc[self.prc_date_df.index > max_price_ts].copy()
-        # dump_ts = post_max_df.loc[post_max_df["price"] < min_price].index
-
-        # # Get last trade timestamp
-        # last_trade_ts = self.prc_date_df.index[-1]
-
-        # if dump_ts.empty:
-        #     return int((last_trade_ts - self.launch_time).total_seconds())
-
-        # dump_ts = min(dump_ts)
-
-        # # Calculate dump duration
-        # return int((dump_ts - max_price_ts).total_seconds())
-
     def get_number_of_traders(self) -> int:
         """Method to get the number of traders"""
         # non-bot-transfer trader plus the creator
@@ -395,7 +377,7 @@ class MemeAnalyzer(MemeBase):
             trader.sniper = swapper in self.sniper
             sorted_swaps = sorted(swaps_list, key=lambda x: x["block"])
             for swap in sorted_swaps:
-                trader.swap(swap["acts"][0])
+                trader.swap(swap["acts"][0], swap["date"])
             traders[(swapper,)] = trader
         return traders
 

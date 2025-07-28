@@ -30,7 +30,9 @@ class MemeBase:
             self.pool_add,
             self.launch_txn_id,
         ) = self._load_creation()
-        self.non_swap_transfers, self.swappers = self._build_transfer_swap()
+        self.non_swap_transfers, self.swappers, self.time_traders = (
+            self._build_transfer_swap()
+        )
 
     def _load_pickle(self, attr: str):
         """Method to load the pickle file of the meme token"""
@@ -93,16 +95,34 @@ class MemeBase:
                     non_swap_transfers_hash.add(transfer.txn_hash)
 
         swappers = defaultdict(list)
-        for swap in self.get_acts(Swap):
+        time_traders = {}
+        unique_traders = set()
+        for i, swap in enumerate(self.get_acts(Swap)):
             swappers[swap["maker"]].append(swap)
             non_swap_transfers_hash.discard(swap["txn_hash"])
+
+            delta_int = int(
+                (
+                    swap["date"].replace(tzinfo=timezone.utc) - self.launch_time
+                ).total_seconds()
+                / 60
+            )
+            if i == 0:
+                last_delta = delta_int
+
+            if delta_int > last_delta:
+                for delta in range(last_delta, delta_int):
+                    time_traders[delta] = len(unique_traders)
+                last_delta = delta_int
+
+            unique_traders.add(swap["maker"])
 
         non_swap_transfers = []
         for transfer in self.transfer:
             if transfer.txn_hash in non_swap_transfers_hash:
                 non_swap_transfers.append(transfer)
 
-        return non_swap_transfers, swappers
+        return non_swap_transfers, swappers, time_traders
 
     def get_acts(self, act: type) -> list:
         """Method to get the swap transaction of the meme token"""
@@ -124,3 +144,7 @@ class MemeBase:
             )
         acts_list.sort(key=lambda x: x["date"])
         return acts_list
+
+    def get_time_traders(self, subset: set) -> dict[int, int]:
+        """Method to get the time traders of the meme token"""
+        return {k: v for k, v in self.time_traders.items() if k in subset}

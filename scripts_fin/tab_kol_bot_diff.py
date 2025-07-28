@@ -1,7 +1,7 @@
 """This script compares financial metrics across Winner, Loser, and Neutral projects in a single LaTeX table with mean columns."""
 
+import numpy as np
 import pandas as pd
-from scipy.stats import ttest_ind
 from environ.constants import (
     TABLE_PATH,
     PROCESSED_DATA_PATH,
@@ -9,7 +9,6 @@ from environ.constants import (
     PFM_NAMING_DICT,
     ID_DICT,
 )
-from ast import literal_eval
 
 
 def significance_stars(p):
@@ -29,13 +28,6 @@ X_VAR_PANEL = (
 )
 PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT, **ID_DICT}
 
-
-# Load project performance data
-# trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats.csv")
-# trader_t = trader_t.loc[trader_t["meme_num"] <= 1000].dropna(subset=["t_stat"])
-# trader_t["winner"] = trader_t["t_stat"] > 2.576
-# trader_t["loser"] = trader_t["t_stat"] < -2.576
-# trader_t["neutral"] = trader_t["t_stat"].abs() <= 2.576
 
 pft = pd.read_csv(PROCESSED_DATA_PATH / "pft.csv")
 pft = pft.loc[(pft["winner"] == 1) | (pft["loser"] == 1) | (pft["neutral"] == 1)]
@@ -58,79 +50,58 @@ pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
 pfm = pft.merge(pfm, how="left", on="token_address")
 
 # aggreagete by trader
-pfm = (
-    pfm.groupby(["trader_address"])[["winner", "loser", "neutral", *X_VAR_PANEL]]
-    .mean()
-    .reset_index()
+# Define columns to average
+AGG_VARS = [_ for _ in X_VAR_PANEL if _ not in ["winner", "loser", "neutral"]]
+
+# Define aggregation dict
+agg_dict = {
+    col: lambda x: np.average(x, weights=pfm.loc[x.index, "weight"]) for col in AGG_VARS
+}
+
+# Include winner/loser/neutral as mode or max (binary), weight as sum
+agg_dict.update(
+    {
+        "winner": "max",
+        "loser": "max",
+        "neutral": "max",
+        "creator": "max",
+        "sniper": "max",
+    }
 )
 
-# If the creator and sniper greater than 0, set to 1, else 0
-pfm["creator"] = pfm["creator"].apply(lambda x: int(x > 0))
-pfm["sniper"] = pfm["sniper"].apply(lambda x: int(x > 0))
+# Perform weighted aggregation
+pfm = pfm.groupby("trader_address").agg(agg_dict).reset_index()
 
 winner = pfm.loc[pfm["winner"] == 1]
 loser = pfm.loc[pfm["loser"] == 1]
 neutral = pfm.loc[pfm["neutral"] == 1]
 
-
-def ttest_wrapper(df1, df2, var):
-    """Perform t-test and return difference and t-statistic."""
-    x, y = df1[var].dropna(), df2[var].dropna()
-    if len(x) < 2 or len(y) < 2:
-        return "", ""
-    t_stat, p_val = ttest_ind(y, x, equal_var=False)
-    diff = y.mean() - x.mean()
-    return f"{diff:.2f}", f"{t_stat:.2f}{significance_stars(p_val)}"
-
-
 # LaTeX header
 lines = [
-    "\\begin{tabular}{lcccccccccccc}",
-    "\\hline",
-    "& Neutral & Winner & & & Neutral & Loser & & & Winner & Loser & & \\\\",
-    "\\cline{2-13}",
-    "& Mean & Mean & Diff & t & Mean & Mean & Diff & t & Mean & Mean & Diff & t \\\\",
-    "\\hline",
+    "\\begin{tabular}{lccc}",
+    "\\toprule",
+    "& \\multicolumn{3}{c}{Mean} \\\\",
+    "\\cmidrule{2-4}",
+    "& Winner & Neutral & Loser \\\\",
+    "\\midrule",
 ]
 
-
-# Loop through all variables and compute comparisons
-for var in X_VAR_PANEL:
-    if var not in neutral.columns:
+# Mean values only
+for var in [_ for _ in X_VAR_PANEL if _ not in ["winner", "loser", "neutral"]]:
+    if var not in pfm.columns:
         continue
-    # Means
+    mean_w = winner[var].mean()
     mean_n = neutral[var].mean()
     mean_l = loser[var].mean()
-    mean_w = winner[var].mean()
-
-    # T-tests
-    diff_wn, t_wn = ttest_wrapper(neutral, winner, var)
-    diff_ln, t_ln = ttest_wrapper(neutral, loser, var)
-    diff_wl, t_wl = ttest_wrapper(winner, loser, var)
-
     lines.append(
-        f"{PANEL_NAMING_DICT[var]} & "
-        f"{mean_n:.2f} & {mean_w:.2f} & {diff_wn} & {t_wn} & "
-        f"{mean_n:.2f} & {mean_l:.2f} & {diff_ln} & {t_ln} & "
-        f"{mean_w:.2f} & {mean_l:.2f} & {diff_wl} & {t_wl} \\\\"
+        f"{PANEL_NAMING_DICT[var]} & {mean_w:.2f} & {mean_n:.2f} & {mean_l:.2f} \\\\"
     )
 
-obs_n = len(neutral)
-obs_w = len(winner)
-obs_l = len(loser)
-
-lines.append(
-    "\\hline",
-)
-
-lines.append(
-    f"Observations & {obs_n} & {obs_w} & & & "
-    f"{obs_n} & {obs_l} & & & "
-    f"{obs_w} & {obs_l} & & \\\\"
-)
-
-# LaTeX footer
-lines.extend(["\\hline", "\\end{tabular}"])
+# Observation counts
+lines.append("\\midrule")
+lines.append(f"Observations & {len(winner)} & {len(neutral)} & {len(loser)} \\\\")
+lines.append("\\bottomrule")
+lines.append("\\end{tabular}")
 
 # Write to .tex
 with open(TABLE_PATH / "wln_bot_diff.tex", "w", encoding="utf-8") as f:

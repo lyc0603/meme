@@ -4,13 +4,23 @@ import json
 import pandas as pd
 import matplotlib.pyplot as plt
 from environ.constants import PROCESSED_DATA_PATH, FIGURE_PATH
-from environ.constants import NAMING_DICT
 
 # Constants
 CRITICAL_VAL = 2.576
 FONT_SIZE = 18
-BOT_LIST = ["launch_bundle", "volume_bot", "sniper_bot"]
+BOT_LIST = ["launch_bundle", "volume_bot", "sniper_bot", "comment_bot"]
 
+NAMING_DICT = {
+    # bundle bots
+    "launch_bundle": "$\\text{Rat Bot}_{i}$",
+    # "bundle_bot": "$\\text{Bundle Bot}_{i}$",
+    # sniper bots
+    "sniper_bot": "$\\text{Sniper Bot}_{i}$",
+    # volume bots
+    "volume_bot": "$\\text{Wash Trading Bot}_{i}$",
+    # comment bots
+    "comment_bot": "$\\text{Comment Bot}_{i}$",
+}
 
 # Load trader token list
 with open(
@@ -49,7 +59,9 @@ def compute_learning_curve(df: pd.DataFrame) -> pd.DataFrame:
     df = df.loc[df["txn_group"] <= 50]
 
     grouped = (
-        df.groupby("txn_group")[["launch_bundle", "volume_bot", "sniper_bot"]]
+        df.groupby("txn_group")[
+            ["launch_bundle", "volume_bot", "sniper_bot", "comment_bot"]
+        ]
         .mean()
         .reset_index()
     )

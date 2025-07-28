@@ -72,7 +72,9 @@ def run_regression(
         }
     )
     y = df[y_var]
-    return sm.OLS(y, X).fit()
+    return sm.WLS(y, X, weights=df["weight"]).fit(
+        cov_type="cluster", cov_kwds={"groups": df["token_address"]}
+    )
 
 
 def render_latex_two_panel_table(
@@ -143,7 +145,9 @@ if __name__ == "__main__":
     pft = pd.read_csv(f"{PROCESSED_DATA_PATH}/pft.csv")
     samples = {
         "unmigrated": pft.loc[
-            pft["category"].isin(["pumpfun", "pre_trump_pumpfun"])
+            pft["category"].isin(
+                ["pumpfun", "pre_trump_pumpfun", "no_one_care", "pre_trump_no_one_care"]
+            )
         ].copy(),
         "migrated": pft.loc[
             pft["category"].isin(["raydium", "pre_trump_raydium"])

@@ -6,15 +6,15 @@ from environ.constants import (
     PROCESSED_DATA_PATH,
     NAMING_DICT,
     PFM_NAMING_DICT,
-    ID_DICT,
+    ROLE_DICT,
 )
 
 
 # Define variable list and naming
 X_VAR_PANEL = (
-    list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys()) + list(ID_DICT.keys())
+    list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys()) + list(ROLE_DICT.keys())
 )
-PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT, **ID_DICT}
+PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT, **ROLE_DICT}
 
 
 pft = pd.read_csv(PROCESSED_DATA_PATH / "pft.csv")
@@ -41,6 +41,11 @@ winner = pfm.loc[pfm["winner"] == 1]
 loser = pfm.loc[pfm["loser"] == 1]
 neutral = pfm.loc[pfm["neutral"] == 1]
 
+for df in [winner, loser, neutral]:
+    # recalculate the weight
+    for var in X_VAR_PANEL:
+        df[var] = df[var] * df["weight"] / df["weight"].sum()
+
 
 # LaTeX table lines
 lines = [
@@ -56,9 +61,9 @@ lines = [
 for var in X_VAR_PANEL:
     if var not in pfm.columns:
         continue
-    mean_w = winner[var].mean()
-    mean_n = neutral[var].mean()
-    mean_l = loser[var].mean()
+    mean_w = winner[var].sum()
+    mean_n = neutral[var].sum()
+    mean_l = loser[var].sum()
     lines.append(
         f"{PANEL_NAMING_DICT[var]} & {mean_w:.2f} & {mean_n:.2f} & {mean_l:.2f} \\\\"
     )

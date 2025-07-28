@@ -61,7 +61,7 @@ def import_meme(
             )
             # Only keep the unmigrated pools
             if category in ["pre_trump_pumpfun", "pumpfun"]:
-                if meme.check_migrate() | (meme.check_max_purchase_pct() < 0.2):
+                if meme.check_migrate() | (meme.check_max_purchase_pct() >= 0.2):
                     continue
 
             memes.append(meme)
@@ -154,11 +154,18 @@ def worker(tq: Queue, rq: Queue):
 
 
 if __name__ == "__main__":
+
+    NO_ONE_CARE_NAMING = {
+        "pumpfun": "no_one_care",
+        "pre_trump_pumpfun": "pre_trump_no_one_care",
+    }
+
     for chain in [
         "pumpfun",
         "pre_trump_pumpfun",
     ]:
         all_pools = import_meme(chain, NUM_OF_OBSERVATIONS)
+        chain = NO_ONE_CARE_NAMING[chain]
         task_queue = Queue()
         result_queue = Queue()
 
