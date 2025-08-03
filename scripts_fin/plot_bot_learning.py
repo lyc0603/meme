@@ -103,7 +103,10 @@ for bot in BOT_LIST:
 
     # Axis formatting
     ax.set_xlabel("Number of Meme Coin Projects", fontsize=FONT_SIZE)
-    ax.set_ylabel(f"Average {NAMING_DICT[bot]}\nProbability", fontsize=FONT_SIZE)
+    ax.set_ylabel(
+        f"10-Project Rolling Average\n{NAMING_DICT[bot]} Probability",
+        fontsize=FONT_SIZE,
+    )
     ax.tick_params(axis="both", labelsize=FONT_SIZE)
 
     # formatter = ScalarFormatter(useMathText=True)
@@ -116,7 +119,6 @@ for bot in BOT_LIST:
     legend = ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.5, -0.18),
-        title="10-Project Rolling Average",
         ncol=3,
         frameon=True,
         fontsize=FONT_SIZE,
