@@ -117,7 +117,7 @@ for var in [_ for _ in X_VAR_PANEL if _ not in ["winner", "loser", "neutral"]]:
 
 # Observation counts
 lines.append("\\midrule")
-lines.append(f"Observations & {len(winner)} & {len(neutral)} & {len(loser)} \\\\")
+lines.append(f"Observations & {len(winner):,} & {len(neutral):,} & {len(loser):,} \\\\")
 lines.append("\\bottomrule")
 lines.append("\\end{tabular}")
 

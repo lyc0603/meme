@@ -170,7 +170,7 @@ if __name__ == "__main__":
                     if var in model.params
                     else ""
                 )
-            res_dict["obs"].append(f"{int(model.nobs)}")
+            res_dict["obs"].append(f"{(model.nobs):,}")
             res_dict["r2"].append(f"{model.rsquared:.2f}")
 
         # Generate and save table

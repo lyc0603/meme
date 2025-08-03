@@ -148,7 +148,7 @@ def render_multicolumn_latex_table(models, y_name="Exit$_{it}$", var_rename=None
     tab.append(
         "Observations"
         + " & "
-        + " & ".join(str(int(m.nobs)) for m in models.values())
+        + " & ".join(f"{int(m.nobs):,}" for m in models.values())
         + " \\\\"
     )
     tab.append(

@@ -116,7 +116,7 @@ def render_latex_table(
     obs_row = (
         PROFIT_NAMING_DICT["obs"]
         + " "
-        + " ".join(f"& {results[key]['nobs']}" for key in keys)
+        + " ".join(f"& {results[key]['nobs']:,}" for key in keys)
         + r" \\"
     )
     r2_row = (

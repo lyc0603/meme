@@ -99,7 +99,7 @@ for row in result.index:
     if row == "Total":
         lines.append(r"\midrule")
     lines.append(
-        f"{row} & {result.loc[row, 'Total']} &  {result.loc[row, 'Creator']} & {result.loc[row, 'Sniper']} \\\\"
+        f"{row} & {result.loc[row, 'Total']:,} &  {result.loc[row, 'Creator']:,} & {result.loc[row, 'Sniper']:,} \\\\"
     )
 
 lines.extend(["\\bottomrule", "\\end{tabular}"])
