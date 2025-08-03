@@ -14,6 +14,8 @@ from environ.meme_base import MemeBase
 from environ.sol_fetcher import import_pool
 
 INITIAL_PRICE = 2.8e-8
+MAX_INACTIVITY = pd.Timedelta(days=30)
+UPPER_BOUND = 5000
 
 trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats_dep.csv")
 trader_t = trader_t.loc[trader_t["meme_num"] <= 1000].dropna(subset=["t_stat"])
@@ -103,10 +105,12 @@ class MemeAnalyzer(MemeBase):
         new_token_pool: NewTokenPool,
     ):
         super().__init__(new_token_pool)
+        self.bundler = set([self.creator])
         self.prc_date_df = self._build_price_df()
         self.comment_list = self._build_comment_list()
         self.bundle = self._build_bundle()
         self.sniper = self._build_sniper()
+        self.launch_bundle, self.bundle_bot_pct = self._build_bundle_bot()
 
         # analyze traders
         self.traders = self._load_swaps()
@@ -232,97 +236,18 @@ class MemeAnalyzer(MemeBase):
 
         return set([_["maker"] for _ in sniper_txn])
 
-    # Dependent Variables
-    def get_pre_migration_duration(self) -> int:
-        """Method to get the pre-migration duration in seconds"""
-
-        if self.migrate_time:
-            return int(self.migrate_time.timestamp() - self.launch_time.timestamp())
-        else:
-            return np.nan
-
-    def get_max_ret_and_pump_duration(self) -> tuple[float, int]:
-        """Method to get the maximum return and pump duration in seconds"""
-        pre_price = self.prc_date_df["price"].iloc[0]
-        max_price = self.prc_date_df["price"].max()
-
-        # Calculate max return
-        max_return = (max_price - pre_price) / pre_price
-
-        # Get timestamps of transactions at peak price
-        pre_price_ts = self.prc_date_df.index[0]
-        max_price_ts = self.prc_date_df.loc[
-            self.prc_date_df["price"] == max_price
-        ].index
-
-        # Calculate pump duration
-        pump_duration = int((min(max_price_ts) - pre_price_ts).total_seconds())
-
-        return np.log(1 + max_return), pump_duration
-
-    def get_dump_duration(self) -> int:
-        """Method to get the dump duration in seconds"""
-
-        # calculate the cumulative balance
-        balance_df = self.prc_date_df.copy()
-        balance_df["balance"] = balance_df.apply(
-            lambda row: row["base"] if row["typ"] == "Buy" else -row["base"], axis=1
-        )
-        balance_df["cum_balance"] = balance_df["balance"].cumsum()
-
-        # Get the maximum price and its timestamp
-        max_price = self.prc_date_df["price"].max()
-        max_price_ts = min(
-            self.prc_date_df.loc[self.prc_date_df["price"] == max_price].index
-        )
-        max_price_cum_balance = balance_df.loc[
-            balance_df.index == max_price_ts, "cum_balance"
-        ].values[0]
-        post_max_df = balance_df.loc[balance_df.index >= max_price_ts].copy()
-
-        # Calculate the dump threshold as 10% of the maximum cumulative balance
-        dump_balance = 0.1 * max_price_cum_balance
-        dump_ts = post_max_df.loc[(post_max_df["cum_balance"] < dump_balance)].index
-
-        # Get last trade timestamp
-        last_trade_ts = self.prc_date_df.index[-1]
-
-        if dump_ts.empty:
-            return int((last_trade_ts - self.launch_time).total_seconds())
-
-        dump_ts = min(dump_ts)
-
-        # Calculate dump duration
-        return int((dump_ts - max_price_ts).total_seconds())
-
-    def get_number_of_traders(self) -> int:
-        """Method to get the number of traders"""
-        # non-bot-transfer trader plus the creator
-        return len(self.non_bot_creator_transfer_traders) + 1
-
-    # Metrics for Sniper Bot
-    def get_sniper_bot(self) -> int:
-        """Method to get the number of sniper bots"""
-        return int(len(self.sniper) > 0)
-
-    # Metrics for Bundle Bot
-    def get_bundle_launch_buy_sell_num(self) -> tuple[int, int]:
-        """Method to get the number of bundle buys"""
+    def _build_bundle_bot(self) -> tuple[int, float]:
+        """Method to build the bundle data"""
         bundle_launch = 0
         bundle_bot = 0
 
         for block, bundle_info in self.bundle.items():
             if block == self.launch_block:
-                if (
-                    len(
-                        [
-                            row["maker"]
-                            for row in bundle_info
-                            if row["maker"] != self.creator
-                        ]
-                    )
-                    > 0
-                ):
+                bundle_maker = [
+                    row["maker"] for row in bundle_info if row["maker"] != self.creator
+                ]
+                self.bundler.update(bundle_maker)
+                if len(bundle_maker) > 0:
                     bundle_launch += 1
             else:
                 bundle_length = len(bundle_info)
@@ -353,6 +278,150 @@ class MemeAnalyzer(MemeBase):
         total_blocks = len([_.block for _ in self.txn])
 
         return bundle_launch, bundle_bot / total_blocks
+
+    # Dependent Variables
+    def get_pre_migration_duration(self) -> int:
+        """Method to get the pre-migration duration in seconds"""
+
+        if self.migrate_time:
+            return int(self.migrate_time.timestamp() - self.launch_time.timestamp())
+        else:
+            return np.nan
+
+    def get_max_ret_and_pump_duration(self) -> tuple[float, int]:
+        """Method to get the maximum return and pump duration in seconds"""
+
+        first_price = self.prc_date_df["price"].iloc[0]
+        max_price = self.prc_date_df.loc[
+            self.prc_date_df["price"] <= first_price * UPPER_BOUND, "price"
+        ].max()
+
+        # Get timestamps of transactions at peak price
+        first_price_ts = self.prc_date_df.index[0]
+        max_price_ts = self.prc_date_df.loc[
+            self.prc_date_df["price"] == self.prc_date_df["price"].max()
+        ].index
+        max_price_ts = min(max_price_ts)
+
+        pre_max_df = self.prc_date_df.loc[self.prc_date_df.index < max_price_ts].copy()
+        pre_max_df["time_diff"] = pre_max_df.index.to_series().diff()
+
+        # Find the first trade after a >1 month inactivity gap
+        long_gap = pre_max_df.loc[pre_max_df["time_diff"] > MAX_INACTIVITY]
+        if not long_gap.empty:
+            last_gap_idx = long_gap.index[-1]
+            first_price = pre_max_df.loc[last_gap_idx:].iloc[0]["price"]
+            first_price_ts = pre_max_df.loc[last_gap_idx:].index[0]
+
+        # Calculate max return
+        max_return = (max_price - first_price) / first_price
+
+        # Calculate pump duration
+        pump_duration = int((max_price_ts - first_price_ts).total_seconds())
+
+        return np.log(1 + max_return), pump_duration
+
+    def get_dumper(self) -> tuple[str, int, int, int]:
+        """Method to get the address of the dumper"""
+
+        winner_dump, loser_dump, neutral_dump = 0, 0, 0
+
+        max_price = self.prc_date_df["price"].max()
+        max_price_ts = min(
+            self.prc_date_df.loc[self.prc_date_df["price"] == max_price].index
+        ).tz_localize(None)
+
+        first_ten_sell = []
+        creator_txn = []
+        for swap in self.get_acts(Swap):
+            if swap["date"] >= max_price_ts:
+                if swap["acts"][0]["typ"] == "Sell":
+                    if swap["maker"] in self.bundler:
+                        creator_txn.append(swap)
+                    first_ten_sell.append(swap)
+                    if len(first_ten_sell) == 10:
+                        break
+
+        if len(creator_txn) != 0:
+            creator_base = sum([swap["acts"][0]["base"] for swap in creator_txn])
+        else:
+            creator_base = 0
+
+        if len(first_ten_sell) != 0:
+            largest_sell = max(first_ten_sell, key=lambda x: x["acts"][0]["base"])
+        else:
+            return "no dumper", 0, 0, 0
+
+        if largest_sell["maker"] in winner:
+            winner_dump = 1
+
+        if largest_sell["maker"] in loser:
+            loser_dump = 1
+
+        if largest_sell["maker"] in neutral:
+            neutral_dump = 1
+
+        if (largest_sell["maker"] in self.bundler) | (
+            creator_base >= largest_sell["acts"][0]["base"]
+        ):
+            if len(winner & self.bundler) > 0:
+                return "creator", 1, 0, 0
+            return "creator", winner_dump, loser_dump, neutral_dump
+        elif largest_sell["maker"] in self.sniper:
+            return "sniper", winner_dump, loser_dump, neutral_dump
+        else:
+            return "other", winner_dump, loser_dump, neutral_dump
+
+    def get_dump_duration(self) -> int:
+        """Method to get the dump duration in seconds"""
+
+        # calculate the cumulative balance
+        balance_df = self.prc_date_df.copy()
+        balance_df["balance"] = balance_df.apply(
+            lambda row: row["base"] if row["typ"] == "Buy" else -row["base"], axis=1
+        )
+        balance_df["cum_balance"] = balance_df["balance"].cumsum()
+
+        # Get the maximum price and its timestamp
+        max_price = self.prc_date_df["price"].max()
+        max_price_ts = min(
+            self.prc_date_df.loc[self.prc_date_df["price"] == max_price].index
+        )
+        max_price_cum_balance = balance_df.loc[
+            balance_df.index == max_price_ts, "cum_balance"
+        ].values[0]
+        post_max_df = balance_df.loc[balance_df.index >= max_price_ts].copy()
+
+        # Calculate the dump threshold as 10% of the maximum cumulative balance
+        dump_balance = 0.1 * max_price_cum_balance
+        dump_ts = post_max_df.loc[(post_max_df["cum_balance"] < dump_balance)].index
+
+        # Get last trade timestamp
+        last_trade_ts = self.prc_date_df.index[-1]
+
+        if dump_ts.empty:
+            # return int((last_trade_ts - self.launch_time).total_seconds())
+            return int((last_trade_ts - max_price_ts).total_seconds())
+
+        dump_ts = min(dump_ts)
+
+        # Calculate dump duration
+        return int((dump_ts - max_price_ts).total_seconds())
+
+    def get_number_of_traders(self) -> int:
+        """Method to get the number of traders"""
+        # non-bot-transfer trader plus the creator
+        return len(self.non_bot_creator_transfer_traders) + 1
+
+    # Metrics for Sniper Bot
+    def get_sniper_bot(self) -> int:
+        """Method to get the number of sniper bots"""
+        return int(len(self.sniper) > 0)
+
+    # Metrics for Bundle Bot
+    def get_bundle_launch_buy_sell_num(self) -> tuple[int, float]:
+        """Method to get the number of bundle buys and sells"""
+        return self.launch_bundle, self.bundle_bot_pct
 
     # Metrics for Comment Bot
     def get_comment_bot_num(self) -> int:
@@ -472,7 +541,7 @@ if __name__ == "__main__":
             NUM_OF_OBSERVATIONS,
         ):
             token_add = pool["token_address"]
-            token_add = "WVdXTu5EUsNke22WuRAEH1t81hPAnRRQURQE3R3pump"
+            token_add = "9E6PfjKH7TcJ6T75FN5h1HRNnUVhTT6vNsudauyWCxza"
             meme = MemeAnalyzer(
                 NewTokenPool(
                     token0=SOL_TOKEN_ADDRESS,
@@ -486,12 +555,14 @@ if __name__ == "__main__":
                     txns={},
                 ),
             )
-
+            # bundle_launch, bundle_bot = meme.get_bundle_launch_buy_sell_num()
             print(
                 f"meme coin: {meme.new_token_pool.pool_add}\n",
                 f"pre_migration_duration: {meme.get_pre_migration_duration()} seconds\n",
                 f"max_return and pump duration: {meme.get_max_ret_and_pump_duration()}\n",
                 f"dump duration: {meme.get_dump_duration()} seconds\n",
+                # f"get_bundle_launch_buy_sell_num: {meme.get_bundle_launch_buy_sell_num()}\n",
+                f"dumper: {meme.get_dumper()}\n",
                 # f"wash_trading: {max([v.wash_trading() for k,v in {**meme.bots, **meme.traders}.items()])}\n",
                 # f"bundle_bot: {meme.get_bundle_launch_buy_sell_num()}\n",
                 # f"comment_bot_num: {meme.get_comment_bot_num()}\n",

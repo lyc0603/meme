@@ -54,6 +54,7 @@ def worker(tq: Queue, rq: Queue, chain: str):
         bundle_launch, bundle_bot = meme.get_bundle_launch_buy_sell_num()
 
         launch_bundle = int(bool(bundle_launch))
+        dumper, winner_dump, loser_dump, neutral_dump = meme.get_dumper()
 
         pfm_dict = {
             "max_ret": max_ret,
@@ -61,6 +62,10 @@ def worker(tq: Queue, rq: Queue, chain: str):
             "pump_duration": pump_duration,
             "dump_duration": meme.get_dump_duration(),
             "number_of_traders": meme.get_number_of_traders(),
+            "dumper": dumper,
+            "winner_dump": winner_dump,
+            "loser_dump": loser_dump,
+            "neutral_dump": neutral_dump,
         }
 
         time_trader_dict = meme.get_time_traders(wt_set) if wt_set else {}

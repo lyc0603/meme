@@ -8,7 +8,7 @@ from environ.constants import (
     TABLE_PATH,
     PROCESSED_DATA_PATH,
     NAMING_DICT,
-    PFM_NAMING_DICT,
+    RAW_PFM_NAMING_DICT,
 )
 from environ.utils import asterisk
 
@@ -17,8 +17,8 @@ pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
 pfm["post_trump"] = pfm["chain"].apply(lambda x: 0 if "pre_trump" in x else 1)
 
 # Define variables
-X_VAR_PANEL = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
-PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT}
+X_VAR_PANEL = list(NAMING_DICT.keys()) + list(RAW_PFM_NAMING_DICT.keys())
+PANEL_NAMING_DICT = {**NAMING_DICT, **RAW_PFM_NAMING_DICT}
 
 results = {}
 for var in X_VAR_PANEL:
@@ -73,13 +73,36 @@ latex_lines = [
     "\\midrule",
 ]
 
+
+def format_latex_line(
+    var_name: str,
+    s: dict,
+    fmt_mean: str = ".2f",
+    fmt_diff: str = ".2f",
+):
+    """Helper function to format a LaTeX table line."""
+    return (
+        f"{var_name} & {s['mean_1']:{fmt_mean}} & "
+        f"{s['mean_2']:{fmt_mean}} & {s['diff']:{fmt_diff}} & "
+        f"{s['t_stat']:.2f}{s['stars']} \\\\"
+    )
+
+
 for var in X_VAR_PANEL:
     if var in results:
         s = results[var]
+        if var in [
+            "raw_pre_migration_duration",
+            "raw_pump_duration",
+            "raw_dump_duration",
+        ]:
+            fmt_mean = ",.0f"
+            fmt_diff = ",.0f"
+        else:
+            fmt_mean = ".2f"
+            fmt_diff = ".2f"
         latex_lines.append(
-            f"{PANEL_NAMING_DICT[var]} & "
-            f"{s['mean_1']:.2f} & {s['mean_2']:.2f} & {s['diff']:.2f} & "
-            f"{s['t_stat']:.2f}{s['stars']} \\\\"
+            format_latex_line(PANEL_NAMING_DICT[var], s, fmt_mean, fmt_diff)
         )
 
 latex_lines.extend(["\\bottomrule", "\\end{tabular}"])

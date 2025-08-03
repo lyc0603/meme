@@ -81,13 +81,25 @@ def worker(tq: Queue, rq: Queue):
             break  # Stop the worker gracefully
 
         max_ret, pump_duration = meme.get_max_ret_and_pump_duration()
+
+        try:
+            dumper, winner_dump, loser_dump, neutral_dump = meme.get_dumper()
+        except Exception as e:
+            print(f"Error processing dumper for {meme.new_token_pool.pool_add}: {e}")
+            print(meme.get_dumper())
+
         pfm_dict = {
             "max_ret": max_ret,
             "pre_migration_duration": meme.get_pre_migration_duration(),
             "pump_duration": pump_duration,
             "dump_duration": meme.get_dump_duration(),
             "number_of_traders": meme.get_number_of_traders(),
+            "dumper": dumper,
+            "winner_dump": winner_dump,
+            "loser_dump": loser_dump,
+            "neutral_dump": neutral_dump,
         }
+
         time_trader_dict = meme.get_time_traders(wt_set) if wt_set else {}
 
         bundle_launch, bundle_bot = meme.get_bundle_launch_buy_sell_num()

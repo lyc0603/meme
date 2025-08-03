@@ -6,11 +6,15 @@ import json
 import pickle
 from collections import defaultdict
 from datetime import UTC, timezone
+import numpy as np
+import pandas as pd
+import warnings
 
 from environ.constants import PROCESSED_DATA_PATH
 from environ.data_class import NewTokenPool, Swap
 
 MIGATOR = "39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg"
+warnings.filterwarnings("ignore")
 
 
 class MemeBase:
@@ -97,6 +101,7 @@ class MemeBase:
         swappers = defaultdict(list)
         time_traders = {}
         unique_traders = set()
+
         for i, swap in enumerate(self.get_acts(Swap)):
             swappers[swap["maker"]].append(swap)
             non_swap_transfers_hash.discard(swap["txn_hash"])
@@ -107,15 +112,30 @@ class MemeBase:
                 ).total_seconds()
                 / 60
             )
-            if i == 0:
-                last_delta = delta_int
-
-            if delta_int > last_delta:
-                for delta in range(last_delta, delta_int):
-                    time_traders[delta] = len(unique_traders)
-                last_delta = delta_int
-
             unique_traders.add(swap["maker"])
+
+            time_traders[delta_int] = {
+                "log_number_of_traders": np.log(len(unique_traders)),
+                "price": swap["acts"][0].price,
+            }
+
+        df = pd.DataFrame.from_dict(time_traders, orient="index").sort_index()
+
+        # Reindex to fill all missing minute steps
+        df = df.reindex(range(df.index.min(), df.index.max() + 1))
+
+        # Forward fill missing values
+        df["log_number_of_traders"] = df["log_number_of_traders"].ffill()
+        df["price"] = df["price"].ffill()
+
+        # Recalculate log returns based on previous available price
+        prev_price = df["price"].shift(1)
+        df["log_ret"] = (
+            np.log(df["price"] / prev_price)
+            .mask((df["price"] == 0) | (prev_price == 0))
+            .fillna(0)
+        )
+        time_traders = df.to_dict(orient="index")
 
         non_swap_transfers = []
         for transfer in self.transfer:

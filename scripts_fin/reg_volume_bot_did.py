@@ -8,7 +8,7 @@ import pandas as pd
 from tqdm import tqdm
 import pyfixest as pf
 
-from environ.constants import PROCESSED_DATA_PATH, TABLE_PATH
+from environ.constants import PROCESSED_DATA_PATH, TABLE_PATH, WINDOW
 from environ.utils import asterisk
 
 # Constants
@@ -20,10 +20,10 @@ CHAINS = [
     "no_one_care",
     "pre_trump_no_one_care",
 ]
-WINDOW = range(-2, 3)
+
 CPU_COUNT = 10
 NAMING_DICT = {
-    "number_of_traders": "$\\text{Number of Traders}_{i}$",
+    "log_number_of_traders": "$\\text{Number of Traders}_{i}$",
     "treat_coef": "$\\text{Treat}$",
     "treat_stderr": "",
     "post_coef": "$\\text{Post}$",
@@ -45,20 +45,25 @@ with open(PROCESSED_DATA_PATH / "meme_project_ratio.json", "r", encoding="utf-8"
 wt_list = []
 for chain in CHAINS:
     df = pd.read_csv(f"{PROCESSED_DATA_PATH}/wt_cm/wash_trading_{chain}.csv")
-    df = df.dropna().assign(
-        category=chain,
-        weight=meme_project_ratio[chain],
-        first_trade_time=lambda x: pd.to_datetime(x["first_trade_time"]),
-        launch_time=lambda x: pd.to_datetime(x["launch_time"]),
+    df = (
+        df.dropna()
+        .dropna()
+        .assign(
+            category=chain,
+            weight=meme_project_ratio[chain],
+            first_trade_time=lambda x: pd.to_datetime(x["first_trade_time"]),
+            launch_time=lambda x: pd.to_datetime(x["launch_time"]),
+        )
     )
     df["delta_time_int"] = (
         (df["first_trade_time"] - df["launch_time"]).dt.total_seconds() / 60
     ).astype(int)
-    df = df[df["delta_time_int"] >= 2]
+    # df = df[df["delta_time_int"] >= -WINDOW[0]]
     # First wash trade only
     df = df.sort_values(["token_address", "first_trade_time"]).drop_duplicates(
         subset=["token_address"], keep="first"
     )
+    print("chain:", chain, "num of wash bots:", len(df))
     wt_list.append(df)
 wt = pd.concat(wt_list, ignore_index=True)
 
@@ -96,10 +101,11 @@ def process_cohort(item):
         token = row["token_address"]
         cat = row["category"]
         # check full window exists
-        keys = set(tt[cat].get(token, {}).keys())
-        req = {str(cohort_id + o) for o in WINDOW}
-        if req.issubset(keys):
-            for offset in WINDOW:
+        # keys = set(tt[cat].get(token, {}).keys())
+        # req = {str(cohort_id + o) for o in WINDOW}
+        # if req.issubset(keys):
+        for offset in WINDOW:
+            if str(cohort_id + offset) in tt[cat][token].keys():
                 treats.append(
                     {
                         "cohort": cohort_id,
@@ -109,7 +115,12 @@ def process_cohort(item):
                         "cohort*time": f"{cohort_id}_{cohort_id + offset}",
                         "treat": 1,
                         "post": int(offset >= 0),
-                        "number_of_traders": tt[cat][token][str(cohort_id + offset)],
+                        "offset": offset,
+                        "log_number_of_traders": tt[cat][token][
+                            str(cohort_id + offset)
+                        ]["log_number_of_traders"],
+                        "log_ret": tt[cat][token][str(cohort_id + offset)]["log_ret"],
+                        "price": tt[cat][token][str(cohort_id + offset)]["price"],
                         "category": cat,
                         "weight": row["weight"],
                     }
@@ -120,10 +131,11 @@ def process_cohort(item):
         for token, series in tt[cat].items():
             if token in volume_bot:
                 continue
-            keys = set(series.keys())
-            req = {str(cohort_id + o) for o in WINDOW}
-            if req.issubset(keys):
-                for offset in WINDOW:
+            # keys = set(series.keys())
+            # req = {str(cohort_id + o) for o in WINDOW}
+            # if req.issubset(keys):
+            for offset in WINDOW:
+                if str(cohort_id + offset) in series:
                     controls.append(
                         {
                             "cohort": cohort_id,
@@ -133,7 +145,12 @@ def process_cohort(item):
                             "cohort*time": f"{cohort_id}_{cohort_id + offset}",
                             "treat": 0,
                             "post": int(offset >= 0),
-                            "number_of_traders": series[str(cohort_id + offset)],
+                            "offset": offset,
+                            "log_number_of_traders": series[str(cohort_id + offset)][
+                                "log_number_of_traders"
+                            ],
+                            "log_ret": series[str(cohort_id + offset)]["log_ret"],
+                            "price": series[str(cohort_id + offset)]["price"],
                             "category": cat,
                             "weight": meme_project_ratio[cat],
                         }
@@ -150,6 +167,7 @@ def process_cohort(item):
 
 # 4) Parallel execution
 tasks = list(wt.groupby("delta_time_int"))
+
 with Pool(processes=CPU_COUNT) as pool:
     results = list(tqdm(pool.imap(process_cohort, tasks), total=len(tasks)))
 
@@ -160,7 +178,7 @@ cohorts_df.to_csv(PROCESSED_DATA_PATH / "reg_volume_did.csv", index=False)
 
 # implement the Cohort DiD
 model = pf.feols(
-    "number_of_traders ~ treat*post|cohort*time+cohort*token",
+    "log_number_of_traders ~ treat*post|cohort*time+cohort*token",
     data=cohorts_df,
     demeaner_backend="numba",
     # vcov={"CRV3": "cohort*token"},
@@ -207,7 +225,7 @@ latex_path = TABLE_PATH / "reg_volume_did.tex"
 with open(latex_path, "w", encoding="utf-8") as f:
     f.write("\\begin{tabular}{lc}\n")
     f.write("\\toprule\n")
-    f.write(f"& {NAMING_DICT.get('number_of_traders', 'Number of Traders')} \\\\\n")
+    f.write(f"& {NAMING_DICT.get('log_number_of_traders', 'Number of Traders')} \\\\\n")
     f.write("\\midrule\n")
     for var in [
         "treat_post_coef",

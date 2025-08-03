@@ -27,6 +27,8 @@ SOLANA_PATH_DICT = {
     "pre_trump_pumpfun": DATA_PATH / "solana" / "pre_trump_pumpfun.jsonl",
 }
 
+WINDOW = range(-30, 31)
+
 # naming dictionary for independent variables in regression analysis
 NAMING_DICT = {
     # bundle bots
@@ -47,6 +49,14 @@ PFM_NAMING_DICT = {
     "pre_migration_duration": "$\\text{Ln(Pre-Migration Duration)}_{i}$",
     "pump_duration": "$\\text{Ln(Pump Duration)}_{i}$",
     "dump_duration": "$\\text{Ln(Dump Duration)}_{i}$",
+}
+
+RAW_PFM_NAMING_DICT = {
+    "raw_max_ret": "$\\text{Max Ret}_{i}$",
+    "raw_number_of_traders": "$\\text{Number of Traders}_{i}$",
+    "raw_pre_migration_duration": "$\\text{Pre-Migration Duration}_{i}$",
+    "raw_pump_duration": "$\\text{Pump Duration}_{i}$",
+    "raw_dump_duration": "$\\text{Dump Duration}_{i}$",
 }
 
 KOL_NAMING_DICT = {

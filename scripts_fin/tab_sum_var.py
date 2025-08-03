@@ -2,15 +2,21 @@
 
 import json
 import pandas as pd
+import numpy as np
 from environ.constants import (
     TABLE_PATH,
     PROCESSED_DATA_PATH,
     NAMING_DICT,
     PFM_NAMING_DICT,
+    RAW_PFM_NAMING_DICT,
 )
 
 # Define variable groups
-X_VAR_PANEL = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
+X_VAR_PANEL = (
+    list(NAMING_DICT.keys())
+    + list(PFM_NAMING_DICT.keys())
+    + list(RAW_PFM_NAMING_DICT.keys())
+)
 
 CHAINS = [
     "raydium",
@@ -33,8 +39,13 @@ for chain in CHAINS:
     pfm.append(pfm_df)
 pfm = pd.concat(pfm, ignore_index=True)
 
-# winsorize the max return
-pfm["max_ret"] = pfm["max_ret"].clip(upper=pfm["max_ret"].quantile(0.99))
+for var, _ in PFM_NAMING_DICT.items():
+    pfm["raw_" + var] = (
+        round(np.exp(pfm[var]) - 1, 0) if var != "max_ret" else np.exp(pfm[var]) - 1
+    )
+    pfm[var] = pfm[var].clip(upper=pfm[var].quantile(0.99))
+    pfm[f"raw_{var}"] = pfm[f"raw_{var}"].clip(upper=pfm[f"raw_{var}"].quantile(0.99))
+
 pfm.to_csv(f"{PROCESSED_DATA_PATH}/pfm.csv", index=False)
 
 # Load profit data
@@ -73,34 +84,98 @@ pre_migration_duration_obs_num = len(pfm["pre_migration_duration"].dropna())
 
 # Repeat rows based on weight and compute summary
 pfm = pfm.loc[pfm.index.repeat(pfm["weight"])].reset_index(drop=True)
+
 summary = compute_summary(pfm, X_VAR_PANEL)
 
 # Generate LaTeX code
 latex_lines = [
-    "\\begin{tabular}{lcccccc}",
+    "\\begin{tabular}{lccccccc}",
     "\\toprule",
-    "Variable & Num. Obs. & Mean & Std. Dev. & P10 & Median & P90 \\\\",
+    "Variable & Num. Obs. & Mean & Std. Dev. & P10 & Median & P90\\\\",
     "\\midrule",
 ]
 
 PANEL_A_NAMING_DICT = {
     **NAMING_DICT,
     **PFM_NAMING_DICT,
+    **RAW_PFM_NAMING_DICT,
 }
 
-for var in X_VAR_PANEL:
-    if var in summary:
-        s = summary[var]
 
+def format_latex_line(
+    var_name: str,
+    obs: int,
+    s: dict,
+    fmt_mean: str,
+    fmt_std: str,
+    fmt_p10: str,
+    fmt_median: str,
+    fmt_p90: str,
+):
+    """Helper function to format a LaTeX table line."""
+    return (
+        f"{var_name} & {obs:,} & "
+        f"{s['mean']:{fmt_mean}} & {s['std']:{fmt_std}} & "
+        f"{s['p10']:{fmt_p10}} & {s['median']:{fmt_median}} & {s['p90']:{fmt_p90}}\\\\"
+    )
+
+
+for var in {**NAMING_DICT, **PFM_NAMING_DICT}:
+    if var in PFM_NAMING_DICT:
+        s = summary[f"raw_{var}"]
         obs = (
             initial_obs_num
             if var != "pre_migration_duration"
             else pre_migration_duration_obs_num
         )
 
-        latex_lines.append(
-            f"{PANEL_A_NAMING_DICT[var]} & {obs} & {s['mean']:.2f} & {s['std']:.2f} & {s['p10']:.2f} & {s['median']:.2f} & {s['p90']:.2f} \\\\"
-        )
+        if var == "max_ret":
+            line = format_latex_line(
+                PANEL_A_NAMING_DICT[f"raw_{var}"],
+                obs,
+                s,
+                ".2f",
+                ".2f",
+                ".2f",
+                ".2f",
+                ".2f",
+            )
+        elif var == "number_of_traders":
+            line = format_latex_line(
+                PANEL_A_NAMING_DICT[f"raw_{var}"],
+                obs,
+                s,
+                ",.2f",
+                ",.2f",
+                ",.0f",
+                ",.0f",
+                ",.0f",
+            )
+        else:
+            line = format_latex_line(
+                PANEL_A_NAMING_DICT[f"raw_{var}"],
+                obs,
+                s,
+                ",.0f",
+                ",.0f",
+                ",.0f",
+                ",.0f",
+                ",.0f",
+            )
+        latex_lines.append(line)
+
+    s = summary[var]
+    obs = (
+        initial_obs_num
+        if var != "pre_migration_duration"
+        else pre_migration_duration_obs_num
+    )
+
+    if var in NAMING_DICT:
+        fmt = (".2f", ".2f", ".0f", ".0f", ".0f")
+    else:
+        fmt = (".2f", ".2f", ".2f", ".2f", ".2f")
+    latex_lines.append(format_latex_line(PANEL_A_NAMING_DICT[var], obs, s, *fmt))
 
 latex_lines.extend(["\\bottomrule", "\\end{tabular}"])
 

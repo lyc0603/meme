@@ -6,7 +6,7 @@ from environ.constants import (
     TABLE_PATH,
     PROCESSED_DATA_PATH,
     NAMING_DICT,
-    PFM_NAMING_DICT,
+    RAW_PFM_NAMING_DICT,
     ID_DICT,
 )
 
@@ -24,9 +24,9 @@ def significance_stars(p):
 
 # Define variable list and naming
 X_VAR_PANEL = (
-    list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys()) + list(ID_DICT.keys())
+    list(NAMING_DICT.keys()) + list(RAW_PFM_NAMING_DICT.keys()) + list(ID_DICT.keys())
 )
-PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT, **ID_DICT}
+PANEL_NAMING_DICT = {**NAMING_DICT, **RAW_PFM_NAMING_DICT, **ID_DICT}
 
 
 pft = pd.read_csv(PROCESSED_DATA_PATH / "pft.csv")
@@ -49,7 +49,9 @@ pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
 # pfm = trader_t.merge(pfm, how="left", on="token_address")
 pfm = pft.merge(pfm, how="left", on="token_address")
 
-# aggreagete by trader
+# for var, _ in RAW_PFM_NAMING_DICT.items():
+#     pfm[var] = pfm[var] * (pfm["weight"] / 2000)
+
 # Define columns to average
 AGG_VARS = [_ for _ in X_VAR_PANEL if _ not in ["winner", "loser", "neutral"]]
 
@@ -57,6 +59,8 @@ AGG_VARS = [_ for _ in X_VAR_PANEL if _ not in ["winner", "loser", "neutral"]]
 agg_dict = {
     col: lambda x: np.average(x, weights=pfm.loc[x.index, "weight"]) for col in AGG_VARS
 }
+# agg_dict = {col: (lambda x: x.mean()) for col in AGG_VARS}
+
 
 # Include winner/loser/neutral as mode or max (binary), weight as sum
 agg_dict.update(
@@ -76,6 +80,7 @@ winner = pfm.loc[pfm["winner"] == 1]
 loser = pfm.loc[pfm["loser"] == 1]
 neutral = pfm.loc[pfm["neutral"] == 1]
 
+
 # LaTeX header
 lines = [
     "\\begin{tabular}{lccc}",
@@ -93,9 +98,22 @@ for var in [_ for _ in X_VAR_PANEL if _ not in ["winner", "loser", "neutral"]]:
     mean_w = winner[var].mean()
     mean_n = neutral[var].mean()
     mean_l = loser[var].mean()
-    lines.append(
-        f"{PANEL_NAMING_DICT[var]} & {mean_w:.2f} & {mean_n:.2f} & {mean_l:.2f} \\\\"
-    )
+    if var in [
+        "raw_pre_migration_duration",
+        "raw_pump_duration",
+        "raw_dump_duration",
+    ]:
+        lines.append(
+            f"{PANEL_NAMING_DICT[var]} & {mean_w:,.0f} & {mean_n:,.0f} & {mean_l:,.0f} \\\\"
+        )
+    elif var in ["raw_number_of_traders"]:
+        lines.append(
+            f"{PANEL_NAMING_DICT[var]} & {mean_w:,.2f} & {mean_n:,.2f} & {mean_l:,.2f} \\\\"
+        )
+    else:
+        lines.append(
+            f"{PANEL_NAMING_DICT[var]} & {mean_w:.2f} & {mean_n:.2f} & {mean_l:.2f} \\\\"
+        )
 
 # Observation counts
 lines.append("\\midrule")
