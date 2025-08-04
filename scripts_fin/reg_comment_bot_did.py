@@ -114,6 +114,7 @@ def process_cohort(item):
                         "cohort*time": f"{cohort_id}_{cohort_id + offset}",
                         "treat": 1,
                         "post": int(offset >= 0),
+                        "offset": offset,
                         "log_number_of_traders": tt[cat][token][
                             str(cohort_id + offset)
                         ]["log_number_of_traders"],
@@ -143,6 +144,7 @@ def process_cohort(item):
                             "cohort*time": f"{cohort_id}_{cohort_id + offset}",
                             "treat": 0,
                             "post": int(offset >= 0),
+                            "offset": offset,
                             "log_number_of_traders": series[str(cohort_id + offset)][
                                 "log_number_of_traders"
                             ],
