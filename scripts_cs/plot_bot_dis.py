@@ -105,10 +105,10 @@ for bot_col in bot_vars:
         if not (np.isfinite(x_mean) and np.isfinite(y_mean)):
             continue
         c = color_map[lvl]
-        g.ax_joint.axvline(x_mean, color=c, linestyle="--", linewidth=1.3, alpha=0.95)
-        g.ax_joint.axhline(y_mean, color=c, linestyle="--", linewidth=1.3, alpha=0.95)
-        g.ax_marg_x.axvline(x_mean, color=c, linestyle="--", linewidth=1.0, alpha=0.95)
-        g.ax_marg_y.axhline(y_mean, color=c, linestyle="--", linewidth=1.0, alpha=0.95)
+        g.ax_joint.axvline(x_mean, color=c, linestyle="--", linewidth=2)
+        g.ax_joint.axhline(y_mean, color=c, linestyle="--", linewidth=2)
+        g.ax_marg_x.axvline(x_mean, color=c, linestyle="--", linewidth=2)
+        g.ax_marg_y.axhline(y_mean, color=c, linestyle="--", linewidth=2)
 
     # Limits (exact min/max of scatter)
     g.ax_joint.set_xlim(x_min, x_max)
