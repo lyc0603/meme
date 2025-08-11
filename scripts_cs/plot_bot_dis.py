@@ -13,7 +13,7 @@ sns.set_theme(style="white")
 pfm = pd.read_csv(f"{PROCESSED_DATA_CS_PATH}/pfm_cs.csv")
 
 # Bot-related columns to iterate over
-bot_vars = ["launch_bundle", "volume_bot", "bot_comment_num"]
+bot_vars = ["launch_bundle", "volume_bot", "bot_comment_num", "sniper_bot"]
 
 for bot_col in bot_vars:
     # Map 0/1 -> labels (title case)
@@ -144,4 +144,3 @@ for bot_col in bot_vars:
 
     # Save each plot
     g.figure.savefig(f"{FIGURE_PATH}/{bot_col}_hist.pdf", dpi=300, bbox_inches="tight")
-    print(f"Saved {FIGURE_PATH}/{bot_col}_hist.pdf")
