@@ -3,10 +3,11 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from environ.constants import PROCESSED_DATA_CS_PATH, FIGURE_PATH
 
-FONT_SIZE = 13
+FONT_SIZE = 20
 sns.set_theme(style="white")
 
 pfm = pd.read_csv(f"{PROCESSED_DATA_CS_PATH}/pfm_cs.csv")
@@ -125,7 +126,7 @@ for bot_col in bot_vars:
         handles=hue_handles,
         title=None,
         loc="lower center",
-        bbox_to_anchor=(0.5, -0.3),
+        bbox_to_anchor=(0.5, -0.4),
         frameon=False,
         ncols=2,
         fontsize=FONT_SIZE + 2,
@@ -140,9 +141,6 @@ for bot_col in bot_vars:
     g.ax_joint.yaxis.set_tick_params(labelsize=FONT_SIZE + 2)
     for lbl in g.ax_joint.get_xticklabels() + g.ax_joint.get_yticklabels():
         lbl.set_fontweight("bold")
-
-    # Title per figure
-    g.ax_joint.set_title(f"{bot_col} groups", fontsize=FONT_SIZE + 4, fontweight="bold")
 
     # Save each plot
     g.figure.savefig(f"{FIGURE_PATH}/{bot_col}_hist.pdf", dpi=300, bbox_inches="tight")
