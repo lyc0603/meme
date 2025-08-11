@@ -10,6 +10,7 @@ dotenv.load_dotenv()
 
 DATA_PATH = PROJECT_ROOT / "data"
 PROCESSED_DATA_PATH = PROJECT_ROOT / "processed_data"
+PROCESSED_DATA_CS_PATH = PROJECT_ROOT / "processed_data_cs"
 FIGURE_PATH = PROJECT_ROOT / "figures"
 TABLE_PATH = PROJECT_ROOT / "tables"
 ABI_PATH = DATA_PATH / "abi"

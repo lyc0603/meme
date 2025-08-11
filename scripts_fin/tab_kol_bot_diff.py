@@ -6,7 +6,7 @@ from environ.constants import (
     TABLE_PATH,
     PROCESSED_DATA_PATH,
     NAMING_DICT,
-    RAW_PFM_NAMING_DICT,
+    PFM_NAMING_DICT,
     ID_DICT,
 )
 
@@ -24,9 +24,9 @@ def significance_stars(p):
 
 # Define variable list and naming
 X_VAR_PANEL = (
-    list(NAMING_DICT.keys()) + list(RAW_PFM_NAMING_DICT.keys()) + list(ID_DICT.keys())
+    list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys()) + list(ID_DICT.keys())
 )
-PANEL_NAMING_DICT = {**NAMING_DICT, **RAW_PFM_NAMING_DICT, **ID_DICT}
+PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT, **ID_DICT}
 
 
 pft = pd.read_csv(PROCESSED_DATA_PATH / "pft.csv")

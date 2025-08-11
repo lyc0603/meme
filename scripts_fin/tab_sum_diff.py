@@ -8,7 +8,7 @@ from environ.constants import (
     TABLE_PATH,
     PROCESSED_DATA_PATH,
     NAMING_DICT,
-    RAW_PFM_NAMING_DICT,
+    PFM_NAMING_DICT,
 )
 from environ.utils import asterisk
 
@@ -17,8 +17,8 @@ pfm = pd.read_csv(f"{PROCESSED_DATA_PATH}/pfm.csv")
 pfm["post_trump"] = pfm["chain"].apply(lambda x: 0 if "pre_trump" in x else 1)
 
 # Define variables
-X_VAR_PANEL = list(NAMING_DICT.keys()) + list(RAW_PFM_NAMING_DICT.keys())
-PANEL_NAMING_DICT = {**NAMING_DICT, **RAW_PFM_NAMING_DICT}
+X_VAR_PANEL = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
+PANEL_NAMING_DICT = {**NAMING_DICT, **PFM_NAMING_DICT}
 
 results = {}
 for var in X_VAR_PANEL:

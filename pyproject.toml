@@ -18,8 +18,8 @@ classifiers = [
 dependencies = [
     "numpy==2.2.3",
     "pandas==2.2.3",
-    "requests==2.32.3",
-    "matplotlib=3.10.1",
+    "requests>=2.32.0,<2.33",
+    "matplotlib==3.10.1",
     "web3==7.8.0",
     "pymongo==4.11.2",
     "asyncstdlib==3.13.1",
@@ -39,6 +39,7 @@ dependencies = [
     "kaleido==1.0.0",
     "scikit-learn==1.7.0",
     "snowflake-connector-python==3.16.0",
+    "statsmodels==0.14.5",
 ]
 
 [project.optional-dependencies]

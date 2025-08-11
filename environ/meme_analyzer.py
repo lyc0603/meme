@@ -17,7 +17,7 @@ INITIAL_PRICE = 2.8e-8
 MAX_INACTIVITY = pd.Timedelta(days=30)
 UPPER_BOUND = 5000
 
-trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats_dep.csv")
+trader_t = pd.read_csv(PROCESSED_DATA_PATH / "trader_t_stats.csv")
 trader_t = trader_t.loc[trader_t["meme_num"] <= 1000].dropna(subset=["t_stat"])
 winner = set(trader_t.loc[trader_t["t_stat"] > 2.576, "trader_address"].unique())
 loser = set(trader_t.loc[trader_t["t_stat"] < -2.576, "trader_address"].unique())
