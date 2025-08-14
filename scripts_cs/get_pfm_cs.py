@@ -16,7 +16,7 @@ resample_pfm = []
 for chain, n_rows in meme_project_ratio.items():
     chain_data = pfm[pfm["category"] == chain]
     if not chain_data.empty:
-        resampled = chain_data.sample(n=int(n_rows), replace=True, random_state=42)
+        resampled = chain_data.sample(n=int(n_rows), replace=False, random_state=42)
         resample_pfm.append(resampled)
 pfm = pd.concat(resample_pfm, ignore_index=True)
 
