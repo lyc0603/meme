@@ -1,13 +1,15 @@
 # Meme
 
-## Setup
+## 1. Configuration
+
+- Clone the repository
 
 ```
 git clone https://github.com/lyc0603/meme.git
 cd meme
 ```
 
-### Give execute permission to your script and then run `setup_repo.sh`
+- Give execute permission to your script and then run `setup_repo.sh`
 
 ```
 chmod +x setup_repo.sh
@@ -15,78 +17,54 @@ chmod +x setup_repo.sh
 . venv/bin/activate
 ```
 
-or follow the step-by-step instructions below between the two horizontal rules:
-
----
-
-#### Create a python virtual environment
-
-- MacOS / Linux
-
-```bash
-python3 -m venv venv
-```
-
-- Windows
-
-```bash
-python -m venv venv
-```
-
-#### Activate the virtual environment
-
-- MacOS / Linux
-
-```bash
-. venv/bin/activate
-```
-
-- Windows (in Command Prompt, NOT Powershell)
-
-```bash
-venv\Scripts\activate.bat
-```
-
-#### Install toml
-
-```
-pip install toml
-```
-
-#### Install the project in editable mode
-
-```bash
-pip install -e ".[dev]"
-```
-
 ## Set up the environmental variables
 
-put your APIs in `.env`:
+- Rename the `.env.example` file into `.env`.
+- Put your Snowflake and OpenAI APIs in `.env`:
 
 ```
-INFURA_API_KEYS = "XXX,XXX,XXX"
+SNOWFLAKE_USER = "..."
+OPENAI_API = "..."
 ```
 
-```
-export $(cat .env | xargs)
-```
+## 2. Fetch Pumpfun Data
 
-# fetch historical meme data
+- Fetch Pre-Trump data
 
 ```
-python scripts/fetch_meme_data.py --chain <Chain Name>
+python scripts_fin/fetch_pumpfun.py \
+    --category pre_trump_raydium \
+    --num 1000 \
+    --timestamp "2024-10-17 14:01:48"
+```
+```
+python scripts_fin/fetch_pumpfun.py \
+    --category pre_trump_pumpfun \
+    --num 3000 \
+    --timestamp "2024-10-17 14:01:48"
 ```
 
-# fetch timestamp
+- Fetch Post-Trump data
 
 ```
-python scripts/fetch_timestamp.py --chain <Chain Name>
+python scripts_fin/fetch_pumpfun.py \
+    --category raydium \
+    --num 1000 \
+    --timestamp "2025-01-17 14:01:48"
 ```
 
-# plot meme data
 
 ```
-python scripts/process_meme_data.py
-python scripts/plot_historical_meme.py
+python scripts_fin/fetch_pumpfun.py \
+    --category pumpfun \
+    --num 3000 \
+    --timestamp "2025-01-17 14:01:48"
 ```
+
+## 3. Process Raw Pumpfun Data
+
+```
+python scripts_fin/process_pumpfun.py
+```
+
 

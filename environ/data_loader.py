@@ -11,19 +11,9 @@ from tenacity import retry, stop_after_attempt
 from environ.constants import FIGURE_PATH, SOL_TOKEN_ADDRESS
 from environ.data_class import NewTokenPool, Swap
 from environ.meme_analyzer import MemeAnalyzer
-from environ.trader_analyzer import TraderAnalyzer
-from environ.sol_fetcher import import_pool
 
 IMAGE_URL_TEMP = "https://raw.githubusercontent.com/lyc0603/meme/\
 refs/heads/main/figures/candle/{ca}.png"
-
-
-class WalletLoader(TraderAnalyzer):
-    """Wallet Loader for the multi-agent system."""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the WalletLoader."""
-        super().__init__(*args, **kwargs)
 
 
 class DataLoader(MemeAnalyzer):
@@ -49,19 +39,19 @@ class DataLoader(MemeAnalyzer):
             self.creator: "Creator",
         }
         swap_list = []
-        funded_wallet = set()
-        for bundle in ["bundle_launch", "bundle_creator_buy"]:
-            funded_wallet = funded_wallet.union(
-                set(
-                    [
-                        add
-                        for k, v in self.launch_bundle[bundle].items()
-                        for tsf in v["transfer"]
-                        for add in (tsf["from_"], tsf["to"])
-                    ]
-                )
-            )
-        funded_wallet = funded_wallet - set([self.creator])
+        # funded_wallet = set()
+        # for bundle in ["bundle_launch", "bundle_creator_buy"]:
+        #     funded_wallet = funded_wallet.union(
+        #         set(
+        #             [
+        #                 add
+        #                 for k, v in self.launch_bundle[bundle].items()
+        #                 for tsf in v["transfer"]
+        #                 for add in (tsf["from_"], tsf["to"])
+        #             ]
+        #         )
+        #     )
+        # funded_wallet = funded_wallet - set([self.creator])
         swap_list.append(
             (
                 self.launch_block,
@@ -73,14 +63,13 @@ class DataLoader(MemeAnalyzer):
 
             if swap["maker"] not in wallet_dict:
                 wallet_dict[swap["maker"]] = f"Trader {len(wallet_dict)}"
+            # if swap["maker"] in funded_wallet:
+            #     funding_string = " (bundle funded by creator)"
+            # else:
+            #     funding_string = ""
 
-            if swap["maker"] in funded_wallet:
-                funding_string = " (bundle funded by creator)"
-            else:
-                funding_string = ""
-
-            if swap["acts"][0]["block"] >= self.migrate_block:
-                continue
+            # if swap["acts"][0]["block"] >= self.migrate_block:
+            #     continue
 
             if swap["acts"][0]["usd"] is None:
                 base = "0.00"
@@ -100,14 +89,14 @@ class DataLoader(MemeAnalyzer):
                 swap_list.append(
                     (
                         swap["acts"][0]["block"],
-                        f"{wallet_dict[swap['maker']]}{funding_string} buy {base} meme coin for {quote} SOL at block {swap['acts'][0]['block']}",
+                        f"{wallet_dict[swap['maker']]} buy {base} meme coin for {quote} SOL at block {swap['acts'][0]['block']}",
                     )
                 )
             else:
                 swap_list.append(
                     (
                         swap["acts"][0]["block"],
-                        f"{wallet_dict[swap['maker']]}{funding_string} sell {base} meme coin for {quote} SOL at block {swap['acts'][0]['block']}",
+                        f"{wallet_dict[swap['maker']]} sell {base} meme coin for {quote} SOL at block {swap['acts'][0]['block']}",
                     )
                 )
 
@@ -121,7 +110,7 @@ class DataLoader(MemeAnalyzer):
         Args:
             freq (str): Resampling frequency for the pre-migration data (e.g., '5min', '15min').
         """
-        df = self.pre_prc_date_df.copy()
+        df = self.prc_date_df.copy()
         df = df.resample(freq).agg(
             {"price": ["first", "max", "min", "last"], "quote": "sum"}
         )
@@ -204,7 +193,10 @@ if __name__ == "__main__":
     txn_num_swap = {}
 
     for chain in [
-        "raydium",
+        # "raydium",
+        # "pre_trump_raydium"
+        # "pumpfun",
+        "pre_trump_pumpfun",
     ]:
         # for pool in tqdm(
         #     import_pool(
@@ -212,17 +204,7 @@ if __name__ == "__main__":
         #         NUM_OF_OBSERVATIONS,
         #     )
         # ):
-        pool = {
-            "token_address": "figures/candle/6QXbUVM4KmpLuFvUWP3mrTqVB4nn1idfK1PdXQaYqycv.png".split(
-                "/"
-            )[
-                -1
-            ].split(
-                "."
-            )[
-                0
-            ],
-        }
+        pool = {"token_address": "EjdQW3tbZHDM6RQ7nf6QPfJLNAwDp4yHHAYikRBipump"}
         meme = DataLoader(
             NewTokenPool(
                 token0=SOL_TOKEN_ADDRESS,
@@ -240,12 +222,3 @@ if __name__ == "__main__":
         txn_num_swap[pool["token_address"]] = len(meme.swap_list)
 
     meme.plot_pre_migration_candlestick_plotly(freq="1min")
-    (meme.get_ret(freq="1min") + 1).cumprod().plot()
-    freq = "1min"
-    before = 40
-    print(
-        f"Max Drawdown: {meme.get_mdd(freq=freq, before=before) * 100:.2f}%, "
-        f"Return: {meme.get_ret_before(freq=freq, before=before) * 100:.2f}%, "
-        f"Survive: {meme.get_survive()}, "
-        # f"Death 1min: {meme.check_death(freq=freq, before=before)}, "
-    )

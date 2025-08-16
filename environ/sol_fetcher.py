@@ -585,5 +585,5 @@ if __name__ == "__main__":
     # solana_fetcher.fetch_replies(
     #     save_path=DATA_PATH / "solana" / "raydium" / "reply",
     # )
-    for category in ["raydium"]:
+    for category in ["pumpfun", "raydium"]:
         process_txn(category)

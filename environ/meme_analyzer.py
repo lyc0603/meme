@@ -532,16 +532,16 @@ if __name__ == "__main__":
 
     for chain in [
         # "pre_trump_pumpfun",
-        # "pre_trump_raydium",
+        "pre_trump_raydium",
         # "pumpfun",
-        "raydium",
+        # "raydium",
     ]:
         for pool in import_pool(
             chain,
             NUM_OF_OBSERVATIONS,
         ):
             token_add = pool["token_address"]
-            token_add = "9E6PfjKH7TcJ6T75FN5h1HRNnUVhTT6vNsudauyWCxza"
+            token_add = "275kVN7zio9CG9c4Dkj3pq9EGDPvL8PEiTJviRg3pump"
             meme = MemeAnalyzer(
                 NewTokenPool(
                     token0=SOL_TOKEN_ADDRESS,
