@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/28.0.6 Chrome/138.0.7204.100 Electron/37.2.3 Safari/537.36" version="28.0.6">
   <diagram name="Page-1" id="Z--_ejFTgG8A-TA4O3CM">
-    <mxGraphModel dx="976" dy="673" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1654" math="0" shadow="0">
+    <mxGraphModel dx="976" dy="672" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1654" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -28,8 +28,8 @@
         <mxCell id="JRDyL9YkyT2CD5z9HUHo-10" value="&lt;font style=&quot;color: rgb(0, 0, 0);&quot;&gt;IPO Application&lt;/font&gt;&lt;div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="272" y="480" width="76" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="JRDyL9YkyT2CD5z9HUHo-11" value="3. Completing&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 138, 0), rgb(67, 186, 67));&quot;&gt;Purchasing (Bonding Curve)&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
-          <mxGeometry x="543.28" y="387.5" width="153.45" height="30" as="geometry" />
+        <mxCell id="JRDyL9YkyT2CD5z9HUHo-11" value="3.Completing&amp;nbsp;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 138, 0), rgb(67, 186, 67));&quot;&gt;Purchasing&amp;nbsp;&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="543.28" y="390" width="153.45" height="27.5" as="geometry" />
         </mxCell>
         <mxCell id="JRDyL9YkyT2CD5z9HUHo-15" value="4. Meme Coin&lt;div&gt;Migration&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#008A00;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="727" y="390" width="102" height="30" as="geometry" />
