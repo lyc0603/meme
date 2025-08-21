@@ -165,8 +165,8 @@
         <mxCell id="evOdLPFtCSrNcTVFNXwy-64" value="&lt;font style=&quot;color: rgb(255, 128, 0);&quot;&gt;&lt;b&gt;2. Sniper deploys sniper bot&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="721" y="686" width="119" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="evOdLPFtCSrNcTVFNXwy-65" value="&lt;font&gt;&lt;b&gt;3 Wash trading bots are working to attract traders&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontColor=#CC99FF;fontSize=14;" parent="1" vertex="1">
-          <mxGeometry x="850" y="694" width="170" height="20" as="geometry" />
+        <mxCell id="evOdLPFtCSrNcTVFNXwy-65" value="&lt;font&gt;&lt;b&gt;3 Bump bots are working to attract traders&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontColor=#CC99FF;fontSize=14;" parent="1" vertex="1">
+          <mxGeometry x="855" y="694" width="140" height="20" as="geometry" />
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-66" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="evOdLPFtCSrNcTVFNXwy-65" target="evOdLPFtCSrNcTVFNXwy-65" edge="1">
           <mxGeometry relative="1" as="geometry" />
@@ -298,7 +298,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="BrqOvg8XGHiVz4vsqj-c-27" value="&lt;font style=&quot;color: rgb(0, 127, 255);&quot;&gt;&lt;b&gt;4 Comment trading bots are working to attract traders&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontColor=#CC99FF;fontSize=14;" parent="1" vertex="1">
+        <mxCell id="BrqOvg8XGHiVz4vsqj-c-27" value="&lt;font style=&quot;color: rgb(0, 127, 255);&quot;&gt;&lt;b&gt;4 Comment bots are working to attract traders&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontColor=#CC99FF;fontSize=14;" parent="1" vertex="1">
           <mxGeometry x="1030" y="694" width="170" height="20" as="geometry" />
         </mxCell>
         <mxCell id="BrqOvg8XGHiVz4vsqj-c-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.858;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitPerimeter=0;dashed=1;dashPattern=8 8;strokeColor=#007FFF;" parent="1" edge="1">
@@ -317,7 +317,7 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="BrqOvg8XGHiVz4vsqj-c-32" value="&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;&lt;b&gt;5. Creator and sniper cash out&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontSize=14;" parent="1" vertex="1">
-          <mxGeometry x="1210" y="686" width="120" height="20" as="geometry" />
+          <mxGeometry x="1196" y="686" width="120" height="20" as="geometry" />
         </mxCell>
         <mxCell id="LSpQPhlU8Xm3PG01vQhM-2" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;dashPattern=8 8;fontColor=#B3B3B3;strokeColor=#B3B3B3;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
