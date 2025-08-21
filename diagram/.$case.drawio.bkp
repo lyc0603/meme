@@ -134,8 +134,8 @@
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-54" value="" style="endArrow=classic;html=1;rounded=0;strokeWidth=1;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="551" y="674.5" as="sourcePoint" />
-            <mxPoint x="1270" y="675" as="targetPoint" />
+            <mxPoint x="551" y="644.5" as="sourcePoint" />
+            <mxPoint x="1270" y="645" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-55" value="Timeline" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" parent="1" vertex="1">
@@ -160,36 +160,35 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-63" value="&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;&lt;b&gt;1. Creator creates MAO and deploys launch bundles&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontSize=14;" parent="1" vertex="1">
-          <mxGeometry x="544.9399999999999" y="694" width="168.12" height="20" as="geometry" />
+          <mxGeometry x="544.9399999999999" y="664" width="168.12" height="20" as="geometry" />
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-64" value="&lt;font style=&quot;color: rgb(255, 128, 0);&quot;&gt;&lt;b&gt;2. Sniper deploys sniper bot&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontSize=14;" parent="1" vertex="1">
-          <mxGeometry x="721" y="686" width="119" height="20" as="geometry" />
+          <mxGeometry x="721" y="656" width="119" height="20" as="geometry" />
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-65" value="&lt;font&gt;&lt;b&gt;3. Bump bots are working to attract traders&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontColor=#CC99FF;fontSize=14;" parent="1" vertex="1">
-          <mxGeometry x="855" y="694" width="140" height="20" as="geometry" />
+          <mxGeometry x="855" y="664" width="140" height="20" as="geometry" />
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-66" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="evOdLPFtCSrNcTVFNXwy-65" target="evOdLPFtCSrNcTVFNXwy-65" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-68" value="" style="endArrow=classic;html=1;rounded=0;dashed=1;dashPattern=8 8;strokeColor=#FF0000;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="629" y="670" as="sourcePoint" />
+            <mxPoint x="629" y="640" as="sourcePoint" />
             <mxPoint x="628.5" y="580" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-74" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#FF8000;curved=0;" parent="1" edge="1">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="750" y="670" as="sourcePoint" />
+            <mxPoint x="750" y="640" as="sourcePoint" />
             <mxPoint x="634" y="496" as="targetPoint" />
             <Array as="points">
-              <mxPoint x="750" y="670" />
               <mxPoint x="750" y="496" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="evOdLPFtCSrNcTVFNXwy-76" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#CC99FF;curved=0;" parent="1" edge="1">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="920" y="670" as="sourcePoint" />
+            <mxPoint x="920" y="640" as="sourcePoint" />
             <mxPoint x="919" y="420" as="targetPoint" />
             <Array as="points">
               <mxPoint x="920" y="446" />
@@ -291,15 +290,16 @@
         </mxCell>
         <mxCell id="BrqOvg8XGHiVz4vsqj-c-26" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=8 8;strokeColor=#007FFF;curved=0;" parent="1" edge="1">
           <mxGeometry relative="1" as="geometry">
-            <mxPoint x="1060" y="670" as="sourcePoint" />
+            <mxPoint x="1060" y="640" as="sourcePoint" />
             <mxPoint x="1060" y="423.52" as="targetPoint" />
             <Array as="points">
-              <mxPoint x="1061" y="423.52" />
+              <mxPoint x="1060" y="600" />
+              <mxPoint x="1061" y="600" />
             </Array>
           </mxGeometry>
         </mxCell>
         <mxCell id="BrqOvg8XGHiVz4vsqj-c-27" value="&lt;font style=&quot;color: rgb(0, 127, 255);&quot;&gt;&lt;b&gt;4. Comment bots are working to attract traders&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontColor=#CC99FF;fontSize=14;" parent="1" vertex="1">
-          <mxGeometry x="1030" y="694" width="170" height="20" as="geometry" />
+          <mxGeometry x="1030" y="664" width="170" height="20" as="geometry" />
         </mxCell>
         <mxCell id="BrqOvg8XGHiVz4vsqj-c-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.858;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitPerimeter=0;dashed=1;dashPattern=8 8;strokeColor=#007FFF;" parent="1" edge="1">
           <mxGeometry relative="1" as="geometry">
@@ -312,27 +312,27 @@
         </mxCell>
         <mxCell id="BrqOvg8XGHiVz4vsqj-c-31" value="" style="endArrow=classic;html=1;rounded=0;dashed=1;dashPattern=8 8;strokeColor=#FF0000;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="1256" y="670" as="sourcePoint" />
+            <mxPoint x="1256" y="640" as="sourcePoint" />
             <mxPoint x="1255.5" y="574" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="BrqOvg8XGHiVz4vsqj-c-32" value="&lt;font style=&quot;color: rgb(255, 0, 0);&quot;&gt;&lt;b&gt;5. Creator and sniper cash out&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=0;fontSize=14;" parent="1" vertex="1">
-          <mxGeometry x="1196" y="686" width="120" height="20" as="geometry" />
+          <mxGeometry x="1196" y="656" width="120" height="20" as="geometry" />
         </mxCell>
         <mxCell id="LSpQPhlU8Xm3PG01vQhM-2" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;dashPattern=8 8;fontColor=#B3B3B3;strokeColor=#B3B3B3;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="636" y="560" as="sourcePoint" />
-            <mxPoint x="1242" y="560" as="targetPoint" />
+            <mxPoint x="1240" y="574" as="sourcePoint" />
+            <mxPoint x="1264" y="574" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="LSpQPhlU8Xm3PG01vQhM-4" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;dashPattern=8 8;strokeColor=#B3B3B3;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="1243" y="559.97" as="sourcePoint" />
+            <mxPoint x="1243" y="573" as="sourcePoint" />
             <mxPoint x="1243" y="297" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="LSpQPhlU8Xm3PG01vQhM-6" value="&lt;span&gt;Pump Duration&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#B3B3B3;fontSize=14;fontStyle=1" parent="1" vertex="1">
-          <mxGeometry x="920" y="565" width="110" height="20" as="geometry" />
+        <mxCell id="LSpQPhlU8Xm3PG01vQhM-6" value="&lt;span&gt;Dump Duration&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#B3B3B3;fontSize=14;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="1210" y="580" width="110" height="20" as="geometry" />
         </mxCell>
         <mxCell id="LSpQPhlU8Xm3PG01vQhM-7" value="&lt;span&gt;Max Return&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;flipV=0;direction=east;textDirection=vertical-rl;fontColor=#B3B3B3;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="1220" y="438.74" width="15" height="97.26" as="geometry" />
