@@ -321,18 +321,18 @@
         </mxCell>
         <mxCell id="LSpQPhlU8Xm3PG01vQhM-2" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;dashPattern=8 8;fontColor=#B3B3B3;strokeColor=#B3B3B3;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="636" y="560" as="sourcePoint" />
-            <mxPoint x="1242" y="560" as="targetPoint" />
+            <mxPoint x="1240" y="574" as="sourcePoint" />
+            <mxPoint x="1264" y="574" as="targetPoint" />
           </mxGeometry>
         </mxCell>
         <mxCell id="LSpQPhlU8Xm3PG01vQhM-4" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;dashed=1;dashPattern=8 8;strokeColor=#B3B3B3;" parent="1" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="1243" y="559.97" as="sourcePoint" />
+            <mxPoint x="1243" y="573" as="sourcePoint" />
             <mxPoint x="1243" y="297" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="LSpQPhlU8Xm3PG01vQhM-6" value="&lt;span&gt;Pump Duration&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#B3B3B3;fontSize=14;fontStyle=1" parent="1" vertex="1">
-          <mxGeometry x="920" y="565" width="110" height="20" as="geometry" />
+        <mxCell id="LSpQPhlU8Xm3PG01vQhM-6" value="&lt;span&gt;Dump Duration&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#B3B3B3;fontSize=14;fontStyle=1" parent="1" vertex="1">
+          <mxGeometry x="1210" y="580" width="110" height="20" as="geometry" />
         </mxCell>
         <mxCell id="LSpQPhlU8Xm3PG01vQhM-7" value="&lt;span&gt;Max Return&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;flipV=0;direction=east;textDirection=vertical-rl;fontColor=#B3B3B3;fontSize=14;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="1220" y="438.74" width="15" height="97.26" as="geometry" />
