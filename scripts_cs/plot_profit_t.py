@@ -113,12 +113,12 @@ for (w, s), color, name in zip(series, colors, NAMING):
 
     # Wallet label
     ax.text(
-        1.25,
+        1.32,
         y_offset + 0.2,
         name,
         va="center",
         ha="right",
-        fontsize=FONT_SIZE - 1,
+        fontsize=FONT_SIZE - 2,
         color="black",
         fontweight="bold",
     )
@@ -144,7 +144,7 @@ legend_handles = [
 ax.legend(
     handles=legend_handles,
     loc="upper left",
-    fontsize=FONT_SIZE,
+    fontsize=FONT_SIZE + 2,
     frameon=False,
     prop=FontProperties(weight="bold"),
 )
