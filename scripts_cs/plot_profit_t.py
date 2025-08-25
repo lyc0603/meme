@@ -4,9 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde, t
 from pathlib import Path
-from environ.constants import PROCESSED_DATA_PATH, PROCESSED_DATA_CS_PATH, FIGURE_PATH
+from environ.constants import PROCESSED_DATA_PATH, FIGURE_PATH
 import matplotlib.patches as mpatches
 import matplotlib.lines as mlines
+from matplotlib.font_manager import FontProperties
+
 
 # --- Config ---
 WALLETS = [
@@ -15,7 +17,7 @@ WALLETS = [
     "CcSVw6PGY655z9ava7pQhSkckmBL7rtkrjPGRVK5z1K3",
 ]
 
-NAMING = ["Loss-Making Trader", "Noise Trader", "KOL"]
+NAMING = ["Underperforming Trader", "Noise Trader", "KOL"]
 
 FONT_SIZE = 14
 N_GRID = 600
@@ -116,8 +118,9 @@ for (w, s), color, name in zip(series, colors, NAMING):
         name,
         va="center",
         ha="right",
-        fontsize=FONT_SIZE - 2,
+        fontsize=FONT_SIZE - 1,
         color="black",
+        fontweight="bold",
     )
 
     y_offset += Y_STEP
@@ -125,10 +128,12 @@ for (w, s), color, name in zip(series, colors, NAMING):
 # --- Aesthetics ---
 ax.set_xlim(xs[0], -xs[0])
 ax.set_yticks([])
-ax.set_xlabel("Return", fontsize=FONT_SIZE)
-ax.set_ylabel("Density", fontsize=FONT_SIZE)
+ax.set_xlabel("Return", fontsize=FONT_SIZE, fontweight="bold")
+ax.set_ylabel("Density", fontsize=FONT_SIZE, fontweight="bold")
 ax.grid(axis="x", linestyle=":", alpha=0.5)
-ax.tick_params(axis="x", labelsize=FONT_SIZE - 2)
+ax.tick_params(axis="x", labelsize=FONT_SIZE)
+for label in ax.get_xticklabels():
+    label.set_fontweight("bold")
 fig.tight_layout()
 
 legend_handles = [
@@ -137,8 +142,15 @@ legend_handles = [
     mpatches.Patch(facecolor="grey", alpha=ALPHA_FILL, label="Distribution"),
 ]
 ax.legend(
-    handles=legend_handles, loc="upper left", fontsize=FONT_SIZE - 4, frameon=False
+    handles=legend_handles,
+    loc="upper left",
+    fontsize=FONT_SIZE,
+    frameon=False,
+    prop=FontProperties(weight="bold"),
 )
+ax.spines["top"].set_visible(False)
+ax.spines["left"].set_visible(False)
+ax.spines["right"].set_visible(False)
 
 out = Path(FIGURE_PATH) / "ridge.pdf"
 fig.savefig(out, bbox_inches="tight")
