@@ -30,6 +30,12 @@ ALPHA_CI = 0.55
 ALPHA_MEAN = 0.95
 ALPHA = 0.01  # 99% CI
 
+ROLE_COLOR = {
+    "KOL": "green",
+    "Noise Trader": "blue",
+    "Underperforming Trader": "red",
+}
+
 
 # --- Load & clean ---
 df = pd.read_csv(
@@ -55,17 +61,12 @@ x_lo, x_hi = np.percentile(all_vals, PERC_BOUNDS)
 pad = 0.05 * (x_hi - x_lo) if x_hi > x_lo else 0.1
 xs = np.linspace(x_lo - pad, x_hi + pad, N_GRID)
 
-# --- Colors: distinct per wallet ---
-base_colors = (
-    plt.rcParams["axes.prop_cycle"].by_key().get("color", ["C0", "C1", "C2", "C3"])
-)
-colors = [base_colors[i % len(base_colors)] for i in range(len(series))]
-
 # --- Plot ---
 fig, ax = plt.subplots(figsize=(6.5, 3.8))
 y_offset = 0.0
 
-for (w, s), color, name in zip(series, colors, NAMING):
+for (w, s), name in zip(series, NAMING):
+    color = ROLE_COLOR.get(name, "C0")
     kde = gaussian_kde(s.values)
     ys_raw = kde(xs)
     peak = ys_raw.max()
@@ -104,7 +105,7 @@ for (w, s), color, name in zip(series, colors, NAMING):
         mu,
         y_offset,
         y_offset + mu_h,
-        colors=color,
+        colors="black",
         linestyles="--",
         linewidth=1.8,
         alpha=ALPHA_MEAN,
