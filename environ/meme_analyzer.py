@@ -532,8 +532,8 @@ if __name__ == "__main__":
 
     for chain in [
         # "pre_trump_pumpfun",
-        "pre_trump_raydium",
-        # "pumpfun",
+        # "pre_trump_raydium",
+        "pumpfun",
         # "raydium",
     ]:
         for pool in import_pool(
@@ -541,7 +541,7 @@ if __name__ == "__main__":
             NUM_OF_OBSERVATIONS,
         ):
             token_add = pool["token_address"]
-            token_add = "275kVN7zio9CG9c4Dkj3pq9EGDPvL8PEiTJviRg3pump"
+            token_add = "AE1A1M3PTWmkuhfyL4pS22eYfxLzRw28aACu4hVMpump"
             meme = MemeAnalyzer(
                 NewTokenPool(
                     token0=SOL_TOKEN_ADDRESS,
@@ -557,12 +557,12 @@ if __name__ == "__main__":
             )
             # bundle_launch, bundle_bot = meme.get_bundle_launch_buy_sell_num()
             print(
-                f"meme coin: {meme.new_token_pool.pool_add}\n",
-                f"pre_migration_duration: {meme.get_pre_migration_duration()} seconds\n",
-                f"max_return and pump duration: {meme.get_max_ret_and_pump_duration()}\n",
-                f"dump duration: {meme.get_dump_duration()} seconds\n",
+                # f"meme coin: {meme.new_token_pool.pool_add}\n",
+                # f"pre_migration_duration: {meme.get_pre_migration_duration()} seconds\n",
+                # f"max_return and pump duration: {meme.get_max_ret_and_pump_duration()}\n",
+                # f"dump duration: {meme.get_dump_duration()} seconds\n",
                 # f"get_bundle_launch_buy_sell_num: {meme.get_bundle_launch_buy_sell_num()}\n",
-                f"dumper: {meme.get_dumper()}\n",
+                # f"dumper: {meme.get_dumper()}\n",
                 # f"wash_trading: {max([v.wash_trading() for k,v in {**meme.bots, **meme.traders}.items()])}\n",
                 # f"bundle_bot: {meme.get_bundle_launch_buy_sell_num()}\n",
                 # f"comment_bot_num: {meme.get_comment_bot_num()}\n",
@@ -572,3 +572,7 @@ if __name__ == "__main__":
             # (
             #     meme.get_ret(meme.prc_date_df, meme.migrate_time, True) + 1
             # ).cumprod().plot()
+
+            from environ.utils import handle_first_comment_bot
+
+            comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)

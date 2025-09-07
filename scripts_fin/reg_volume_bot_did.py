@@ -176,72 +176,72 @@ cohort_dfs = [df for df in results if df is not None]
 cohorts_df = pd.concat(cohort_dfs, ignore_index=True)
 cohorts_df.to_csv(PROCESSED_DATA_PATH / "reg_volume_did.csv", index=False)
 
-# implement the Cohort DiD
-model = pf.feols(
-    "log_number_of_traders ~ treat*post|cohort*time+cohort*token",
-    data=cohorts_df,
-    demeaner_backend="numba",
-    # vcov={"CRV3": "cohort*token"},
-    weights="weight",
-)
+# # implement the Cohort DiD
+# model = pf.feols(
+#     "log_number_of_traders ~ treat*post|cohort*time+cohort*token",
+#     data=cohorts_df,
+#     demeaner_backend="numba",
+#     # vcov={"CRV3": "cohort*token"},
+#     weights="weight",
+# )
 
-TABLE_KEYS = [
-    "treat_coef",
-    "treat_stderr",
-    "post_coef",
-    "post_stderr",
-    "treat_post_coef",
-    "treat_post_stderr",
-    "obs",
-    "r2",
-    "cohort_project_fe",
-    "cohort_time_fe",
-]
+# TABLE_KEYS = [
+#     "treat_coef",
+#     "treat_stderr",
+#     "post_coef",
+#     "post_stderr",
+#     "treat_post_coef",
+#     "treat_post_stderr",
+#     "obs",
+#     "r2",
+#     "cohort_project_fe",
+#     "cohort_time_fe",
+# ]
 
-res_dict = {k: [] for k in TABLE_KEYS}
+# res_dict = {k: [] for k in TABLE_KEYS}
 
 
-# Extract regression results
-est = model
-res_dict["treat_coef"].append(
-    f"{est.coef()['treat']:.2f}{asterisk(est.pvalue()['treat'])}"
-)
-res_dict["treat_stderr"].append(f"({est.tstat()['treat']:.2f})")
-res_dict["post_coef"].append(
-    f"{est.coef()['post']:.2f}{asterisk(est.pvalue()['post'])}"
-)
-res_dict["post_stderr"].append(f"({est.tstat()['post']:.2f})")
-res_dict["treat_post_coef"].append(
-    f"{est.coef()['treat:post']:.2f}{asterisk(est.pvalue()['treat:post'])}"
-)
-res_dict["treat_post_stderr"].append(f"({est.tstat()['treat:post']:.2f})")
-res_dict["obs"].append(f"{est._N}")
-res_dict["r2"].append(f"{est._adj_r2:.3f}")
-res_dict["cohort_project_fe"].append("Y")
-res_dict["cohort_time_fe"].append("Y")
+# # Extract regression results
+# est = model
+# res_dict["treat_coef"].append(
+#     f"{est.coef()['treat']:.2f}{asterisk(est.pvalue()['treat'])}"
+# )
+# res_dict["treat_stderr"].append(f"({est.tstat()['treat']:.2f})")
+# res_dict["post_coef"].append(
+#     f"{est.coef()['post']:.2f}{asterisk(est.pvalue()['post'])}"
+# )
+# res_dict["post_stderr"].append(f"({est.tstat()['post']:.2f})")
+# res_dict["treat_post_coef"].append(
+#     f"{est.coef()['treat:post']:.2f}{asterisk(est.pvalue()['treat:post'])}"
+# )
+# res_dict["treat_post_stderr"].append(f"({est.tstat()['treat:post']:.2f})")
+# res_dict["obs"].append(f"{est._N}")
+# res_dict["r2"].append(f"{est._adj_r2:.3f}")
+# res_dict["cohort_project_fe"].append("Y")
+# res_dict["cohort_time_fe"].append("Y")
 
-# Render LaTeX line-by-line
-latex_path = TABLE_PATH / "reg_volume_did.tex"
-with open(latex_path, "w", encoding="utf-8") as f:
-    f.write("\\begin{tabular}{lc}\n")
-    f.write("\\toprule\n")
-    f.write(f"& {NAMING_DICT.get('log_number_of_traders', 'Number of Traders')} \\\\\n")
-    f.write("\\midrule\n")
-    for var in [
-        "treat_post_coef",
-        "treat_post_stderr",
-        "treat_coef",
-        "treat_stderr",
-        "post_coef",
-        "post_stderr",
-        "obs",
-        "r2",
-        "cohort_time_fe",
-        "cohort_project_fe",
-    ]:
-        label = NAMING_DICT.get(var, var)
-        if var in {"obs"}:
-            f.write("\\midrule\n")
-        f.write(f"{label} & {res_dict[var][0]} \\\\\n")
-    f.write("\\bottomrule\n")
-    f.write("\\end{tabular}\n")
+# # Render LaTeX line-by-line
+# latex_path = TABLE_PATH / "reg_volume_did.tex"
+# with open(latex_path, "w", encoding="utf-8") as f:
+#     f.write("\\begin{tabular}{lc}\n")
+#     f.write("\\toprule\n")
+#     f.write(f"& {NAMING_DICT.get('log_number_of_traders', 'Number of Traders')} \\\\\n")
+#     f.write("\\midrule\n")
+#     for var in [
+#         "treat_post_coef",
+#         "treat_post_stderr",
+#         "treat_coef",
+#         "treat_stderr",
+#         "post_coef",
+#         "post_stderr",
+#         "obs",
+#         "r2",
+#         "cohort_time_fe",
+#         "cohort_project_fe",
+#     ]:
+#         label = NAMING_DICT.get(var, var)
+#         if var in {"obs"}:
+#             f.write("\\midrule\n")
+#         f.write(f"{label} & {res_dict[var][0]} \\\\\n")
+#     f.write("\\bottomrule\n")
+#     f.write("\\end{tabular}\n")

@@ -132,7 +132,7 @@ if __name__ == "__main__":
         task_queue = Queue()
         result_queue = Queue()
 
-        num_workers = min(cpu_count(), len(all_pools)) - 5
+        num_workers = min(cpu_count(), len(all_pools)) - 2
 
         # Start worker processes
         workers = []

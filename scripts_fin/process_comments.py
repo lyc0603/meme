@@ -13,16 +13,20 @@ from environ.prompt import (
     FEW_SHOT_EXAMPLES_COMMENT_BOT,
     JSON_SCHEMA_COMMENT_BOT,
 )
-from environ.agent import send_batch, retrieve_batch
+
+# from environ.agent import send_batch, retrieve_batch
 from tqdm import tqdm
 
 # client = OpenAI(api_key=os.getenv("OPENAI_API"))
 
-BATCH_NAME = "kol_non_kol"
+BATCH_NAME = "pre_trump_pumpfun"
 
 # Load comments from JSONL files
-# comments_path = glob.glob(f"{DATA_PATH}/solana/{BATCH_NAME}/reply/*.jsonl")
-comments_path = glob.glob(f"{PROCESSED_DATA_PATH}/{BATCH_NAME}/replies/*.jsonl")
+comments_path = (
+    glob.glob(f"{DATA_PATH}/solana/{BATCH_NAME}/reply/*.jsonl")
+    if BATCH_NAME != "kol_non_kol"
+    else glob.glob(f"{PROCESSED_DATA_PATH}/{BATCH_NAME}/replies/*.jsonl")
+)
 
 comments_batch = []
 comments_chunk = {}

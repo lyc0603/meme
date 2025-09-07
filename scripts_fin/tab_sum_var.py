@@ -11,10 +11,7 @@ from environ.constants import (
 )
 
 # Define variable groups
-X_VAR_PANEL = (
-    list(NAMING_DICT.keys())
-    + list(PFM_NAMING_DICT.keys())
-)
+X_VAR_PANEL = list(NAMING_DICT.keys()) + list(PFM_NAMING_DICT.keys())
 
 CHAINS = [
     "raydium",
@@ -104,7 +101,7 @@ def format_latex_line(
 ):
     """Helper function to format a LaTeX table line."""
     return (
-        f"{var_name} & {obs:,} & "
+        f"{var_name} & {obs:,.0f} & "
         f"{s['mean']:{fmt_mean}} & {s['std']:{fmt_std}} & "
         f"{s['p10']:{fmt_p10}} & {s['median']:{fmt_median}} & {s['p90']:{fmt_p90}}\\\\"
     )
