@@ -18,7 +18,7 @@ from sklearn.metrics import (
     roc_curve,
     precision_recall_curve,
 )
-from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.compose import ColumnTransformer
 
@@ -61,10 +61,7 @@ dummy_features = ["launch_bundle", "sniper_bot", "wash_trading_bot", "comment_bo
 all_features = continuous_features + dummy_features
 
 X_train, y_train = train_df[all_features], train_df["label_cls"]
-X_val, y_val = (
-    val_df[all_features],
-    val_df["label_cls"],
-)  # (unused here, but kept if you want threshold tuning)
+X_val, y_val = val_df[all_features], val_df["label_cls"]
 X_test, y_test = test_df[all_features], test_df["label_cls"]
 
 # ---------- Preprocessor ----------
@@ -150,12 +147,19 @@ f1_rf = 2 * (prec_rf * rec_rf) / (prec_rf + rec_rf + eps)
 thr_lasso = np.append(thr_lasso, 1.0)
 thr_rf = np.append(thr_rf, 1.0)
 
-# ---------- FIGURE 1: Precision & F1 vs Threshold ----------
-plt.rcParams.update({"font.size": 11, "axes.grid": True})
+# ---------- Styling ----------
+plt.rcParams.update(
+    {
+        "font.size": 22,  # global font size
+        "font.weight": "bold",  # global bold
+        "axes.grid": True,
+    }
+)
 color_lasso = "dimgray"
 color_rf = "crimson"
 
-fig1, ax1 = plt.subplots(figsize=(5, 3))
+# ---------- FIGURE 1: Precision & F1 vs Threshold ----------
+fig1, ax1 = plt.subplots(figsize=(7, 5))
 
 # LASSO
 ax1.plot(thr_lasso, prec_lasso, linestyle="--", linewidth=1.8, color=color_lasso)
@@ -166,30 +170,27 @@ ax1.plot(thr_rf, f1_rf, linestyle="-", linewidth=1.8, color=color_rf)
 
 ax1.set_xlim(0, 1)
 ax1.set_ylim(0, 1)
-ax1.set_xlabel("Threshold")
-ax1.set_ylabel("Score")
+ax1.set_xlabel("Threshold", fontweight="bold")
+ax1.set_ylabel("Score", fontweight="bold")
 
 # Legends
 measure_lines = [
     plt.Line2D([0], [0], linestyle="--", color="black", lw=1.8, label="Precision"),
-    plt.Line2D([0], [0], linestyle="-", color="black", lw=1.8, label=r"$F_1$"),
+    plt.Line2D([0], [0], linestyle="-", color="black", lw=1.8, label=r"$\mathbf{F_1}$"),
 ]
 leg1 = ax1.legend(
-    handles=measure_lines, title="Measure", loc="upper left", frameon=False
+    handles=measure_lines,
+    title="Measure",
+    loc="upper left",
+    frameon=False,
+    fontsize=18,
+    title_fontsize=18,
 )
 ax1.add_artist(leg1)
 
 model_patches = [
-    Patch(
-        facecolor=color_lasso,
-        edgecolor="none",
-        label="LASSO",
-        linewidth=0,
-        path_effects=[],
-    ),
-    Patch(
-        facecolor=color_rf, edgecolor="none", label="RF", linewidth=0, path_effects=[]
-    ),
+    Patch(facecolor=color_lasso, edgecolor="none", label="LASSO"),
+    Patch(facecolor=color_rf, edgecolor="none", label="RF"),
 ]
 leg2 = ax1.legend(
     handles=model_patches,
@@ -198,15 +199,18 @@ leg2 = ax1.legend(
     frameon=False,
     handlelength=1,
     handleheight=1,
+    fontsize=18,
+    title_fontsize=18,
 )
 ax1.add_artist(leg1)
+ax1.grid(False)
 
 plt.tight_layout()
 plt.savefig(FIGURE_PATH / "prec_f1_vs_threshold.pdf", dpi=300)
 plt.show()
 
 # ---------- FIGURE 2: ROC Curves ----------
-fig2, ax2 = plt.subplots(figsize=(5, 3))
+fig2, ax2 = plt.subplots(figsize=(7, 5))
 ax2.plot(
     fpr_lasso,
     tpr_lasso,
@@ -219,9 +223,9 @@ ax2.plot([0, 1], [0, 1], linestyle=":", color="black", lw=1.2)
 
 ax2.set_xlim(0, 1)
 ax2.set_ylim(0, 1)
-ax2.set_xlabel("False positive rate")
-ax2.set_ylabel("True positive rate")
-ax2.legend(loc="lower right", frameon=False)
+ax2.set_xlabel("False positive rate", fontweight="bold")
+ax2.set_ylabel("True positive rate", fontweight="bold")
+ax2.legend(loc="lower right", frameon=False, fontsize=18, title_fontsize=18)
 ax2.grid(False)
 
 plt.tight_layout()
