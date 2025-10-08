@@ -159,7 +159,7 @@ color_lasso = "dimgray"
 color_rf = "crimson"
 
 # ---------- FIGURE 1: Precision & F1 vs Threshold ----------
-fig1, ax1 = plt.subplots(figsize=(7, 5))
+fig1, ax1 = plt.subplots(figsize=(10, 5))
 
 # LASSO
 ax1.plot(thr_lasso, prec_lasso, linestyle="--", linewidth=1.8, color=color_lasso)
@@ -210,7 +210,7 @@ plt.savefig(FIGURE_PATH / "prec_f1_vs_threshold.pdf", dpi=300)
 plt.show()
 
 # ---------- FIGURE 2: ROC Curves ----------
-fig2, ax2 = plt.subplots(figsize=(7, 5))
+fig2, ax2 = plt.subplots(figsize=(10, 5))
 ax2.plot(
     fpr_lasso,
     tpr_lasso,
