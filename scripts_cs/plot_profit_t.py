@@ -35,7 +35,7 @@ ALPHA_MEAN = 0.95
 ALPHA = 0.01  # 99% CI
 
 ROLE_COLOR = {
-    "KOL/Bundle/Sniper Bot": "b",
+    "KOL/Bundle/Sniper Bot": "darkblue",
     "Noise Trader": "tab:blue",
     "Underperforming Trader": "gray",
 }
