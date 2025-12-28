@@ -1,14 +1,18 @@
-# Ridge plot of returns for three wallets with CI as shaded fill
+"""
+Script to plot profit distributions for selected trader wallets as ridge plots,
+"""
+
+from pathlib import Path
+
+import matplotlib.lines as mlines
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from scipy.stats import gaussian_kde, t
-from pathlib import Path
-from environ.constants import PROCESSED_DATA_PATH, FIGURE_PATH
-import matplotlib.patches as mpatches
-import matplotlib.lines as mlines
 from matplotlib.font_manager import FontProperties
+from scipy.stats import gaussian_kde, t
 
+from environ.constants import FIGURE_PATH, PROCESSED_DATA_PATH
 
 # --- Config ---
 WALLETS = [
@@ -17,7 +21,7 @@ WALLETS = [
     "CcSVw6PGY655z9ava7pQhSkckmBL7rtkrjPGRVK5z1K3",
 ]
 
-NAMING = ["Underperforming Trader", "Noise Trader", "KOL"]
+NAMING = ["Underperforming Trader", "Noise Trader", "KOL/Bundle/Sniper Bot"]
 
 FONT_SIZE = 14
 N_GRID = 600
@@ -31,13 +35,13 @@ ALPHA_MEAN = 0.95
 ALPHA = 0.01  # 99% CI
 
 ROLE_COLOR = {
-    "KOL": "green",
-    "Noise Trader": "blue",
-    "Underperforming Trader": "red",
+    "KOL/Bundle/Sniper Bot": "b",
+    "Noise Trader": "tab:blue",
+    "Underperforming Trader": "gray",
 }
 
 
-# --- Load & clean ---
+# Load and preprocess data
 df = pd.read_csv(
     Path(PROCESSED_DATA_PATH) / "trader_project_profits.csv",
     usecols=["trader_address", "ret"],
@@ -55,13 +59,13 @@ for w in WALLETS:
         raise ValueError(f"Wallet {w} has < 2 observations (need >= 2).")
     series.append((w, s))
 
-# --- Shared x-grid ---
+# Shared x-axis grid
 all_vals = pd.concat([s for _, s in series], axis=0)
 x_lo, x_hi = np.percentile(all_vals, PERC_BOUNDS)
 pad = 0.05 * (x_hi - x_lo) if x_hi > x_lo else 0.1
 xs = np.linspace(x_lo - pad, x_hi + pad, N_GRID)
 
-# --- Plot ---
+# Plotting
 fig, ax = plt.subplots(figsize=(6.5, 3.8))
 y_offset = 0.0
 
@@ -72,7 +76,7 @@ for (w, s), name in zip(series, NAMING):
     peak = ys_raw.max()
     ys = ys_raw / peak if peak > 0 else ys_raw
 
-    # --- Ridge fill ---
+    # Ridge fill
     ax.fill_between(
         xs, y_offset, y_offset + ys, color=color, alpha=ALPHA_FILL, zorder=2
     )
@@ -80,7 +84,7 @@ for (w, s), name in zip(series, NAMING):
     # Ridge outline
     ax.plot(xs, y_offset + ys, linewidth=1.0, color="black", alpha=0.8, zorder=3)
 
-    # --- Mean & 99% CI ---
+    # Confidence interval
     n = len(s)
     mu = s.mean()
     sd = s.std(ddof=1)
@@ -126,7 +130,7 @@ for (w, s), name in zip(series, NAMING):
 
     y_offset += Y_STEP
 
-# --- Aesthetics ---
+# Final plot adjustments
 ax.set_xlim(xs[0], -xs[0])
 ax.set_yticks([])
 ax.set_xlabel("Return", fontsize=FONT_SIZE, fontweight="bold")

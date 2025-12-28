@@ -4,13 +4,13 @@ import os
 
 import dotenv
 
-from environ.settings import PROJECT_ROOT
+from environ.settings import PROJECT_ROOT, DATA_ROOT
 
 dotenv.load_dotenv()
 
-DATA_PATH = PROJECT_ROOT / "data"
-PROCESSED_DATA_PATH = PROJECT_ROOT / "processed_data"
-PROCESSED_DATA_CS_PATH = PROJECT_ROOT / "processed_data_cs"
+DATA_PATH = DATA_ROOT / "data"
+PROCESSED_DATA_PATH = DATA_ROOT / "processed_data"
+PROCESSED_DATA_CS_PATH = DATA_ROOT / "processed_data_cs"
 FIGURE_PATH = PROJECT_ROOT / "figures"
 TABLE_PATH = PROJECT_ROOT / "tables"
 ABI_PATH = DATA_PATH / "abi"
