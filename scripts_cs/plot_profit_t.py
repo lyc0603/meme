@@ -21,7 +21,7 @@ WALLETS = [
     "CcSVw6PGY655z9ava7pQhSkckmBL7rtkrjPGRVK5z1K3",
 ]
 
-NAMING = ["Underperforming Trader", "Noise Trader", "KOL/Bundle/Sniper Bot"]
+NAMING = ["Underperforming Trader", "Noise Trader", "KOL/Bot"]
 
 FONT_SIZE = 14
 N_GRID = 600
