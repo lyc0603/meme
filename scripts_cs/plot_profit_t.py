@@ -21,7 +21,11 @@ WALLETS = [
     "CcSVw6PGY655z9ava7pQhSkckmBL7rtkrjPGRVK5z1K3",
 ]
 
-NAMING = ["Underperforming Trader", "Noise Trader", "KOL/Bot"]
+NAMING = [
+    "Underperforming\nTrader/Bump Bot",
+    "Noise Trader",
+    "KOL/Bundle Bot\n/Sniper Bot",
+]
 
 FONT_SIZE = 14
 N_GRID = 600
@@ -35,9 +39,9 @@ ALPHA_MEAN = 0.95
 ALPHA = 0.01  # 99% CI
 
 ROLE_COLOR = {
-    "KOL/Bot": "darkblue",
+    "KOL/Bundle Bot\n/Sniper Bot": "darkblue",
     "Noise Trader": "tab:blue",
-    "Underperforming Trader": "gray",
+    "Underperforming\nTrader/Bump Bot": "gray",
 }
 
 
