@@ -304,7 +304,7 @@ if __name__ == "__main__":
         title_fontsize=18,
     )
     ax1.add_artist(leg2)
-    ax1.grid(False)
+    ax1.grid(True)
 
     plt.tight_layout()
     plt.savefig(FIGURE_PATH / "prec_f1_vs_threshold.pdf", dpi=300)
@@ -348,7 +348,7 @@ if __name__ == "__main__":
         title_fontsize=18,
     )
     ax2.add_artist(leg)
-    ax2.grid(False)
+    ax2.grid(True)
 
     plt.tight_layout()
     plt.savefig(FIGURE_PATH / "roc_curves.pdf", dpi=300)
