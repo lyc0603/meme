@@ -17,7 +17,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
-from environ.constants import PROCESSED_DATA_CS_PATH
+from environ.constants import FIGURE_PATH, PROCESSED_DATA_CS_PATH
 
 SEED = 42
 
@@ -252,7 +252,7 @@ if __name__ == "__main__":
         "NN": "royalblue",
     }
 
-    fig1, ax1 = plt.subplots(figsize=(8, 7))
+    fig1, ax1 = plt.subplots(figsize=(7, 7))
 
     for name, proba in proba_dict.items():
         prec, rec, thr = precision_recall_curve(y_test, proba)
@@ -307,11 +307,11 @@ if __name__ == "__main__":
     ax1.grid(False)
 
     plt.tight_layout()
-    plt.savefig(PROCESSED_DATA_CS_PATH / "prec_f1_vs_threshold.pdf", dpi=300)
+    plt.savefig(FIGURE_PATH / "prec_f1_vs_threshold.pdf", dpi=300)
     plt.show()
 
     # ROC Curves
-    fig2, ax2 = plt.subplots(figsize=(8, 7))
+    fig2, ax2 = plt.subplots(figsize=(7, 7))
 
     for name, proba in proba_dict.items():
         fpr, tpr, _ = roc_curve(y_test, proba)
@@ -320,7 +320,7 @@ if __name__ == "__main__":
             tpr,
             lw=1.8,
             color=colors[name],
-            label=f"{name} (AUC = {auc_dict[name]:.4f})",
+            label=f"{name}",
         )
 
     ax2.plot([0, 1], [0, 1], linestyle=":", color="black", lw=1.2)
@@ -351,6 +351,5 @@ if __name__ == "__main__":
     ax2.grid(False)
 
     plt.tight_layout()
-    plt.savefig(PROCESSED_DATA_CS_PATH / "roc_curves.pdf", dpi=300)
-    plt.show()
+    plt.savefig(FIGURE_PATH / "roc_curves.pdf", dpi=300)
     plt.show()
