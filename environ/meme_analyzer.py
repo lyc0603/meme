@@ -1,17 +1,17 @@
 """Class to analyze meme token"""
 
 import datetime
+import json
 from collections import defaultdict
 from datetime import timezone
-from typing import Optional, Any
+from typing import Any, Literal, Optional
 
 import numpy as np
 import pandas as pd
 
-from environ.constants import SOL_TOKEN_ADDRESS, PROCESSED_DATA_PATH
+from environ.constants import PROCESSED_DATA_PATH, SOL_TOKEN_ADDRESS, SOLANA_PATH_DICT
 from environ.data_class import NewTokenPool, Swap, Transfer
 from environ.meme_base import MemeBase
-from environ.sol_fetcher import import_pool
 
 INITIAL_PRICE = 2.8e-8
 MAX_INACTIVITY = pd.Timedelta(days=30)
@@ -27,6 +27,27 @@ neutral = set(
         "trader_address",
     ].unique()
 )
+
+
+def import_pool(
+    category: Literal["pumpfun", "raydium", "pre_trump_raydium", "pre_trump_pumpfun"],
+    num: Optional[int] = None,
+) -> list[tuple[str, str | int | Any]]:
+    """Utility function to fetch the pool list."""
+
+    pool = []
+    with open(
+        SOLANA_PATH_DICT[category],
+        "r",
+        encoding="utf-8",
+    ) as f:
+        for idx, line in enumerate(f, 1):
+            if num:
+                if idx > num:
+                    break
+            pool.append(json.loads(line))
+
+    return pool
 
 
 class Account:
@@ -575,4 +596,5 @@ if __name__ == "__main__":
 
             from environ.utils import handle_first_comment_bot
 
+            comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
             comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)

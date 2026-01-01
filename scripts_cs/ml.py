@@ -1,49 +1,29 @@
-#!/usr/bin/env python3
-"""
-LASSO-Logit + Random Forest with styled plots:
-Fig 1: Precision (dashed) & F1 (solid) vs Threshold (both models)
-Fig 2: ROC curves with AUC (both models)
-"""
+"""Script to train ML models to classify traders based on their features."""
 
+import warnings
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
-
-from sklearn.linear_model import LogisticRegression
+from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import (
-    roc_auc_score,
-    roc_curve,
-    precision_recall_curve,
-)
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import precision_recall_curve, roc_auc_score, roc_curve
+from sklearn.model_selection import ParameterGrid
+from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.compose import ColumnTransformer
+from tqdm import tqdm
 
-from environ.constants import PROCESSED_DATA_CS_PATH, FIGURE_PATH
+from environ.constants import PROCESSED_DATA_CS_PATH
 
+SEED = 42
 
-# ---------- Load & prep ----------
-df = pd.read_csv(PROCESSED_DATA_CS_PATH / "trader_features_merged.csv")
-df["date"] = pd.to_datetime(df["date"])
-df.dropna(inplace=True)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-# Binary label
-df["label_cls"] = (df["label"] > 0).astype(int)
-
-# Chronological split
-df = df.sort_values("date")
-cutoff_1 = df["date"].quantile(0.70)
-cutoff_2 = df["date"].quantile(0.85)
-
-train_df = df[df["date"] <= cutoff_1]
-val_df = df[(df["date"] > cutoff_1) & (df["date"] <= cutoff_2)]
-test_df = df[df["date"] > cutoff_2]
-
-# ---------- Features ----------
-continuous_features = [
+CONTINUOUS_FEATURES = [
     "average_ret",
     "std_ret",
     "last_ret",
@@ -57,177 +37,320 @@ continuous_features = [
     "first_txn_price",
     "time_since_launch",
 ]
-dummy_features = ["launch_bundle", "sniper_bot", "wash_trading_bot", "comment_bot"]
-all_features = continuous_features + dummy_features
+DUMMY_FEATURES = ["launch_bundle", "sniper_bot", "wash_trading_bot", "comment_bot"]
+all_features = CONTINUOUS_FEATURES + DUMMY_FEATURES
 
-X_train, y_train = train_df[all_features], train_df["label_cls"]
-X_val, y_val = val_df[all_features], val_df["label_cls"]
-X_test, y_test = test_df[all_features], test_df["label_cls"]
 
-# ---------- Preprocessor ----------
+class Winsorizer(BaseEstimator, TransformerMixin):
+    """
+    Per-feature winsorization at given lower/upper quantiles.
+    Cutoffs are computed from training data and applied to all data.
+    """
+
+    def __init__(self, lower=0.01, upper=0.99):
+        self.lower = lower
+        self.upper = upper
+
+    def fit(self, X: np.ndarray, y=None) -> "Winsorizer":
+        """Fit the transformer on X."""
+        X = np.asarray(X, dtype=float)
+        # store per-feature quantiles
+        self.lower_ = np.nanquantile(X, self.lower, axis=0)
+        self.upper_ = np.nanquantile(X, self.upper, axis=0)
+        return self
+
+    def transform(self, X: np.ndarray) -> np.ndarray:
+        """Transform X by applying winsorization."""
+        X = np.asarray(X, dtype=float)
+        return np.clip(X, self.lower_, self.upper_)
+
+
+def grid_search(
+    name: str,
+    base_estimator: Pipeline,
+    param_grid: dict,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_val: np.ndarray,
+    y_val: np.ndarray,
+) -> tuple[Pipeline, dict, float]:
+    """Perform grid search over param_grid for the given base_estimator."""
+
+    best_model = None
+    best_params = None
+    best_auc = -np.inf
+
+    for params in tqdm(ParameterGrid(param_grid), desc=f"Grid search for {name}"):
+        model = clone(base_estimator)
+        model.set_params(**params)
+        model.fit(X_train, y_train)
+
+        val_proba = model.predict_proba(X_val)[:, 1]
+        val_auc = roc_auc_score(y_val, val_proba)
+
+        if val_auc > best_auc:
+            best_auc = val_auc
+            best_model = model
+            best_params = params
+
+    return best_model, best_params, best_auc
+
+
+# Preprocessor
 pre = ColumnTransformer(
     transformers=[
-        ("scale", StandardScaler(), continuous_features),
-        ("pass", "passthrough", dummy_features),
+        (
+            "cont",
+            Pipeline(
+                [
+                    ("winsor", Winsorizer(lower=0.025, upper=0.975)),
+                    ("scale", StandardScaler()),
+                ]
+            ),
+            CONTINUOUS_FEATURES,
+        ),
+        ("dummy", "passthrough", DUMMY_FEATURES),
     ]
 )
 
-# ========= LASSO-Logit (L1) with CV on C =========
-lasso_pipe = Pipeline(
+# LASSO
+pipe_lasso = Pipeline(
     [
         ("preprocessor", pre),
         (
             "lasso",
             LogisticRegression(
                 penalty="l1",
-                solver="liblinear",  # supports L1 for binary
+                solver="liblinear",
                 class_weight="balanced",
                 max_iter=5000,
-                random_state=42,
+                random_state=SEED,
+            ),
+        ),
+    ]
+)
+grid_lasso = {"lasso__C": np.logspace(1, 4, 10)}
+
+# Random Forest
+pipe_rf = Pipeline(
+    [
+        ("preprocessor", pre),
+        ("rf", RandomForestClassifier(random_state=SEED, class_weight="balanced")),
+    ]
+)
+grid_rf = {
+    "rf__max_depth": list(range(1, 11)),
+    "rf__n_estimators": [300],
+    "rf__max_features": [2, 4, 8, 16],
+}
+
+
+# MLP
+pipe_mlp = Pipeline(
+    [
+        ("preprocessor", pre),
+        (
+            "mlp",
+            MLPClassifier(
+                batch_size=500,
+                max_iter=100,
+                early_stopping=True,
+                n_iter_no_change=5,
+                solver="adam",
+                random_state=SEED,
             ),
         ),
     ]
 )
 
-param_grid_lasso = {"lasso__C": np.logspace(-3, 2, 10)}  # 0.001 ... 100
-gs_lasso = GridSearchCV(
-    lasso_pipe,
-    param_grid_lasso,
-    cv=3,
-    scoring="roc_auc",
-    n_jobs=-1,
-    verbose=0,
-)
-gs_lasso.fit(X_train, y_train)
-lasso = gs_lasso.best_estimator_
-
-# Report chosen C and sparsity
-best_C = gs_lasso.best_params_["lasso__C"]
-coef = lasso.named_steps["lasso"].coef_.ravel()
-nonzero = (coef != 0).sum()
-print(f"[LASSO] Best C = {best_C:.4g} | Non-zero coefficients = {nonzero}/{coef.size}")
-
-# ========= Random Forest (GridSearch) =========
-rf_pipe = Pipeline(
-    [
-        ("preprocessor", pre),
-        ("rf", RandomForestClassifier(random_state=42, class_weight="balanced")),
-    ]
-)
-
-param_grid_rf = {
-    "rf__n_estimators": [200],
-    "rf__max_depth": [5, 10],
-    "rf__min_samples_leaf": [5, 10],
-    "rf__max_features": ["sqrt", "log2"],
+# Treat hidden_layer_sizes as a hyperparameter
+grid_mlp = {
+    "mlp__hidden_layer_sizes": [
+        (32,),
+        (32, 16),
+        (32, 16, 8),
+        (32, 16, 8, 4),
+        (32, 16, 8, 4, 2),
+    ],
+    "mlp__alpha": np.logspace(-5, -3, 3),
+    "mlp__learning_rate_init": [0.0001, 0.0005, 0.001, 0.01],
 }
-gs_rf = GridSearchCV(
-    rf_pipe, param_grid_rf, cv=3, scoring="roc_auc", n_jobs=-1, verbose=0
-)
-gs_rf.fit(X_train, y_train)
-rf = gs_rf.best_estimator_
-print(f"[RF] Best params: {gs_rf.best_params_}")
 
-# ---------- Test-set probabilities ----------
-proba_lasso = lasso.predict_proba(X_test)[:, 1]
-proba_rf = rf.predict_proba(X_test)[:, 1]
 
-# ---------- ROC data ----------
-auc_lasso = roc_auc_score(y_test, proba_lasso)
-auc_rf = roc_auc_score(y_test, proba_rf)
-fpr_lasso, tpr_lasso, _ = roc_curve(y_test, proba_lasso)
-fpr_rf, tpr_rf, _ = roc_curve(y_test, proba_rf)
+if __name__ == "__main__":
 
-# ---------- Precision / F1 vs Threshold ----------
-prec_lasso, rec_lasso, thr_lasso = precision_recall_curve(y_test, proba_lasso)
-prec_rf, rec_rf, thr_rf = precision_recall_curve(y_test, proba_rf)
-eps = 1e-8
-f1_lasso = 2 * (prec_lasso * rec_lasso) / (prec_lasso + rec_lasso + eps)
-f1_rf = 2 * (prec_rf * rec_rf) / (prec_rf + rec_rf + eps)
-thr_lasso = np.append(thr_lasso, 1.0)
-thr_rf = np.append(thr_rf, 1.0)
+    # Load the data
+    df = pd.read_csv(PROCESSED_DATA_CS_PATH / "trader_features_merged.csv")
+    df["date"] = pd.to_datetime(df["date"])
+    df.dropna(inplace=True)
 
-# ---------- Styling ----------
-plt.rcParams.update(
-    {
-        "font.size": 22,  # global font size
-        "font.weight": "bold",  # global bold
-        "axes.grid": True,
+    # Binary label
+    df["label_cls"] = (df["label"] > 0).astype(int)
+
+    # Chronological split
+    df = df.sort_values("date")
+    cutoff_1 = df["date"].quantile(0.70)
+    cutoff_2 = df["date"].quantile(0.85)
+
+    train_df = df[df["date"] <= cutoff_1]
+    val_df = df[(df["date"] > cutoff_1) & (df["date"] <= cutoff_2)]
+    test_df = df[df["date"] > cutoff_2]
+
+    X_train, y_train = train_df[all_features], train_df["label_cls"]
+    X_val, y_val = val_df[all_features], val_df["label_cls"]
+    X_test, y_test = test_df[all_features], test_df["label_cls"]
+
+    # models and grids
+    model_specs = [
+        ("LASSO", pipe_lasso, grid_lasso),
+        ("RF", pipe_rf, grid_rf),
+        ("NN", pipe_mlp, grid_mlp),
+    ]
+
+    # Train and evaluate models
+    results = {}
+    for name, base_estimator, param_grid in model_specs:
+        best_model, best_params, best_val_auc = grid_search(
+            name,
+            base_estimator,
+            param_grid,
+            X_train,
+            y_train,
+            X_val,
+            y_val,
+        )
+        proba_test = best_model.predict_proba(X_test)[:, 1]
+        test_auc = roc_auc_score(y_test, proba_test)
+        results[name] = {
+            "model": best_model,
+            "best_params": best_params,
+            "val_auc": best_val_auc,
+            "test_auc": test_auc,
+        }
+
+    # collect test probabilities and AUCs
+    proba_dict = {}
+    auc_dict = {}
+
+    for name, info in results.items():
+        model = info["model"]
+        proba = model.predict_proba(X_test)[:, 1]
+        proba_dict[name] = proba
+        auc_dict[name] = info["test_auc"]
+
+    plt.rcParams.update(
+        {
+            "font.size": 22,
+            "font.weight": "bold",
+            "axes.grid": True,
+        }
+    )
+
+    colors = {
+        "LASSO": "dimgray",
+        "RF": "crimson",
+        "NN": "royalblue",
     }
-)
-color_lasso = "dimgray"
-color_rf = "crimson"
 
-# ---------- FIGURE 1: Precision & F1 vs Threshold ----------
-fig1, ax1 = plt.subplots(figsize=(10, 5))
+    fig1, ax1 = plt.subplots(figsize=(8, 7))
 
-# LASSO
-ax1.plot(thr_lasso, prec_lasso, linestyle="--", linewidth=1.8, color=color_lasso)
-ax1.plot(thr_lasso, f1_lasso, linestyle="-", linewidth=1.8, color=color_lasso)
-# RF
-ax1.plot(thr_rf, prec_rf, linestyle="--", linewidth=1.8, color=color_rf)
-ax1.plot(thr_rf, f1_rf, linestyle="-", linewidth=1.8, color=color_rf)
+    for name, proba in proba_dict.items():
+        prec, rec, thr = precision_recall_curve(y_test, proba)
 
-ax1.set_xlim(0, 1)
-ax1.set_ylim(0, 1)
-ax1.set_xlabel("Threshold", fontweight="bold")
-ax1.set_ylabel("Score", fontweight="bold")
+        # Drop the artificial last point (precision=1, recall=0) with no threshold
+        prec = prec[:-1]
+        rec = rec[:-1]
 
-# Legends
-measure_lines = [
-    plt.Line2D([0], [0], linestyle="--", color="black", lw=1.8, label="Precision"),
-    plt.Line2D([0], [0], linestyle="-", color="black", lw=1.8, label=r"$\mathbf{F_1}$"),
-]
-leg1 = ax1.legend(
-    handles=measure_lines,
-    title="Measure",
-    loc="upper left",
-    frameon=False,
-    fontsize=18,
-    title_fontsize=18,
-)
-ax1.add_artist(leg1)
+        eps = 1e-8
+        f1 = 2 * prec * rec / (prec + rec + eps)
 
-model_patches = [
-    Patch(facecolor=color_lasso, edgecolor="none", label="LASSO"),
-    Patch(facecolor=color_rf, edgecolor="none", label="RF"),
-]
-leg2 = ax1.legend(
-    handles=model_patches,
-    title="Model",
-    loc="lower left",
-    frameon=False,
-    handlelength=1,
-    handleheight=1,
-    fontsize=18,
-    title_fontsize=18,
-)
-ax1.add_artist(leg1)
-ax1.grid(False)
+        # No need to append anything to thr
+        ax1.plot(thr, prec, linestyle="--", linewidth=1.8, color=colors[name])
+        ax1.plot(thr, f1, linestyle="-", linewidth=1.8, color=colors[name])
 
-plt.tight_layout()
-plt.savefig(FIGURE_PATH / "prec_f1_vs_threshold.pdf", dpi=300)
-plt.show()
+    ax1.set_xlim(0, 1)
+    ax1.set_ylim(0, 1)
+    ax1.set_xlabel("Threshold", fontweight="bold")
+    ax1.set_ylabel("Score", fontweight="bold")
 
-# ---------- FIGURE 2: ROC Curves ----------
-fig2, ax2 = plt.subplots(figsize=(10, 5))
-ax2.plot(
-    fpr_lasso,
-    tpr_lasso,
-    color=color_lasso,
-    lw=1.8,
-    label=f"LASSO (AUC = {auc_lasso:.4f})",
-)
-ax2.plot(fpr_rf, tpr_rf, color=color_rf, lw=1.8, label=f"RF (AUC = {auc_rf:.4f})")
-ax2.plot([0, 1], [0, 1], linestyle=":", color="black", lw=1.2)
+    measure_lines = [
+        plt.Line2D([0], [0], linestyle="--", color="black", lw=1.8, label="Precision"),
+        plt.Line2D(
+            [0], [0], linestyle="-", color="black", lw=1.8, label=r"$\mathbf{F_1}$"
+        ),
+    ]
+    leg1 = ax1.legend(
+        handles=measure_lines,
+        title="Measure",
+        loc="upper left",
+        frameon=False,
+        fontsize=18,
+        title_fontsize=18,
+    )
+    ax1.add_artist(leg1)
 
-ax2.set_xlim(0, 1)
-ax2.set_ylim(0, 1)
-ax2.set_xlabel("False positive rate", fontweight="bold")
-ax2.set_ylabel("True positive rate", fontweight="bold")
-ax2.legend(loc="lower right", frameon=False, fontsize=18, title_fontsize=18)
-ax2.grid(False)
+    model_patches = [
+        Patch(facecolor=colors[name], edgecolor="none", label=name)
+        for name, _ in proba_dict.items()
+    ]
+    leg2 = ax1.legend(
+        handles=model_patches,
+        title="Model",
+        loc="lower left",
+        frameon=False,
+        handlelength=1,
+        handleheight=1,
+        fontsize=18,
+        title_fontsize=18,
+    )
+    ax1.add_artist(leg2)
+    ax1.grid(False)
 
-plt.tight_layout()
-plt.savefig(FIGURE_PATH / "roc_curves.pdf", dpi=300)
-plt.show()
+    plt.tight_layout()
+    plt.savefig(PROCESSED_DATA_CS_PATH / "prec_f1_vs_threshold.pdf", dpi=300)
+    plt.show()
+
+    # ROC Curves
+    fig2, ax2 = plt.subplots(figsize=(8, 7))
+
+    for name, proba in proba_dict.items():
+        fpr, tpr, _ = roc_curve(y_test, proba)
+        ax2.plot(
+            fpr,
+            tpr,
+            lw=1.8,
+            color=colors[name],
+            label=f"{name} (AUC = {auc_dict[name]:.4f})",
+        )
+
+    ax2.plot([0, 1], [0, 1], linestyle=":", color="black", lw=1.2)
+
+    ax2.set_xlim(0, 1)
+    ax2.set_ylim(0, 1)
+    ax2.set_xlabel("False positive rate", fontweight="bold")
+    ax2.set_ylabel("True positive rate", fontweight="bold")
+    model_patches = [
+        Patch(
+            facecolor=colors[name],
+            edgecolor="none",
+            label=f"{name} (AUC = {auc_dict[name]:.4f})",
+        )
+        for name, _ in proba_dict.items()
+    ]
+    leg = ax2.legend(
+        handles=model_patches,
+        title="Model",
+        loc="lower right",
+        frameon=False,
+        handlelength=1,
+        handleheight=1,
+        fontsize=18,
+        title_fontsize=18,
+    )
+    ax2.add_artist(leg)
+    ax2.grid(False)
+
+    plt.tight_layout()
+    plt.savefig(PROCESSED_DATA_CS_PATH / "roc_curves.pdf", dpi=300)
+    plt.show()
+    plt.show()
