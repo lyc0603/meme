@@ -9,7 +9,7 @@ find = {}
 name = "environ"
 version = "0.0.1" 
 readme = "README.md"
-requires-python = ">=3.9.6"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -33,7 +33,6 @@ dependencies = [
     "dotenv",
     "web3",
     "xgboost",
-    "ipkernel",
 ]
 
 [project.optional-dependencies]

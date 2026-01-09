@@ -2,6 +2,7 @@
 
 import datetime
 from datetime import timezone
+from typing import Optional
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -24,14 +25,23 @@ class DataLoader(MemeAnalyzer):
         super().__init__(*args, **kwargs)
         self.candle_url = IMAGE_URL_TEMP.format(ca=self.new_token_pool.pool_add)
         self.swap_list = self.build_txn_list()
-        self.comment_list = [
-            _["comment"]["user"][:6] + ": " + _["comment"]["text"]
-            for _ in self.comment
-            if datetime.datetime.fromtimestamp(
-                _["comment"]["timestamp"] / 1000, tz=timezone.utc
-            )
-            <= self.migrate_time
-        ]
+
+    def save_comment(
+        self, trader_addr: str, before: Optional[pd.Timestamp] = None
+    ) -> None:
+        """Save comments to a text file."""
+        with open(
+            FIGURE_PATH / "comment" / f"{self.new_token_pool.token1}_{trader_addr}.txt",
+            "w",
+            encoding="utf-8",
+        ) as f:
+            for c in self.comment:
+                ts = pd.to_datetime(c["comment"]["timestamp"], unit="ms", utc=True)
+                ts_str = ts.strftime("%Y-%m-%d %H:%M:%S")
+                if before is None or ts <= before:
+                    f.write(
+                        f'{ts_str} - {c["comment"]["user"][:6]}: {c["comment"]["text"]}\n'
+                    )
 
     def build_txn_list(self) -> list:
         """Get transactions for the meme token."""
@@ -103,14 +113,19 @@ class DataLoader(MemeAnalyzer):
         return [i for _, i in sorted(swap_list, key=lambda x: x[0])]
 
     @retry(stop=stop_after_attempt(3))
-    def plot_pre_migration_candlestick_plotly(self, freq: str = "5min") -> None:
+    def plot_pre_migration_candlestick_plotly(
+        self, trader_addr: str, freq: str, before: Optional[pd.Timestamp] = None
+    ) -> None:
         """
         Plot a Plotly-based candlestick chart for **pre-migration** meme token price.
 
         Args:
             freq (str): Resampling frequency for the pre-migration data (e.g., '5min', '15min').
+            before (datetime.datetime): Timestamp to filter data before migration.
         """
         df = self.prc_date_df.copy()
+        if before is not None:
+            df = df[df.index < before]
         df = df.resample(freq).agg(
             {"price": ["first", "max", "min", "last"], "quote": "sum"}
         )
@@ -171,18 +186,16 @@ class DataLoader(MemeAnalyzer):
                 df.index.max() + pd.Timedelta(minutes=0.5),
             ]
         )
-        # fig.write_image(
-        #     FIGURE_PATH / "candle" / f"{self.new_token_pool.token1}.png",
-        #     scale=2,
-        # )
-        fig.show()
+        fig.write_image(
+            FIGURE_PATH / "candle" / f"{self.new_token_pool.token1}_{trader_addr}.png",
+            scale=2,
+        )
+        # fig.show()
 
 
 if __name__ == "__main__":
 
     import os
-
-    from tqdm import tqdm
 
     os.makedirs(FIGURE_PATH / "candle", exist_ok=True)
 
@@ -193,10 +206,10 @@ if __name__ == "__main__":
     txn_num_swap = {}
 
     for chain in [
-        # "raydium",
+        "raydium",
         # "pre_trump_raydium"
         # "pumpfun",
-        "pre_trump_pumpfun",
+        # "pre_trump_pumpfun",
     ]:
         # for pool in tqdm(
         #     import_pool(
@@ -204,7 +217,7 @@ if __name__ == "__main__":
         #         NUM_OF_OBSERVATIONS,
         #     )
         # ):
-        pool = {"token_address": "EjdQW3tbZHDM6RQ7nf6QPfJLNAwDp4yHHAYikRBipump"}
+        pool = {"token_address": "2acimvdQF5yHL28h4uyUo6ANoDWPgDfeNCnrF5d9pump"}
         meme = DataLoader(
             NewTokenPool(
                 token0=SOL_TOKEN_ADDRESS,
@@ -221,4 +234,8 @@ if __name__ == "__main__":
 
         txn_num_swap[pool["token_address"]] = len(meme.swap_list)
 
-    meme.plot_pre_migration_candlestick_plotly(freq="1min")
+    # meme.plot_pre_migration_candlestick_plotly(
+    #     trader_addr=pool["token_address"],
+    #     freq="1min",
+    #     before=pd.to_datetime("2025-01-19 02:00:00+00:00"),
+    # )
