@@ -1,6 +1,6 @@
 <mxfile host="Electron" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.0 Chrome/140.0.7339.249 Electron/38.7.2 Safari/537.36" version="29.3.0">
   <diagram name="Page-1" id="cnZoVvaNaMYkMaLIiD-e">
-    <mxGraphModel dx="1018" dy="698" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="1" shadow="0">
+    <mxGraphModel dx="1018" dy="777" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -35,10 +35,10 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="CKFEmQA0s3hePLSnbmCz-6" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="$$b_1$$" vertex="1">
-          <mxGeometry height="11" width="35" x="607.25" y="418.25" as="geometry" />
+          <mxGeometry height="11" width="35" x="608" y="418.25" as="geometry" />
         </mxCell>
         <mxCell id="CKFEmQA0s3hePLSnbmCz-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="$$b_2$$" vertex="1">
-          <mxGeometry height="11" width="35" x="627.25" y="419.25" as="geometry" />
+          <mxGeometry height="11" width="35" x="627.25" y="418.25" as="geometry" />
         </mxCell>
         <mxCell id="CKFEmQA0s3hePLSnbmCz-8" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="$$b_3$$" vertex="1">
           <mxGeometry height="11" width="35" x="647.25" y="418.25" as="geometry" />
@@ -102,7 +102,7 @@
         <mxCell id="CKFEmQA0s3hePLSnbmCz-32" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=#000000;" value="Creator&lt;div&gt;Wallet&lt;/div&gt;" vertex="1">
           <mxGeometry height="20" width="40" x="545" y="350.25" as="geometry" />
         </mxCell>
-        <mxCell id="CKFEmQA0s3hePLSnbmCz-36" edge="1" parent="1" source="CKFEmQA0s3hePLSnbmCz-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1.033;entryY=0.563;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=none;endFill=0;startArrow=open;startFill=0;strokeWidth=2;strokeColor=#009900;" target="CKFEmQA0s3hePLSnbmCz-31">
+        <mxCell id="CKFEmQA0s3hePLSnbmCz-36" edge="1" parent="1" source="CKFEmQA0s3hePLSnbmCz-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=1.033;entryY=0.563;entryDx=0;entryDy=0;entryPerimeter=0;endArrow=none;endFill=0;startArrow=open;startFill=0;strokeWidth=2;strokeColor=#000000;" target="CKFEmQA0s3hePLSnbmCz-31">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="CKFEmQA0s3hePLSnbmCz-37" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=#FF0000;" value="Sniper Bot (KOL)" vertex="1">
