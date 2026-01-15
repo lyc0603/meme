@@ -1,23 +1,23 @@
 """Script to train ML models to classify traders based on their features."""
 
+import json
 import warnings
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-from matplotlib.patches import Patch
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import precision_recall_curve, roc_auc_score, roc_curve
+from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import ParameterGrid
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
+from xgboost import XGBClassifier
 
-from environ.constants import FIGURE_PATH, PROCESSED_DATA_CS_PATH
+from environ.constants import PROCESSED_DATA_CS_PATH
+from scripts_cs.ml_preprocess import X_test, X_train, X_val, y_test, y_train, y_val
 
 SEED = 42
 
@@ -135,7 +135,12 @@ grid_lasso = {"lasso__C": np.logspace(1, 4, 10)}
 pipe_rf = Pipeline(
     [
         ("preprocessor", pre),
-        ("rf", RandomForestClassifier(random_state=SEED, class_weight="balanced")),
+        (
+            "rf",
+            RandomForestClassifier(
+                random_state=SEED, class_weight="balanced", n_jobs=-1
+            ),
+        ),
     ]
 )
 grid_rf = {
@@ -163,6 +168,34 @@ pipe_mlp = Pipeline(
     ]
 )
 
+# XGBoost
+pipe_xgb = Pipeline(
+    [
+        ("preprocessor", pre),
+        (
+            "xgb",
+            XGBClassifier(
+                objective="binary:logistic",
+                eval_metric="auc",
+                random_state=SEED,
+                n_jobs=-1,
+                tree_method="hist",
+                verbosity=0,
+            ),
+        ),
+    ]
+)
+
+grid_xgb = {
+    "xgb__n_estimators": [300, 600],
+    "xgb__max_depth": [2, 3, 4, 6],
+    "xgb__learning_rate": [0.01, 0.05, 0.1],
+    "xgb__subsample": [0.7, 0.9, 1.0],
+    "xgb__colsample_bytree": [0.7, 0.9, 1.0],
+    "xgb__min_child_weight": [1, 5, 10],
+    "xgb__reg_lambda": [1.0, 5.0, 10.0],
+}
+
 # Treat hidden_layer_sizes as a hyperparameter
 grid_mlp = {
     "mlp__hidden_layer_sizes": [
@@ -179,32 +212,12 @@ grid_mlp = {
 
 if __name__ == "__main__":
 
-    # Load the data
-    df = pd.read_csv(PROCESSED_DATA_CS_PATH / "trader_features_merged.csv")
-    df["date"] = pd.to_datetime(df["date"])
-    df.dropna(inplace=True)
-
-    # Binary label
-    df["label_cls"] = (df["label"] > 0).astype(int)
-
-    # Chronological split
-    df = df.sort_values("date")
-    cutoff_1 = df["date"].quantile(0.70)
-    cutoff_2 = df["date"].quantile(0.85)
-
-    train_df = df[df["date"] <= cutoff_1]
-    val_df = df[(df["date"] > cutoff_1) & (df["date"] <= cutoff_2)]
-    test_df = df[df["date"] > cutoff_2]
-
-    X_train, y_train = train_df[all_features], train_df["label_cls"]
-    X_val, y_val = val_df[all_features], val_df["label_cls"]
-    X_test, y_test = test_df[all_features], test_df["label_cls"]
-
     # models and grids
     model_specs = [
         ("LASSO", pipe_lasso, grid_lasso),
         ("RF", pipe_rf, grid_rf),
         ("NN", pipe_mlp, grid_mlp),
+        ("XGBoost", pipe_xgb, grid_xgb),
     ]
 
     # Train and evaluate models
@@ -229,127 +242,18 @@ if __name__ == "__main__":
         }
 
     # collect test probabilities and AUCs
-    proba_dict = {}
-    auc_dict = {}
-
+    res_dict = {}
     for name, info in results.items():
         model = info["model"]
         proba = model.predict_proba(X_test)[:, 1]
-        proba_dict[name] = proba
-        auc_dict[name] = info["test_auc"]
-
-    plt.rcParams.update(
-        {
-            "font.size": 22,
-            "font.weight": "bold",
-            "axes.grid": True,
+        # proba_dict[name] = proba
+        # auc_dict[name] = info["test_auc"]
+        res_dict[name] = {
+            "best_params": info["best_params"],
+            "test_auc": info["test_auc"],
+            "proba": proba.tolist(),
+            "y_test": y_test.tolist(),
         }
-    )
 
-    colors = {
-        "LASSO": "dimgray",
-        "RF": "crimson",
-        "NN": "royalblue",
-    }
-
-    fig1, ax1 = plt.subplots(figsize=(7, 7))
-
-    for name, proba in proba_dict.items():
-        prec, rec, thr = precision_recall_curve(y_test, proba)
-
-        # Drop the artificial last point (precision=1, recall=0) with no threshold
-        prec = prec[:-1]
-        rec = rec[:-1]
-
-        eps = 1e-8
-        f1 = 2 * prec * rec / (prec + rec + eps)
-
-        # No need to append anything to thr
-        ax1.plot(thr, prec, linestyle="--", linewidth=1.8, color=colors[name])
-        ax1.plot(thr, f1, linestyle="-", linewidth=1.8, color=colors[name])
-
-    ax1.set_xlim(0, 1)
-    ax1.set_ylim(0, 1)
-    ax1.set_xlabel("Threshold", fontweight="bold")
-    ax1.set_ylabel("Score", fontweight="bold")
-
-    measure_lines = [
-        plt.Line2D([0], [0], linestyle="--", color="black", lw=1.8, label="Precision"),
-        plt.Line2D(
-            [0], [0], linestyle="-", color="black", lw=1.8, label=r"$\mathbf{F_1}$"
-        ),
-    ]
-    leg1 = ax1.legend(
-        handles=measure_lines,
-        title="Measure",
-        loc="upper left",
-        frameon=False,
-        fontsize=18,
-        title_fontsize=18,
-    )
-    ax1.add_artist(leg1)
-
-    model_patches = [
-        Patch(facecolor=colors[name], edgecolor="none", label=name)
-        for name, _ in proba_dict.items()
-    ]
-    leg2 = ax1.legend(
-        handles=model_patches,
-        title="Model",
-        loc="lower left",
-        frameon=False,
-        handlelength=1,
-        handleheight=1,
-        fontsize=18,
-        title_fontsize=18,
-    )
-    ax1.add_artist(leg2)
-    ax1.grid(True)
-
-    plt.tight_layout()
-    plt.savefig(FIGURE_PATH / "prec_f1_vs_threshold.pdf", dpi=300)
-    plt.show()
-
-    # ROC Curves
-    fig2, ax2 = plt.subplots(figsize=(7, 7))
-
-    for name, proba in proba_dict.items():
-        fpr, tpr, _ = roc_curve(y_test, proba)
-        ax2.plot(
-            fpr,
-            tpr,
-            lw=1.8,
-            color=colors[name],
-            label=f"{name}",
-        )
-
-    ax2.plot([0, 1], [0, 1], linestyle=":", color="black", lw=1.2)
-
-    ax2.set_xlim(0, 1)
-    ax2.set_ylim(0, 1)
-    ax2.set_xlabel("False positive rate", fontweight="bold")
-    ax2.set_ylabel("True positive rate", fontweight="bold")
-    model_patches = [
-        Patch(
-            facecolor=colors[name],
-            edgecolor="none",
-            label=f"{name} (AUC = {auc_dict[name]:.4f})",
-        )
-        for name, _ in proba_dict.items()
-    ]
-    leg = ax2.legend(
-        handles=model_patches,
-        title="Model",
-        loc="lower right",
-        frameon=False,
-        handlelength=1,
-        handleheight=1,
-        fontsize=18,
-        title_fontsize=18,
-    )
-    ax2.add_artist(leg)
-    ax2.grid(True)
-
-    plt.tight_layout()
-    plt.savefig(FIGURE_PATH / "roc_curves.pdf", dpi=300)
-    plt.show()
+    with open(PROCESSED_DATA_CS_PATH / "ml_res.json", "w", encoding="utf-8") as f:
+        json.dump(res_dict, f, ensure_ascii=False, indent=4)
