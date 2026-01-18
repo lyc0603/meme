@@ -103,7 +103,7 @@
         <mxCell id="alQ-9Z4sIKBNE9Md1jDK-1" parent="alQ-9Z4sIKBNE9Md1jDK-183" style="sketch=0;outlineConnect=0;fontColor=#000000;gradientColor=none;fillColor=#FF0000;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.waf_bot;" value="" vertex="1">
           <mxGeometry height="25" width="25" x="59.5" y="233.14" as="geometry" />
         </mxCell>
-        <mxCell id="alQ-9Z4sIKBNE9Md1jDK-212" parent="alQ-9Z4sIKBNE9Md1jDK-183" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=#FF0000;" value="Bump&lt;div&gt;Bot&lt;/div&gt;" vertex="1">
+        <mxCell id="alQ-9Z4sIKBNE9Md1jDK-212" parent="alQ-9Z4sIKBNE9Md1jDK-183" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=#FFFFFF;" value="Bump&lt;div&gt;Bot&lt;/div&gt;" vertex="1">
           <mxGeometry height="30" width="60" x="42" y="201" as="geometry" />
         </mxCell>
         <mxCell id="alQ-9Z4sIKBNE9Md1jDK-4" edge="1" parent="alQ-9Z4sIKBNE9Md1jDK-183" style="endArrow=open;html=1;rounded=0;endFill=0;strokeColor=#009900;strokeWidth=2;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="alQ-9Z4sIKBNE9Md1jDK-180" value="">
