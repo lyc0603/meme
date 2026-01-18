@@ -9,7 +9,7 @@ from tqdm import tqdm
 from environ.constants import FIGURE_PATH, SOL_TOKEN_ADDRESS
 from environ.data_class import NewTokenPool
 from environ.data_loader import DataLoader
-from scripts_cs.ml_preprocess import X_test
+from scripts_cs.ml_preprocess import X_test, X_val
 
 os.makedirs(FIGURE_PATH / "candle", exist_ok=True)
 
@@ -48,8 +48,22 @@ if __name__ == "__main__":
     for data in ["candle", "comment"]:
         os.makedirs(FIGURE_PATH / data, exist_ok=True)
 
-    X_test["first_txn_date"] = pd.to_datetime(X_test["first_txn_date"])
-    pool_trader = X_test[
+    # X_test["first_txn_date"] = pd.to_datetime(X_test["first_txn_date"])
+    # pool_trader = X_test[
+    #     ["token_address", "trader_address", "chain", "first_txn_date"]
+    # ].values.tolist()
+
+    # with Pool(processes=cpu_count() - 2) as pool:
+    #     list(
+    #         tqdm(
+    #             pool.imap_unordered(process_pool, pool_trader),
+    #             total=len(pool_trader),
+    #         )
+    #     )
+
+    # Validation set
+    X_val["first_txn_date"] = pd.to_datetime(X_val["first_txn_date"])
+    pool_trader = X_val[
         ["token_address", "trader_address", "chain", "first_txn_date"]
     ].values.tolist()
 
