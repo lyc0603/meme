@@ -213,6 +213,8 @@ def build_first_trade_features(df_with_chain: pd.DataFrame) -> pd.DataFrame:
                         "chain": chain,
                         "first_txn_date": pd.NaT,
                         "first_txn_price": np.nan,
+                        "first_txn_amount": np.nan,
+                        "first_txn_quantity": np.nan,
                         "time_since_launch": np.nan,
                         "wash_trading_bot": (
                             0 if wash_first_time is None else np.nan
@@ -232,6 +234,18 @@ def build_first_trade_features(df_with_chain: pd.DataFrame) -> pd.DataFrame:
                 trader_txn_price = first_match["acts"][0].price
             except Exception:
                 trader_txn_price = np.nan
+
+            # trading amount
+            try:
+                trader_txn_amount = first_match["acts"][0].usd
+            except Exception:
+                trader_txn_amount = np.nan
+
+            # trading quantity
+            try:
+                trader_txn_quantity = first_match["acts"][0].base
+            except Exception:
+                trader_txn_quantity = np.nan
 
             # time since launch (seconds)
             try:
@@ -263,6 +277,8 @@ def build_first_trade_features(df_with_chain: pd.DataFrame) -> pd.DataFrame:
                     "chain": chain,
                     "first_txn_date": trader_txn_date,
                     "first_txn_price": trader_txn_price,
+                    "first_txn_amount": trader_txn_amount,
+                    "first_txn_quantity": trader_txn_quantity,
                     "time_since_launch": time_since_launch,
                     "wash_trading_bot": wash_bot,
                     "comment_bot": comment_bot,
