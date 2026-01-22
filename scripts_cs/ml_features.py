@@ -10,7 +10,6 @@ Merged pipeline:
 Outputs:
 - df: pandas.DataFrame with trader, token, time-series features, token flags, and first-trade bot features.
 """
-
 from datetime import UTC
 
 import numpy as np
