@@ -91,7 +91,7 @@
           <mxGeometry height="15" width="15" x="444.25" y="401" as="geometry" />
         </mxCell>
         <mxCell id="cfhzohxkDvREYV4fbM19-80" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=#000000;" value="Creator&lt;div&gt;Wallet&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="20" width="50" x="400" y="381" as="geometry" />
+          <mxGeometry height="20" width="50" x="400" y="377" as="geometry" />
         </mxCell>
         <mxCell id="cfhzohxkDvREYV4fbM19-90" edge="1" parent="1" source="cfhzohxkDvREYV4fbM19-81" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=none;endFill=0;startArrow=open;startFill=0;strokeColor=#FF0000;strokeWidth=2;" target="cfhzohxkDvREYV4fbM19-72">
           <mxGeometry relative="1" as="geometry">
