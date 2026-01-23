@@ -47,7 +47,7 @@ def collect(model_names: list[str]) -> tuple[dict, dict, dict]:
 
 def plot_prec_f1_vs_threshold(proba_dict: dict, y_dict: dict, outpath) -> None:
     """Plot precision and F1 vs threshold curves for multiple models."""
-    fig, ax = plt.subplots(figsize=(7, 6))
+    fig, ax = plt.subplots(figsize=(7, 7))
 
     for name, proba in proba_dict.items():
         prec, rec, thr = precision_recall_curve(y_dict[name], proba)
@@ -109,7 +109,7 @@ def plot_prec_f1_vs_threshold(proba_dict: dict, y_dict: dict, outpath) -> None:
 
 def plot_roc_curves(proba_dict: dict, y_dict: dict, auc_dict: dict, outpath) -> None:
     """Plot ROC curves for multiple models."""
-    fig, ax = plt.subplots(figsize=(7, 6))
+    fig, ax = plt.subplots(figsize=(7, 7))
 
     for name, proba in proba_dict.items():
         fpr, tpr, _ = roc_curve(y_dict[name], proba)
