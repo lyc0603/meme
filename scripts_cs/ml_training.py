@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.inspection import permutation_importance
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import ParameterGrid
@@ -35,6 +36,8 @@ CONTINUOUS_FEATURES = [
     "time_since_last_trade",
     "time_since_first_trade",
     "first_txn_price",
+    "first_txn_amount",
+    "first_txn_quantity",
     "time_since_launch",
 ]
 DUMMY_FEATURES = ["launch_bundle", "sniper_bot", "wash_trading_bot", "comment_bot"]
@@ -73,12 +76,13 @@ def grid_search(
     y_train: np.ndarray,
     X_val: np.ndarray,
     y_val: np.ndarray,
-) -> tuple[Pipeline, dict, float]:
+) -> tuple[Pipeline, dict, float, np.ndarray]:
     """Perform grid search over param_grid for the given base_estimator."""
 
     best_model = None
     best_params = None
     best_auc = -np.inf
+    best_val_proba = None
 
     for params in tqdm(ParameterGrid(param_grid), desc=f"Grid search for {name}"):
         model = clone(base_estimator)
@@ -92,8 +96,9 @@ def grid_search(
             best_auc = val_auc
             best_model = model
             best_params = params
+            best_val_proba = val_proba
 
-    return best_model, best_params, best_auc
+    return best_model, best_params, best_auc, best_val_proba
 
 
 # Preprocessor
@@ -120,7 +125,7 @@ pipe_lasso = Pipeline(
         (
             "lasso",
             LogisticRegression(
-                penalty="l1",
+                l1_ratio=1.0,
                 solver="liblinear",
                 class_weight="balanced",
                 max_iter=5000,
@@ -158,9 +163,8 @@ pipe_mlp = Pipeline(
             "mlp",
             MLPClassifier(
                 batch_size=500,
-                max_iter=100,
-                early_stopping=True,
-                n_iter_no_change=5,
+                max_iter=1000,
+                early_stopping=False,
                 solver="adam",
                 random_state=SEED,
             ),
@@ -210,11 +214,67 @@ grid_mlp = {
 }
 
 
+def compute_feature_importance(
+    name: str,
+    fitted_pipeline: Pipeline,
+    feature_names: list[str],
+    X_val: np.ndarray,
+    y_val: np.ndarray,
+    random_state: int = 42,
+) -> dict:
+    """
+    Returns a JSON-serializable dict:
+      {
+        "method": "...",
+        "importance": {feature: value, ...}  # sorted desc by value
+      }
+    """
+    # after pipeline.fit, you can access final estimator by step name
+    if name.lower() == "lasso":
+        est = fitted_pipeline.named_steps["lasso"]
+        imp = np.abs(est.coef_.ravel())
+
+        method = "abs_coef"
+
+    elif name.lower() == "rf":
+        est = fitted_pipeline.named_steps["rf"]
+        imp = est.feature_importances_
+
+        method = "gini_importance"
+
+    elif name.lower() == "xgboost":
+        est = fitted_pipeline.named_steps["xgb"]
+        imp = est.feature_importances_
+
+        method = "xgb_gain_or_split_importance"
+
+    else:
+        # NN: permutation importance on validation set
+        r = permutation_importance(
+            fitted_pipeline,
+            X_val,
+            y_val,
+            scoring="roc_auc",
+            n_repeats=10,
+            random_state=random_state,
+            n_jobs=-1,
+        )
+        imp = r.importances_mean
+        method = "permutation_importance_auc"
+
+    # Build sorted mapping (desc)
+    pairs = sorted(zip(feature_names, imp), key=lambda x: float(x[1]), reverse=True)
+    return {
+        "method": method,
+        "importance": {k: float(v) for k, v in pairs},
+    }
+
+
 if __name__ == "__main__":
 
     # models and grids
     model_specs = [
-        ("LASSO", pipe_lasso, grid_lasso),
+        ("Lasso", pipe_lasso, grid_lasso),
         ("RF", pipe_rf, grid_rf),
         ("NN", pipe_mlp, grid_mlp),
         ("XGBoost", pipe_xgb, grid_xgb),
@@ -223,7 +283,7 @@ if __name__ == "__main__":
     # Train and evaluate models
     results = {}
     for name, base_estimator, param_grid in model_specs:
-        best_model, best_params, best_val_auc = grid_search(
+        best_model, best_params, best_val_auc, best_val_proba = grid_search(
             name,
             base_estimator,
             param_grid,
@@ -232,28 +292,42 @@ if __name__ == "__main__":
             X_val,
             y_val,
         )
+
+        # --- NEW: train metrics ---
+        proba_train = best_model.predict_proba(X_train)[:, 1]
+        train_auc = roc_auc_score(y_train, proba_train)
+
+        # existing
+        proba_val = best_val_proba
         proba_test = best_model.predict_proba(X_test)[:, 1]
         test_auc = roc_auc_score(y_test, proba_test)
-        results[name] = {
-            "model": best_model,
-            "best_params": best_params,
-            "val_auc": best_val_auc,
-            "test_auc": test_auc,
-        }
 
-    # collect test probabilities and AUCs
-    res_dict = {}
-    for name, info in results.items():
-        model = info["model"]
-        proba = model.predict_proba(X_test)[:, 1]
-        # proba_dict[name] = proba
-        # auc_dict[name] = info["test_auc"]
-        res_dict[name] = {
-            "best_params": info["best_params"],
-            "test_auc": info["test_auc"],
-            "proba": proba.tolist(),
+        # feature importance
+        feat_imp = compute_feature_importance(
+            name=name,
+            fitted_pipeline=best_model,
+            feature_names=list(CONTINUOUS_FEATURES) + list(DUMMY_FEATURES),
+            X_val=X_val,
+            y_val=y_val,
+            random_state=SEED,
+        )
+
+        results[name] = {
+            "best_params": best_params,
+            "train_auc": float(train_auc),
+            "val_auc": float(best_val_auc),
+            "test_auc": float(test_auc),
+            "train_proba": proba_train.tolist(),
+            "val_proba": proba_val.tolist(),
+            "test_proba": proba_test.tolist(),
+            "y_train": y_train.tolist(),
+            "y_val": y_val.tolist(),
             "y_test": y_test.tolist(),
+            "ret_train": X_train["label"].tolist(),
+            "ret_val": X_val["label"].tolist(),
+            "ret_test": X_test["label"].tolist(),
+            "feature_importance": feat_imp,
         }
 
     with open(PROCESSED_DATA_CS_PATH / "ml_res.json", "w", encoding="utf-8") as f:
-        json.dump(res_dict, f, ensure_ascii=False, indent=4)
+        json.dump(results, f, ensure_ascii=False, indent=4)

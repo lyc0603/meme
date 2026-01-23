@@ -1,4 +1,4 @@
-"""Script to plot ROC curves and precision/F1 vs threshold for ML vs MAS models (separate figures)."""
+"""Script to plot ROC curves and precision/F1 vs threshold for ML + MAS models (two figures total)."""
 
 import json
 
@@ -17,15 +17,17 @@ plt.rcParams.update(
 )
 
 # Define model groups
-ML_MODELS = ["XGBoost", "NN", "LASSO"]
+ML_MODELS = ["XGBoost", "NN", "Lasso"]
 MAS_MODELS = ["MAS", "MAS (Zero Shot)"]
+
+ALL_MODELS = ML_MODELS + MAS_MODELS
 
 colors = {
     "XGBoost": "crimson",
     "NN": "royalblue",
-    "LASSO": "dimgray",
-    "MAS": "crimson",
-    "MAS (Zero Shot)": "dimgray",
+    "Lasso": "dimgray",
+    "MAS": "darkorange",
+    "MAS (Zero Shot)": "seagreen",
 }
 
 with open(PROCESSED_DATA_CS_PATH / "res.json", "r", encoding="utf-8") as f:
@@ -33,22 +35,22 @@ with open(PROCESSED_DATA_CS_PATH / "res.json", "r", encoding="utf-8") as f:
 
 
 def collect(model_names: list[str]) -> tuple[dict, dict, dict]:
-    """Collect proba / auc / y_test for a given list of models."""
-    proba_dict, auc_dict, test_dict = {}, {}, {}
+    """Collect proba / auc / y for a given list of models."""
+    proba_dict, auc_dict, y_dict = {}, {}, {}
     for name in model_names:
         info = res_dict[name]
-        proba_dict[name] = info["proba"]
-        auc_dict[name] = info["test_auc"]
-        test_dict[name] = info["y_test"]
-    return proba_dict, auc_dict, test_dict
+        proba_dict[name] = info["val_proba"]
+        auc_dict[name] = info["val_auc"]
+        y_dict[name] = info["y_val"]
+    return proba_dict, auc_dict, y_dict
 
 
-def plot_prec_f1_vs_threshold(proba_dict: dict, test_dict: dict, outpath) -> None:
+def plot_prec_f1_vs_threshold(proba_dict: dict, y_dict: dict, outpath) -> None:
     """Plot precision and F1 vs threshold curves for multiple models."""
     fig, ax = plt.subplots(figsize=(7, 6))
 
     for name, proba in proba_dict.items():
-        prec, rec, thr = precision_recall_curve(test_dict[name], proba)
+        prec, rec, thr = precision_recall_curve(y_dict[name], proba)
 
         # Drop the artificial last point (precision=1, recall=0) with no threshold
         prec = prec[:-1]
@@ -101,16 +103,16 @@ def plot_prec_f1_vs_threshold(proba_dict: dict, test_dict: dict, outpath) -> Non
 
     ax.grid(True)
     plt.tight_layout()
-    plt.savefig(outpath, dpi=300)
+    plt.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.show()
 
 
-def plot_roc_curves(proba_dict: dict, test_dict: dict, auc_dict: dict, outpath) -> None:
+def plot_roc_curves(proba_dict: dict, y_dict: dict, auc_dict: dict, outpath) -> None:
     """Plot ROC curves for multiple models."""
     fig, ax = plt.subplots(figsize=(7, 6))
 
     for name, proba in proba_dict.items():
-        fpr, tpr, _ = roc_curve(test_dict[name], proba)
+        fpr, tpr, _ = roc_curve(y_dict[name], proba)
         ax.plot(fpr, tpr, lw=1.8, color=colors[name], label=name)
 
     ax.plot([0, 1], [0, 1], linestyle=":", color="black", lw=1.2)
@@ -142,20 +144,12 @@ def plot_roc_curves(proba_dict: dict, test_dict: dict, auc_dict: dict, outpath) 
 
     ax.grid(True)
     plt.tight_layout()
-    plt.savefig(outpath, dpi=300)
+    plt.savefig(outpath, dpi=300, bbox_inches="tight")
     plt.show()
 
 
-# Plot ML set
-proba_ml, auc_ml, test_ml = collect(ML_MODELS)
-plot_prec_f1_vs_threshold(
-    proba_ml, test_ml, FIGURE_PATH / "prec_f1_vs_threshold_ml.pdf"
-)
-plot_roc_curves(proba_ml, test_ml, auc_ml, FIGURE_PATH / "roc_curves_ml.pdf")
+# ---- Two plots total: all models together ----
+proba_all, auc_all, y_all = collect(ALL_MODELS)
 
-# Plot MAS set
-proba_mas, auc_mas, test_mas = collect(MAS_MODELS)
-plot_prec_f1_vs_threshold(
-    proba_mas, test_mas, FIGURE_PATH / "prec_f1_vs_threshold_mas.pdf"
-)
-plot_roc_curves(proba_mas, test_mas, auc_mas, FIGURE_PATH / "roc_curves_mas.pdf")
+plot_prec_f1_vs_threshold(proba_all, y_all, FIGURE_PATH / "prec_f1_vs_threshold.pdf")
+plot_roc_curves(proba_all, y_all, auc_all, FIGURE_PATH / "roc_curves.pdf")

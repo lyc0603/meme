@@ -48,6 +48,7 @@ if __name__ == "__main__":
     for data in ["candle", "comment"]:
         os.makedirs(FIGURE_PATH / data, exist_ok=True)
 
+    # # Test set
     # X_test["first_txn_date"] = pd.to_datetime(X_test["first_txn_date"])
     # pool_trader = X_test[
     #     ["token_address", "trader_address", "chain", "first_txn_date"]
