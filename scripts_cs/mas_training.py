@@ -16,8 +16,8 @@ with open(PROCESSED_DATA_CS_PATH / "ml_res.json", "r", encoding="utf-8") as f:
 
 
 NAME_MAPPING = {
-    "mas_20260114": "MAS",
-    "mas_zero_shot_20260114": "MAS (Zero Shot)",
+    "mas_20260116": "MAS",
+    "mas_zero_shot_20260116": "MAS (Zero Shot)",
 }
 
 
@@ -74,7 +74,7 @@ def auc_with_weights(X, coin, wallet, timing, wc, ww, wt):
 
 
 def build_output(X, coin, wallet, timing, wc, ww, wt):
-    y, ret, p = [], [], []
+    y, ret, copy_trading_ret, p = [], [], [], []
 
     for _, r in X.iterrows():
         k = f"{r['token_address']}_{r['trader_address']}"
@@ -84,11 +84,12 @@ def build_output(X, coin, wallet, timing, wc, ww, wt):
         p.append(wc * coin[k] + ww * wallet[k] + wt * timing[k])
         y.append(r["label_cls"])
         ret.append(r["label"])
+        copy_trading_ret.append(r["copy_trading_ret"])
 
-    return y, ret, p
+    return y, ret, copy_trading_ret, p
 
 
-for model in ["mas_20260114", "mas_zero_shot_20260114"]:
+for model in ["mas_20260116", "mas_zero_shot_20260116"]:
     val_path = PROCESSED_DATA_CS_PATH / "batch_res_val" / f"{model}.jsonl"
     test_path = PROCESSED_DATA_CS_PATH / "batch_res_test" / f"{model}.jsonl"
 
@@ -106,8 +107,10 @@ for model in ["mas_20260114", "mas_zero_shot_20260114"]:
 
     wc, ww, wt = best_w
 
-    y_val, ret_val, p_val = build_output(X_val, coin_v, wallet_v, timing_v, wc, ww, wt)
-    y_test, ret_test, p_test = build_output(
+    y_val, ret_val, copy_trading_ret_val, p_val = build_output(
+        X_val, coin_v, wallet_v, timing_v, wc, ww, wt
+    )
+    y_test, ret_test, copy_trading_ret_test, p_test = build_output(
         X_test, coin_t, wallet_t, timing_t, wc, ww, wt
     )
 
@@ -121,6 +124,8 @@ for model in ["mas_20260114", "mas_zero_shot_20260114"]:
         "y_test": y_test,
         "ret_val": ret_val,
         "ret_test": ret_test,
+        "copy_trading_ret_val": copy_trading_ret_val,
+        "copy_trading_ret_test": copy_trading_ret_test,
     }
 
     print(

@@ -326,6 +326,9 @@ if __name__ == "__main__":
             "ret_train": X_train["label"].tolist(),
             "ret_val": X_val["label"].tolist(),
             "ret_test": X_test["label"].tolist(),
+            "copy_trading_ret_train": X_train["copy_trading_ret"].tolist(),
+            "copy_trading_ret_val": X_val["copy_trading_ret"].tolist(),
+            "copy_trading_ret_test": X_test["copy_trading_ret"].tolist(),
             "feature_importance": feat_imp,
         }
 

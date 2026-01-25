@@ -9,7 +9,7 @@ import numpy as np
 from environ.constants import FIGURE_PATH, PROCESSED_DATA_CS_PATH
 
 INPUT_JSON = Path(PROCESSED_DATA_CS_PATH) / "res.json"
-OUT_PDF = Path(FIGURE_PATH) / "avg_return_test_bar.pdf"
+OUT_PDF = Path(FIGURE_PATH) / "avg_return_test.pdf"
 
 N_THRESH = 201
 MIN_VAL_COVERAGE = 0.05
@@ -70,16 +70,29 @@ def safe_mkdir(p: Path) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
 
 
+def _mean_se(x: np.ndarray) -> tuple[float, float, int]:
+    """Return (mean, standard_error, n_effective) ignoring NaNs."""
+    x = np.asarray(x, dtype=float)
+    x = x[np.isfinite(x)]
+    n = int(x.size)
+    if n == 0:
+        return float("nan"), float("nan"), 0
+    mean = float(np.mean(x))
+    # sample std with ddof=1 when possible
+    std = float(np.std(x, ddof=1)) if n > 1 else 0.0
+    se = std / np.sqrt(n) if n > 0 else float("nan")
+    return mean, float(se), n
+
+
 def main() -> None:
     with open(INPUT_JSON, "r", encoding="utf-8") as f:
         res = json.load(f)
 
-    any_model_key = next(iter(res.keys()))
-    ret_test_all = _to_np(res[any_model_key]["ret_test"])
-    baseline_test_mean = float(np.nanmean(ret_test_all))
-
-    labels = ["All test"]
-    test_means = [baseline_test_mean]
+    labels: list[str] = []
+    test_means: list[float] = []
+    test_ses: list[float] = []
+    copy_test_means: list[float] = []
+    copy_test_ses: list[float] = []
     diagnostics = {}
 
     for model_name in MODEL_ORDER:
@@ -91,6 +104,7 @@ def main() -> None:
         ret_val = _to_np(block["ret_val"])
         proba_test = _to_np(block["test_proba"])
         ret_test = _to_np(block["ret_test"])
+        copy_trading_ret_test = _to_np(block["copy_trading_ret_test"])
 
         t_star, val_mean, val_cov = choose_threshold_max_avg_return(
             proba_val=proba_val,
@@ -102,58 +116,142 @@ def main() -> None:
 
         mask_test = proba_test >= t_star
         test_cov = float(mask_test.mean()) if len(mask_test) else 0.0
-        test_mean = (
-            float(np.nanmean(ret_test[mask_test])) if mask_test.any() else float("nan")
+
+        sel_ret = ret_test[mask_test] if mask_test.any() else np.array([], dtype=float)
+        sel_copy = (
+            copy_trading_ret_test[mask_test]
+            if mask_test.any()
+            else np.array([], dtype=float)
         )
+
+        test_mean, test_se, n_test = _mean_se(sel_ret)
+        copy_mean, copy_se, n_copy = _mean_se(sel_copy)
 
         labels.append(model_name)
         test_means.append(test_mean)
+        test_ses.append(test_se)
+        copy_test_means.append(copy_mean)
+        copy_test_ses.append(copy_se)
 
         diagnostics[model_name] = {
             "threshold": t_star,
             "val_mean_selected": val_mean,
             "val_coverage": val_cov,
             "test_mean_selected": test_mean,
+            "test_se_selected": test_se,
+            "copy_test_mean_selected": copy_mean,
+            "copy_test_se_selected": copy_se,
             "test_coverage": test_cov,
+            "n_test_selected": n_test,
         }
 
     safe_mkdir(OUT_PDF)
 
+    #
     x = np.arange(len(labels))
-    bar_colors = [COLORS.get(lbl, "black") for lbl in labels]
+    width = 0.38
 
-    fig, ax = plt.subplots(figsize=(6, 4))
-    ax.bar(x, test_means, color=bar_colors, width=0.9)
+    fig, ax = plt.subplots(figsize=(8.5, 4.2))
+    colors = [COLORS.get(lbl, "black") for lbl in labels]
+
+    # --- bars (NO error bars) ---
+    bars1 = ax.bar(
+        x - width / 2,
+        test_means,
+        width=width,
+        color="#B2B2FF",
+        label="Smart Money Return",
+    )
+    bars2 = ax.bar(
+        x + width / 2,
+        copy_test_means,
+        width=width,
+        color="#81A1C1",
+        linewidth=0.6,
+        label="Copier Return",
+    )
+
+    # --- per-model connecting lines ---
+    for i in range(len(x)):
+        ax.plot(
+            [x[i] - width / 2, x[i] + width / 2],
+            [test_means[i], copy_test_means[i]],
+            color="#2E3440",
+            linewidth=1.0,
+            linestyle="--",
+            marker="s",
+            markersize=6,
+            zorder=5,
+            label="Imitation Penalty" if i == 0 else None,
+        )
 
     pretty_labels = [
-        "MAS\n(ZeroShot)" if lbl == "MAS (Zero Shot)" else lbl for lbl in labels
+        "MAS\n(Zero Shot)" if lbl == "MAS (Zero Shot)" else lbl for lbl in labels
     ]
-
     ax.set_xticks(x)
     ax.set_xticklabels(pretty_labels, fontsize=14)
     ax.set_ylabel("Average Return (Test Set)", fontsize=14)
 
-    for i, v in enumerate(test_means):
-        ax.text(i, v, f"{v:.4f}", ha="center", va="bottom", fontsize=14)
+    ax.axhline(0.0, linewidth=1.0)
 
-    # Remove top/right frame
+    # dynamic y-limits including error bars
+    all_vals = np.array(test_means + copy_test_means, dtype=float)
+    all_errs = np.array(test_ses + copy_test_ses, dtype=float)
+    finite = np.isfinite(all_vals)
+    if finite.any():
+        vmin = float(
+            np.min(all_vals[finite] - np.nan_to_num(all_errs[finite], nan=0.0))
+        )
+        vmax = float(
+            np.max(all_vals[finite] + np.nan_to_num(all_errs[finite], nan=0.0))
+        )
+        pad = 0.10 * (vmax - vmin + 1e-12)
+        ax.set_ylim(vmin - pad, vmax + pad)
+
+    def annotate(bars):
+        for b in bars:
+            v = b.get_height()
+            if not np.isfinite(v):
+                continue
+            x0 = b.get_x() + b.get_width() / 2
+            va = "bottom" if v >= 0 else "top"
+            ax.text(x0, v, f"{v:.4f}", ha="center", va=va, fontsize=12)
+
+    annotate(bars1)
+    annotate(bars2)
+
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
-
-    # keep ticks only on left/bottom
     ax.tick_params(top=False, right=False, labelsize=14)
-    ax.set_ylim(bottom=0.0)
+    handles, labels_ = ax.get_legend_handles_labels()
+    order = [i for i, l in enumerate(labels_) if l != "Imitation Penalty"] + [
+        i for i, l in enumerate(labels_) if l == "Imitation Penalty"
+    ]
+
+    ax.legend(
+        [handles[i] for i in order],
+        [labels_[i] for i in order],
+        loc="upper left",
+        bbox_to_anchor=(0.02, 0.98),
+        frameon=False,
+        fontsize=12,
+        ncol=3,
+        borderaxespad=0.0,
+        handlelength=2.2,
+    )
 
     fig.tight_layout()
+
     fig.savefig(OUT_PDF, bbox_inches="tight")
     plt.close(fig)
 
-    print(f"Baseline (All test) avg return: {baseline_test_mean:.6f}\n")
     for m, d in diagnostics.items():
         print(
             f"{m}: threshold={d['threshold']:.3f} | "
             f"VAL mean={d['val_mean_selected']:.6f}, cov={d['val_coverage']:.2%} | "
-            f"TEST mean={d['test_mean_selected']:.6f}, cov={d['test_coverage']:.2%}"
+            f"TEST mean={d['test_mean_selected']:.6f} (SE={d['test_se_selected']:.6f}, n={d['n_test_selected']}) | "
+            f"COPY mean={d['copy_test_mean_selected']:.6f} (SE={d['copy_test_se_selected']:.6f}) | "
+            f"cov={d['test_coverage']:.2%}"
         )
 
 

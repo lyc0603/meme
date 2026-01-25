@@ -596,6 +596,7 @@ if __name__ == "__main__":
 
             # from environ.utils import handle_first_comment_bot
 
+<<<<<<< Updated upstream
             # comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
             # comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
             # comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
@@ -626,3 +627,6 @@ if __name__ == "__main__":
             # comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
             # comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
             # comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
+=======
+            comment_rows = handle_first_comment_bot(meme, token_add, meme.launch_time)
+>>>>>>> Stashed changes

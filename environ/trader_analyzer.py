@@ -2,15 +2,16 @@
 
 import json
 from collections import defaultdict
-from multiprocessing import Pool, cpu_count
-from tqdm import tqdm
-import pandas as pd
-import numpy as np
-
-from scipy import stats
-from environ.data_class import Multiswap
-from environ.constants import PROCESSED_DATA_PATH
 from datetime import datetime, timezone
+from multiprocessing import Pool, cpu_count
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+from tqdm import tqdm
+
+from environ.constants import PROCESSED_DATA_PATH
+from environ.data_class import Multiswap
 
 
 class Account:
@@ -206,6 +207,6 @@ if __name__ == "__main__":
         project_profits_df.append(pd.DataFrame(_["project_profits"]))
 
     project_profits_df = pd.concat(project_profits_df, ignore_index=True)
-    project_profits_df.to_csv(
-        PROCESSED_DATA_PATH / "trader_project_profits.csv", index=False
-    )
+    # project_profits_df.to_csv(
+    #     PROCESSED_DATA_PATH / "trader_project_profits.csv", index=False
+    # )
