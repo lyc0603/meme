@@ -195,13 +195,35 @@ def build_first_trade_features(df_with_chain: pd.DataFrame) -> pd.DataFrame:
         for trader_add in group["trader_address"].unique():
             # Walk through meme swaps to find first maker == trader
             first_match = None
+            copy_cost = 0.0
+            copy_revenue = 0.0
+            k = 32_190_005_730
+            Y = 1_073_000_191.0  # initial reserve
             for txn in meme.get_acts(Swap):
-                try:
-                    if txn["maker"] == trader_add:
+
+                act = txn["acts"][0]
+                q = float(act.base or 0.0)
+                typ = act.typ
+                Y_pre = Y
+
+                if txn["maker"] == trader_add:
+                    if first_match is None:
                         first_match = txn
-                        break
-                except Exception:
-                    continue
+
+                    if typ == "Buy":
+                        # copier buys after leader buy
+                        if Y_pre > 2 * q and q > 0:
+                            copy_cost += k * (1 / (Y_pre - 2 * q) - 1 / (Y_pre - q))
+                    else:  # Sell
+                        # copier sells after leader sell
+                        if Y_pre > 0 and q > 0:
+                            copy_revenue += k * (1 / (Y_pre + q) - 1 / (Y_pre + 2 * q))
+
+                # update reserve after processing
+                if typ == "Buy":
+                    Y -= q
+                else:
+                    Y += q
 
             if first_match is None:
                 # Trader might not have an on-chain "maker" match in this pool (keep NaNs for merge)
@@ -215,6 +237,7 @@ def build_first_trade_features(df_with_chain: pd.DataFrame) -> pd.DataFrame:
                         "first_txn_amount": np.nan,
                         "first_txn_quantity": np.nan,
                         "time_since_launch": np.nan,
+                        "copy_trading_ret": 0,
                         "wash_trading_bot": (
                             0 if wash_first_time is None else np.nan
                         ),  # unknown if we don't have a date
@@ -279,6 +302,9 @@ def build_first_trade_features(df_with_chain: pd.DataFrame) -> pd.DataFrame:
                     "first_txn_amount": trader_txn_amount,
                     "first_txn_quantity": trader_txn_quantity,
                     "time_since_launch": time_since_launch,
+                    "copy_trading_ret": (
+                        (copy_revenue - copy_cost) / copy_cost if copy_cost != 0 else 0
+                    ),
                     "wash_trading_bot": wash_bot,
                     "comment_bot": comment_bot,
                 }
