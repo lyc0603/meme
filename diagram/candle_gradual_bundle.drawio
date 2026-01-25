@@ -186,7 +186,7 @@
             <mxPoint x="530" y="453" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="smokG_boWxFZ3o6M7Auk-1" edge="1" parent="1" source="smokG_boWxFZ3o6M7Auk-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;endArrow=open;endFill=0;">
+        <mxCell id="smokG_boWxFZ3o6M7Auk-1" edge="1" parent="1" source="smokG_boWxFZ3o6M7Auk-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;endArrow=open;endFill=0;strokeColor=#6A1B9A;">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="349" y="438.75" />

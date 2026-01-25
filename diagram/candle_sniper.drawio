@@ -96,7 +96,7 @@
         <mxCell id="CKFEmQA0s3hePLSnbmCz-28" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontColor=#007FFF;" value="Copier&lt;div&gt;Wallet&lt;/div&gt;" vertex="1">
           <mxGeometry height="20" width="40" x="395" y="260.25" as="geometry" />
         </mxCell>
-        <mxCell id="i24y91rSBe30-9ZgEHHI-7" edge="1" parent="1" source="CKFEmQA0s3hePLSnbmCz-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=open;endFill=0;">
+        <mxCell id="i24y91rSBe30-9ZgEHHI-7" edge="1" parent="1" source="CKFEmQA0s3hePLSnbmCz-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endArrow=open;endFill=0;strokeColor=#6A1B9A;">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="310" y="390" as="targetPoint" />
           </mxGeometry>
