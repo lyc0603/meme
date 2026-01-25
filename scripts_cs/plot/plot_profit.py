@@ -26,6 +26,17 @@ COLORS = {
     "All test": "black",
 }
 
+plt.rcParams.update(
+    {
+        "font.size": 15,
+        "axes.labelsize": 16,
+        "axes.titlesize": 16,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+        "legend.fontsize": 13,
+    }
+)
+
 
 def _to_np(x) -> np.ndarray:
     return np.asarray(x, dtype=float)
@@ -151,7 +162,7 @@ def main() -> None:
     x = np.arange(len(labels))
     width = 0.38
 
-    fig, ax = plt.subplots(figsize=(8.5, 4.2))
+    fig, ax = plt.subplots(figsize=(7.0, 3.8))
     colors = [COLORS.get(lbl, "black") for lbl in labels]
 
     # --- bars (NO error bars) ---
@@ -209,13 +220,31 @@ def main() -> None:
         ax.set_ylim(vmin - pad, vmax + pad)
 
     def annotate(bars):
+        y_min, y_max = ax.get_ylim()
+        y_offset = 0.01 * (y_max - y_min)  # 2% of y-range
+
         for b in bars:
             v = b.get_height()
             if not np.isfinite(v):
                 continue
+
             x0 = b.get_x() + b.get_width() / 2
-            va = "bottom" if v >= 0 else "top"
-            ax.text(x0, v, f"{v:.4f}", ha="center", va=va, fontsize=12)
+
+            if v >= 0:
+                y = v + y_offset
+                va = "bottom"
+            else:
+                y = v - y_offset
+                va = "top"
+
+            ax.text(
+                x0,
+                y,
+                f"{v:.3f}",
+                ha="center",
+                va=va,
+                fontsize=12,
+            )
 
     annotate(bars1)
     annotate(bars2)
@@ -235,13 +264,14 @@ def main() -> None:
         bbox_to_anchor=(0.02, 0.98),
         frameon=False,
         fontsize=12,
-        ncol=3,
+        ncol=1,
         borderaxespad=0.0,
         handlelength=2.2,
     )
 
     fig.tight_layout()
 
+    plt.show()
     fig.savefig(OUT_PDF, bbox_inches="tight")
     plt.close(fig)
 
