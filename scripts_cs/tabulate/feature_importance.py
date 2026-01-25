@@ -45,8 +45,8 @@ DATABAR_MACRO = {
 
 FEATURE_MAP: List[Tuple[str, str, str]] = [
     ("average_ret", "Return (all)", r"$\mathbf{\bar{R}_{\text{all}}}$"),
-    ("last_ret", "Return (1th)", r"$\mathbf{\bar{R}_{\text{1th}}}$"),
-    ("five_to_one_ret", "Return (1th--5th)", r"$\mathbf{\bar{R}_{\text{1th-5th}}}$"),
+    ("last_ret", "Return (1st)", r"$\mathbf{\bar{R}_{\text{1st}}}$"),
+    ("five_to_one_ret", "Return (1st--5th)", r"$\mathbf{\bar{R}_{\text{1st-5th}}}$"),
     ("ten_to_six_ret", "Return (6th--10th)", r"$\mathbf{\bar{R}_{\text{6th-10th}}}$"),
     (
         "fifteen_to_eleven_ret",
@@ -120,7 +120,7 @@ def build_latex(norm_imp: Dict[str, Dict[str, float]]) -> str:
     meta = {f: (name, sym) for f, name, sym in FEATURE_MAP}
 
     lines: List[str] = []
-    lines.append(r"\begin{tabularx}{0.9\linewidth}{l*{3}{X}}")
+    lines.append(r"\begin{tabularx}{0.82\linewidth}{l*{3}{X}}")
     lines.append(r"\toprule")
     lines.append(
         r"\multirow{2}{*}{\textbf{\makecell{Feature}}} & \multicolumn{3}{c}{\textbf{Normalized Importance}} \\"
