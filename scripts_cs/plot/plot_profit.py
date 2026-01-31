@@ -253,7 +253,7 @@ def main() -> None:
     ax.spines["right"].set_visible(False)
     ax.tick_params(top=False, right=False, labelsize=14)
     handles, labels_ = ax.get_legend_handles_labels()
-    order = [2, 1, 0]
+    order = [1, 2, 0]
     ax.legend(
         [handles[i] for i in order],
         [labels_[i] for i in order],
