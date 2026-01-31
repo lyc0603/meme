@@ -221,7 +221,7 @@ def main() -> None:
 
     def annotate(bars):
         y_min, y_max = ax.get_ylim()
-        y_offset = 0.005 * (y_max - y_min)  # 2% of y-range
+        y_offset = 0.01 * (y_max - y_min)  # 2% of y-range
 
         for b in bars:
             v = b.get_height()
@@ -238,7 +238,7 @@ def main() -> None:
                 va = "top"
 
             ax.text(
-                x0 + 0.04,
+                x0 + 0.05,
                 y,
                 f"{v:.3f}",
                 ha="center",
