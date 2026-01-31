@@ -1,13 +1,26 @@
-\begin{tabularx}{\linewidth}{l*2{X}}
-    \toprule
-    \textbf{Ablation} & \textbf{AUC} & \textbf{Mean Return} \\
-    \midrule
-    % - & $0.7196$\dec{0.0\%} & $0.1435$\dec{0.0\%} \\
+\begin{tabularx}{0.90\linewidth}{lccc}
+\toprule
+\multicolumn{1}{c}{\multirow{2}{*}{\textbf{Ablation}}} &
+\multicolumn{1}{c}{\multirow{2}{*}{\textbf{AUC}}} &
+\multicolumn{2}{c}{\textbf{Gross Return (Net Return + 1)}} \\
+\cmidrule(lr){3-4}
+& & \textbf{Smart Money} & \textbf{Copier} \\
+\midrule
 
-    w/o Wallet Agent & $0.6382$\dec{11.3\%} & $0.0753$\dec{47.5\%} \\
+w/o Wallet Agent
+& $0.6382$\dec{11.3\%}
+& $1.0753$\dec{6.0\%}
+& $0.9327$\dec{9.4\%} \\
 
-    w/o Coin Agent & $0.6489$\dec{9.8\%} & $0.0837$\dec{41.7\%} \\
+w/o Coin Agent
+& $0.6489$\dec{9.8\%}
+& $1.0837$\dec{5.2\%}
+& $0.9415$\dec{8.5\%} \\
 
-    w/o Timing Agent & $0.6943$\dec{3.5\%} & $0.1048$\dec{27.0\%} \\
-    \bottomrule
+w/o Timing Agent
+& $0.6943$\dec{3.5\%}
+& $1.1048$\dec{3.4\%}
+& $1.0124$\dec{1.6\%} \\
+
+\bottomrule
 \end{tabularx}

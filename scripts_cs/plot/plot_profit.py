@@ -171,7 +171,7 @@ def main() -> None:
         test_means,
         width=width,
         color="#B2B2FF",
-        label="Smart Money Return",
+        label="Smart Money Return, $R^{(S)}$",
     )
     bars2 = ax.bar(
         x + width / 2,
@@ -179,21 +179,21 @@ def main() -> None:
         width=width,
         color="#81A1C1",
         linewidth=0.6,
-        label="Copier Return",
+        label="Copier Return, $R^{(C)}$",
     )
 
     # --- per-model connecting lines ---
     for i in range(len(x)):
         ax.plot(
-            [x[i] - width / 2, x[i] + width / 2],
+            [x[i], x[i]],
             [test_means[i], copy_test_means[i]],
             color="#2E3440",
-            linewidth=1.0,
+            linewidth=2.0,
             linestyle="--",
             marker="s",
             markersize=6,
             zorder=5,
-            label="Imitation Penalty" if i == 0 else None,
+            label="Imitation Penalty, $\epsilon$" if i == 0 else None,
         )
 
     pretty_labels = [
@@ -201,7 +201,7 @@ def main() -> None:
     ]
     ax.set_xticks(x)
     ax.set_xticklabels(pretty_labels, fontsize=14)
-    ax.set_ylabel("Average Return (Test Set)", fontsize=14)
+    ax.set_ylabel("Average Net Return (Test Set)", fontsize=14)
 
     ax.axhline(0.0, linewidth=1.0)
 
@@ -221,7 +221,7 @@ def main() -> None:
 
     def annotate(bars):
         y_min, y_max = ax.get_ylim()
-        y_offset = 0.01 * (y_max - y_min)  # 2% of y-range
+        y_offset = 0.005 * (y_max - y_min)  # 2% of y-range
 
         for b in bars:
             v = b.get_height()
@@ -238,7 +238,7 @@ def main() -> None:
                 va = "top"
 
             ax.text(
-                x0,
+                x0 + 0.04,
                 y,
                 f"{v:.3f}",
                 ha="center",
@@ -253,15 +253,12 @@ def main() -> None:
     ax.spines["right"].set_visible(False)
     ax.tick_params(top=False, right=False, labelsize=14)
     handles, labels_ = ax.get_legend_handles_labels()
-    order = [i for i, l in enumerate(labels_) if l != "Imitation Penalty"] + [
-        i for i, l in enumerate(labels_) if l == "Imitation Penalty"
-    ]
-
+    order = [2, 1, 0]
     ax.legend(
         [handles[i] for i in order],
         [labels_[i] for i in order],
         loc="upper left",
-        bbox_to_anchor=(0.02, 0.98),
+        bbox_to_anchor=(0.02, 1.10),
         frameon=False,
         fontsize=12,
         ncol=1,

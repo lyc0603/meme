@@ -1,4 +1,4 @@
-"""MAS-only ablation table: AUC + Average Return (no res.json dependency)."""
+"""MAS-only ablation table: AUC + Average Return + Copier Return."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ from scripts_cs.ml_preprocess import (  # contains token_address, trader_address
     X_val,
 )
 
-# ----------------------------- Config ----------------------------- #
 MODEL = "mas_20260116"  # or "mas_zero_shot_20260116"
 
 VAL_PATH = PROCESSED_DATA_CS_PATH / "batch_res_val" / f"{MODEL}.jsonl"
@@ -39,8 +38,9 @@ PCT_DIGITS = 1
 INC_MACRO = r"\inc"
 DEC_MACRO = r"\dec"
 
+COPY_RET_COL = "copy_trading_ret"
 
-# ---------------------------- Helpers ---------------------------- #
+
 def simplex_grid(step: float = 0.05) -> List[Tuple[float, float, float]]:
     vals = np.arange(0.0, 1.0 + 1e-12, step)
     out: List[Tuple[float, float, float]] = []
@@ -103,21 +103,25 @@ def auc_with_weights(
 
 def build_output(
     X, coin, wallet, timing, wc: float, ww: float, wt: float
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Returns y_cls, ret, proba arrays aligned on samples where all agent scores exist.
+    Returns y_cls, ret, proba, copy_ret arrays aligned on samples where all agent scores exist.
     """
-    y, ret, p = [], [], []
+    y, ret, p, copy_ret = [], [], [], []
 
     for _, r in X.iterrows():
         k = f"{r['token_address']}_{r['trader_address']}"
         if k not in coin or k not in wallet or k not in timing:
             continue
+
         p.append(wc * coin[k] + ww * wallet[k] + wt * timing[k])
         y.append(int(r["label_cls"]))
-        ret.append(float(r["label"]))  # your realized return
+        ret.append(float(r["label"]))  # smart-money realized return
 
-    return np.asarray(y), np.asarray(ret), np.asarray(p)
+        # ---- NEW: copier realized return (must exist in preprocess output) ----
+        copy_ret.append(float(r[COPY_RET_COL]))
+
+    return np.asarray(y), np.asarray(ret), np.asarray(p), np.asarray(copy_ret)
 
 
 def choose_threshold_max_avg_return(
@@ -186,7 +190,6 @@ def _fmt_num(x: float, digits: int) -> str:
 def renorm_weights(wc: float, ww: float, wt: float) -> tuple[float, float, float]:
     s = wc + ww + wt
     if s <= 0:
-        # degenerate: return equal weights to avoid crash (shouldn't happen in our variants)
         return (1 / 3, 1 / 3, 1 / 3)
     return (wc / s, ww / s, wt / s)
 
@@ -195,9 +198,11 @@ def evaluate_one(
     name: str,
     y_val: np.ndarray,
     ret_val: np.ndarray,
+    copy_ret_val: np.ndarray,
     p_val: np.ndarray,
     y_test: np.ndarray,
     ret_test: np.ndarray,
+    copy_ret_test: np.ndarray,
     p_test: np.ndarray,
 ) -> Dict:
     auc_val = safe_auc(y_val, p_val)
@@ -213,8 +218,13 @@ def evaluate_one(
 
     mask_test = p_test >= t_star
     test_cov = float(mask_test.mean()) if len(mask_test) else 0.0
+
     test_mean_sel = (
         float(np.nanmean(ret_test[mask_test])) if mask_test.any() else float("nan")
+    )
+    # ---- NEW: copier selected mean (same threshold) ----
+    copy_test_mean_sel = (
+        float(np.nanmean(copy_ret_test[mask_test])) if mask_test.any() else float("nan")
     )
 
     return {
@@ -225,26 +235,30 @@ def evaluate_one(
         "val_mean_selected": float(val_mean_sel),
         "val_coverage": float(val_cov),
         "test_mean_selected": float(test_mean_sel),
+        "copy_test_mean_selected": float(copy_test_mean_sel),
         "test_coverage": float(test_cov),
     }
 
 
 def build_latex_table(rows: List[Dict]) -> str:
     baseline = next((r for r in rows if r["name"] == "MAS (Full)"), rows[0])
+
+    # Baselines (AUC uses raw AUC; returns use gross = net + 1)
     base_auc = float(baseline["test_auc"])
-    base_ret = float(baseline["test_mean_selected"])
+    base_sm_gross = float(baseline["test_mean_selected"]) + 1.0
+    base_cp_gross = float(baseline["copy_test_mean_selected"]) + 1.0
 
     lines: List[str] = []
-    lines.append(r"\begin{tabularx}{\linewidth}{l*2{X}}")
-    lines.append(r"    \toprule")
-    lines.append(r"    \textbf{Ablation} & \textbf{AUC} & \textbf{Mean Return} \\")
-    lines.append(r"    \midrule")
-
-    # Comment baseline row (same style as your ablation tables)
+    lines.append(r"\begin{tabularx}{0.90\linewidth}{lccc}")
+    lines.append(r"\toprule")
     lines.append(
-        rf"    % - & ${_fmt_num(base_auc, DIGITS_AUC)}${DEC_MACRO}{{0.0\%}}"
-        rf" & ${_fmt_num(base_ret, DIGITS_RET)}${DEC_MACRO}{{0.0\%}} \\"
+        r"\multicolumn{1}{c}{\multirow{2}{*}{\textbf{Ablation}}} &"
+        r"\multicolumn{1}{c}{\multirow{2}{*}{\textbf{AUC}}} &"
+        r"\multicolumn{2}{c}{\textbf{Gross Return (Net Return + 1)}} \\"
     )
+    lines.append(r"\cmidrule(lr){3-4}")
+    lines.append(r"& & \textbf{Smart Money} & \textbf{Copier} \\")
+    lines.append(r"\midrule")
     lines.append("")
 
     for r in rows:
@@ -252,18 +266,22 @@ def build_latex_table(rows: List[Dict]) -> str:
             continue
 
         auc = float(r["test_auc"])
-        ret = float(r["test_mean_selected"])
+        sm_gross = float(r["test_mean_selected"]) + 1.0
+        cp_gross = float(r["copy_test_mean_selected"]) + 1.0
 
         lines.append(
-            rf"    {r['name']} & ${_fmt_num(auc, DIGITS_AUC)}$"
+            rf"{r['name']}"
+            rf"\n& ${_fmt_num(auc, DIGITS_AUC)}$"
             + _annot(auc, base_auc)
-            + rf" & ${_fmt_num(ret, DIGITS_RET)}$"
-            + _annot(ret, base_ret)
+            + rf"\n& ${_fmt_num(sm_gross, DIGITS_RET)}$"
+            + _annot(sm_gross, base_sm_gross)
+            + rf"\n& ${_fmt_num(cp_gross, DIGITS_RET)}$"
+            + _annot(cp_gross, base_cp_gross)
             + r" \\"
         )
         lines.append("")
 
-    lines.append(r"    \bottomrule")
+    lines.append(r"\bottomrule")
     lines.append(r"\end{tabularx}")
     return "\n".join(lines)
 
@@ -272,7 +290,6 @@ def main() -> None:
     coin_v, wallet_v, timing_v = load_agent_results(VAL_PATH)
     coin_t, wallet_t, timing_t = load_agent_results(TEST_PATH)
 
-    # -------- learn best weights on VAL AUC (same as your script) -------- #
     best_auc = -np.inf
     best_w = (1 / 3, 1 / 3, 1 / 3)
 
@@ -287,15 +304,24 @@ def main() -> None:
         f"[Best weights] coin={wc0:.2f}, wallet={ww0:.2f}, timing={wt0:.2f} | VAL AUC={best_auc:.4f}"
     )
 
-    # -------- build FULL and ABLATION outputs (no JSON) -------- #
     def run_variant(name: str, wc: float, ww: float, wt: float) -> Dict:
-        y_val, ret_val, p_val = build_output(
+        y_val, ret_val, p_val, copy_ret_val = build_output(
             X_val, coin_v, wallet_v, timing_v, wc, ww, wt
         )
-        y_test, ret_test, p_test = build_output(
+        y_test, ret_test, p_test, copy_ret_test = build_output(
             X_test, coin_t, wallet_t, timing_t, wc, ww, wt
         )
-        return evaluate_one(name, y_val, ret_val, p_val, y_test, ret_test, p_test)
+        return evaluate_one(
+            name,
+            y_val,
+            ret_val,
+            copy_ret_val,
+            p_val,
+            y_test,
+            ret_test,
+            copy_ret_test,
+            p_test,
+        )
 
     rows: List[Dict] = []
     rows.append(run_variant("MAS (Full)", wc0, ww0, wt0))
@@ -312,14 +338,15 @@ def main() -> None:
     wc, ww, wt = renorm_weights(wc0, ww0, 0.0)
     rows.append(run_variant("w/o Timing Agent", wc, ww, wt))
 
-    # -------- print diagnostics -------- #
     for r in rows:
         print(
             f"{r['name']}\n"
             f"  AUC: val={r['val_auc']:.4f} | test={r['test_auc']:.4f}\n"
             f"  Threshold*={r['threshold']:.3f} | "
             f"VAL mean={r['val_mean_selected']:.6f}, cov={r['val_coverage']:.2%} | "
-            f"TEST mean={r['test_mean_selected']:.6f}, cov={r['test_coverage']:.2%}\n"
+            f"TEST mean={r['test_mean_selected']:.6f}, "
+            f"COPY mean={r['copy_test_mean_selected']:.6f}, "
+            f"cov={r['test_coverage']:.2%}\n"
         )
 
     tex = build_latex_table(rows)
