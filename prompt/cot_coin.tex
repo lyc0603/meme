@@ -1,0 +1,60 @@
+\begin{reasoning}[label={cot:coin_agent}]{Coin Agent.}
+
+\begin{minipage}[t]{0.49\linewidth}
+\textbf{Transaction Features:}
+
+Bundle Bot: False
+
+Sniper Bot: False
+
+Bump Bot: True
+
+Comment Bot: True
+
+\textbf{Comment History:}
+
+2025-01-17 15:06:36 -- 3yxCdw: Makers missing? Upgrade your strategy now!\\
+...
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\textbf{Candlestick Chart:}
+
+\vspace{0.3em}
+\includegraphics[width=0.8\linewidth]{Figures/candle_benign.png}
+\end{minipage}
+
+\begin{lstlisting}[
+  style=jsonplain,
+  caption={Coin agent reasoning (positive case)},
+]
+{"reasoning":{"Bundle Bot":"Required check: Bundle Bot must be False. Observed = False. Since False == False, this check passes.","Candlestick Pattern":"Required check: chart should show gradual, sustained price discovery (no single-candle spike-and-dump). Observed pattern indicates a gradual increase, so this check passes.","Sniper Bot":"Auxiliary check: Sniper Bot ideally False. Observed = False. This reduces early predatory trading risk.","Bump Bot":"Auxiliary check: Bump Bot may be True as a weak visibility/support signal but is not required. Observed = True; treat as weakly supportive.","Comments":"Auxiliary check: discount repetitive spam; prefer evidence of non-boilerplate engagement. Observed Comment Bot = True; treat as caution, but not decisive if other required signals are clean.","Summary":"Required checks pass (no bundle and no pump-like candlestick signature). Auxiliary signals are not contradictory. Classify as a good investment opportunity."},"result":true}
+\end{lstlisting}
+\begin{minipage}[t]{0.49\linewidth}
+\textbf{Transaction Features:}
+
+Bundle Bot: True
+
+Sniper Bot: True
+
+Bump Bot: False
+
+Comment Bot: False
+
+\textbf{Comment History:}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\textbf{Candlestick Chart:}
+\includegraphics[width=0.8\linewidth]{Figures/candle_bad_gradual_1.png}
+\end{minipage}
+
+\begin{lstlisting}[
+  style=jsonplain,
+  caption={Coin agent reasoning (negative case)},
+]
+{"reasoning":{"Bundle Bot":"Required check: Bundle Bot must be False. Observed = True. Since True != False, this check fails.","Candlestick Pattern":"Required check: chart should show gradual, sustained price discovery. Observed pattern resembles a spike/pump-like move, so this check fails.","Sniper Bot":"Auxiliary check: Sniper Bot ideally False. Observed = True; negative signal indicating elevated predatory early trading risk.","Bump Bot":"Auxiliary check: Bump Bot may be supportive if True. Observed = False; not supportive.","Comments":"Auxiliary check: prefer sustained, organic engagement. Observed Comment Bot = False; absent bot flags alone is not supportive without additional evidence, treat as non-decisive.","Summary":"One or more required checks fail (bundle present and pump-like price action). Auxiliary signals do not offset these failures. Classify as a poor investment opportunity."},"result":false}
+\end{lstlisting}
+\end{reasoning}

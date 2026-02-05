@@ -33,6 +33,7 @@ dependencies = [
     "dotenv",
     "web3",
     "xgboost",
+    "shap",
 ]
 
 [project.optional-dependencies]

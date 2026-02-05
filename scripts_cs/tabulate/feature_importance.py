@@ -26,7 +26,7 @@ import numpy as np
 from environ.constants import PROCESSED_DATA_CS_PATH, TABLE_PATH
 
 # Configuration
-INPUT_JSON = PROCESSED_DATA_CS_PATH / "ml_res.json"
+INPUT_JSON = PROCESSED_DATA_CS_PATH / "ml_res_shap.json"
 OUTPUT_TEX = TABLE_PATH / "feature_importance.tex"
 
 TOP_K: int | None = None  # None = include all features

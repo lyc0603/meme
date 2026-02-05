@@ -1,0 +1,39 @@
+\begin{tabularx}{\linewidth}{llcccl}
+\toprule
+\multicolumn{1}{l}{\multirow{2}{*}{\textbf{\makecell{Feature}}}} & \multicolumn{1}{l}{\multirow{2}{*}{\textbf{\makecell{Description}}}} & \multicolumn{3}{c}{\textbf{Feature Inclusion}} &
+\multicolumn{1}{c}{\multirow{2}{*}{\textbf{\makecell{MAS\\Condition}}}}\\
+\cmidrule{3-5}
+& & \textbf{\makecell{GMGN}} & \textbf{\makecell{Statistic}} & \textbf{\makecell{MAS}} \\
+\midrule
+
+Return ($[x]$) & The average return across the previous $[x]$ participated meme coins.$^\dagger$ & \CIRCLE & \CIRCLE & \CIRCLE & $>0$\\
+
+Number of Trades & The total number of trades executed across all participated meme coins. & \CIRCLE & \CIRCLE & \CIRCLE & $>25\%$ Training Set\\
+
+Return Standard Deviation & The standard deviation of returns across all participated meme coins. & \Circle & \CIRCLE & \CIRCLE & $<1$\\
+
+$t$-stat & The $t$-statistic of the trader's mean return across all participated meme coins. & \Circle & \CIRCLE & \CIRCLE & $>1.645$\\
+
+Time Since Last Trade & The seconds elapsed since the most recent trade before the current meme coin. & \Circle & \CIRCLE & \CIRCLE & $<75\%$ Training Set\\
+
+Time Since First Trade & The seconds elapsed since the trader's very first trade. & \Circle & \CIRCLE & \CIRCLE & $>25\%$ Training Set\\
+
+Time Since Launch & The seconds elapsed since the meme coin's launch. & \Circle & \CIRCLE & \CIRCLE & $<75\%$ Training Set\\
+
+Trader Purchase Price & The execution dollar price at which the trader purchases the meme coin.      & \Circle & \CIRCLE & \CIRCLE & $>25\%$ Training Set\\
+
+Trader Purchase Amount & The total dollar value of the trader's meme coin purchase.               & \Circle & \CIRCLE & \CIRCLE & $>25\%$ Training Set\\
+
+Trader Purchase Quantity & The number of meme coin units purchased by the trader in the transaction. & \Circle & \CIRCLE & \CIRCLE & $>25\%$ Training Set\\
+
+
+$[y]$ Bot & Dummy equal to 1 if $[y]$ bot is detected at the trader's first trade, and 0 otherwise.$^\ddagger$ & \Circle & \CIRCLE & \CIRCLE & $\mathbbm{1}_{\text{Bump Bot}} =0$ \\
+
+Candlestick & The candlestick chart of the meme coin when the trader makes the first trade. & \Circle & \Circle & \CIRCLE & No Mechanicality \\
+
+Comments & The comments of the meme coin when the trader makes the first trade. & \Circle & \Circle & \CIRCLE & Organically Positive \\
+
+\bottomrule
+\multicolumn{5}{l}{$^\dagger x \in \{\text{all}, \text{1st}, \text{1st-5th}, \text{6th-10th}, \text{11th-15th}\}$.}\\
+\multicolumn{5}{l}{$^\ddagger y \in \{\text{Bundle, Sniper, Bump, Comment}\}$.}
+\end{tabularx}

@@ -1,0 +1,34 @@
+\begin{reasoning}[label={cot:timing_agent}]{Timing Agent.}
+
+Time Since Launch: 3723
+
+Trader Purchase Price: 1.19e-05
+
+Trader Purchase Amount: 661.21
+
+Trader Purchase Quantity: 55153573.25
+
+\begin{lstlisting}[
+  style=jsonplain,
+  caption={Timing Agent Reasoning (Positive Case)},
+]
+{"reasoning":{"Time Since Launch":"Require time since launch < {75% Training Set}. Observed = 3723. Since 3723 < {75% Training Set}, this check passes.","Trader Purchase Price":"Require purchase price > {25% Training Set}. Observed = 1.19e-05. Since 1.19e-05 > {25% Training Set}, this check passes.","Trader Purchase Amount":"Require purchase amount > {25% Training Set}. Observed = 661.21. Since 661.21 > {25% Training Set}, this check passes.","Trader Purchase Quantity":"Require purchase quantity > {25% Training Set}. Observed = 55153573.25. Since 55153573.25 > {25% Training Set}, this check passes.","Summary":"All timing checks pass, indicating suitable entry timing for copy trading this wallet in the meme coin."},"result":true}
+
+\end{lstlisting}
+
+Time Since Launch: 85374
+
+Trader Purchase Price: 4.95e-06
+
+Trader Purchase Amount: 99.65
+
+Trader Purchase Quantity: 6026170.61
+
+
+\begin{lstlisting}[
+  style=jsonplain,
+  caption={Timing Agent Reasoning (Negative Case)},
+]
+{"reasoning":{"Time Since Launch":"Require time since launch < {75% Training Set}. Observed = 85374. Since 85374 > {75% Training Set}, this check fails.","Trader Purchase Price":"Require purchase price > {25% Training Set}. Observed = 4.95e-06. Since 4.95e-06 < {25% Training Set}, this check fails.","Trader Purchase Amount":"Require purchase amount > {25% Training Set}. Observed = 99.65. Since 99.65 < {25% Training Set}, this check fails.","Trader Purchase Quantity":"Require purchase quantity > {25% Training Set}. Observed = 6026170.61. Since 6026170.61 > {25% Training Set}, this check fails.","Summary":"One or more timing checks fail, indicating unsuitable entry timing for copy trading this wallet in the meme coin."},"result":false}
+\end{lstlisting}
+\end{reasoning}
