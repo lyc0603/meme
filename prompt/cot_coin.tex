@@ -27,7 +27,7 @@ Comment Bot: True
 
 \begin{lstlisting}[
   style=jsonplain,
-  caption={Coin agent reasoning (positive case)},
+  caption={Coin Agent Reasoning (Positive Case)},
 ]
 {"reasoning":{"Bundle Bot":"Required check: Bundle Bot must be False. Observed = False. Since False == False, this check passes.","Candlestick Pattern":"Required check: chart should show gradual, sustained price discovery (no single-candle spike-and-dump). Observed pattern indicates a gradual increase, so this check passes.","Sniper Bot":"Auxiliary check: Sniper Bot ideally False. Observed = False. This reduces early predatory trading risk.","Bump Bot":"Auxiliary check: Bump Bot may be True as a weak visibility/support signal but is not required. Observed = True; treat as weakly supportive.","Comments":"Auxiliary check: discount repetitive spam; prefer evidence of non-boilerplate engagement. Observed Comment Bot = True; treat as caution, but not decisive if other required signals are clean.","Summary":"Required checks pass (no bundle and no pump-like candlestick signature). Auxiliary signals are not contradictory. Classify as a good investment opportunity."},"result":true}
 \end{lstlisting}
@@ -53,7 +53,7 @@ Comment Bot: False
 
 \begin{lstlisting}[
   style=jsonplain,
-  caption={Coin agent reasoning (negative case)},
+  caption={Coin Agent Reasoning (Negative Case)},
 ]
 {"reasoning":{"Bundle Bot":"Required check: Bundle Bot must be False. Observed = True. Since True != False, this check fails.","Candlestick Pattern":"Required check: chart should show gradual, sustained price discovery. Observed pattern resembles a spike/pump-like move, so this check fails.","Sniper Bot":"Auxiliary check: Sniper Bot ideally False. Observed = True; negative signal indicating elevated predatory early trading risk.","Bump Bot":"Auxiliary check: Bump Bot may be supportive if True. Observed = False; not supportive.","Comments":"Auxiliary check: prefer sustained, organic engagement. Observed Comment Bot = False; absent bot flags alone is not supportive without additional evidence, treat as non-decisive.","Summary":"One or more required checks fail (bundle present and pump-like price action). Auxiliary signals do not offset these failures. Classify as a poor investment opportunity."},"result":false}
 \end{lstlisting}

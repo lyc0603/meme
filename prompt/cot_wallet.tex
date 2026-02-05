@@ -27,7 +27,7 @@ Time Since First Trade: 19118974
 
 \begin{lstlisting}[
   style=jsonplain,
-  caption={Wallet agent reasoning (positive case)},
+  caption={Wallet Agent Reasoning (Positive Case)},
 ]
 {"reasoning":{"Statistical Significance":"Gate check: require t-statistic > 1.645 (one-tailed 5%). Observed = 24.39. Since 24.39 > 1.645, the gate passes.","Profitability":"Check average return > 1.00. Observed = 1.25. Since 1.25 > 1.00, this check passes.","Risk Profile":"Check standard deviation < 1.00. Observed = 0.84. Since 0.84 < 1.00, this check passes.","Temporal Robustness":"Require 5-to-1, 10-to-6, and 15-to-11 returns all > 1.00. Observed = (0.12,0.14,0.79,0.48). All exceed 1.00, so this check passes.","Statistical Robustness":"Require number of trades > {25% Training Set}. Observed = 4114. Since 4114 > {25% Training Set}, this check passes.","Activity and Longevity":"Recency requires time since last trade < {75% Training Set}: 371 < {75% Training Set} passes. Longevity prefers time since first trade > {25% Training Set}: 19118974 > {25% Training Set}, so this check passes.","Summary":"All checks pass (significance, profitability, risk control, temporal robustness, longevity, and sample size). The wallet is attractive for next-trade copy trading."},"result":true}
 \end{lstlisting}
@@ -58,7 +58,7 @@ Time Since First Trade: 15449
 \end{minipage}
 \begin{lstlisting}[
   style=jsonplain,
-  caption={Wallet agent reasoning (negative case)},
+  caption={Wallet Agent Reasoning (Negative Case)},
 ]
 {"reasoning":{"Statistical Significance":"Gate check: require t-statistic > 1.645 (one-tailed 5%). Observed = 0.45. Since 0.45 < 1.645, the gate fails.","Profitability":"Require average return > 0.00. Observed = 0.00. Since 0.00 is not greater than 0.00, this check fails.","Risk Profile":"Check standard deviation < 1.00. Observed = 0.31. This passes, but cannot compensate for failed core profitability and significance gates.","Temporal Robustness":"Require all horizons > 1.00. Observed = (0.02,-0.02,0.11,-0.12). Multiple horizons are below 0.00, so this check fails.","Statistical Robustness":"Require number of trades > {25% Training Set}. Observed = 461. Since 461 < {25% Training Set}, this check fails.","Activity and Longevity":"Recency 10 < {75% Training Set} passes; longevity 15449 < {25% Training Set} not met. Auxiliary signals cannot offset failed core checks.","Summary":"Core gates fail (statistical significance and profitability) and robustness is insufficient. The wallet is unsuitable for next-trade copy trading."},"result":false}
 \end{lstlisting}
